@@ -1,0 +1,28 @@
+# Source files (bundled into out/)
+src/**
+test/**
+out/test/**
+shared/src/**
+shared/node_modules/**
+shared/tsconfig.json
+
+# Build tooling
+.github/**
+scripts/**
+node_modules/**
+*.ts
+!*.d.ts
+tsconfig.json
+eslint.config.mjs
+.gitignore
+
+# Development files
+*.log
+*.map
+.env*
+.temp
+.tmp
+
+# Test artifacts
+test_output.log
+coverage/**

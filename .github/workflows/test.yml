@@ -29,7 +29,7 @@ jobs:
           npm run build
 
       - name: Type check
-        run: npm run compile
+        run: npm run build
 
       - name: Lint
         run: npm run lint
