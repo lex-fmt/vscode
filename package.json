@@ -1,0 +1,451 @@
+{
+  "name": "lex-vscode",
+  "displayName": "Lex",
+  "description": "Language support for Lex documents via lex-lsp.",
+  "version": "0.2.1",
+  "publisher": "lex",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "main": "./out/src/main.cjs",
+  "engines": {
+    "vscode": "^1.106.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:lex"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "lex.showPreview",
+        "title": "Open Preview",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.showPreviewToSide",
+        "title": "Open Preview to the Side",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.exportToMarkdown",
+        "title": "Export to Markdown",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.exportToHtml",
+        "title": "Export to HTML",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.importFromMarkdown",
+        "title": "Import from Markdown",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.exportToPdf",
+        "title": "Export to PDF",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.insertAssetReference",
+        "title": "Insert Asset Reference",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.insertVerbatimBlock",
+        "title": "Insert Verbatim Block from File",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.goToNextAnnotation",
+        "title": "Go to Next Annotation",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.goToPreviousAnnotation",
+        "title": "Go to Previous Annotation",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.resolveAnnotation",
+        "title": "Resolve Annotation",
+        "category": "Lex"
+      },
+      {
+        "command": "lex.toggleAnnotationResolution",
+        "title": "Toggle Annotation Resolution",
+        "category": "Lex"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "lex.showPreview",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.showPreviewToSide",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.exportToMarkdown",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.exportToHtml",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.importFromMarkdown",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "lex.exportToPdf",
+          "when": "editorLangId == lex"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "lex.showPreviewToSide",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToMarkdown",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToHtml",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.importFromMarkdown",
+          "when": "editorLangId == markdown",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToPdf",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.insertAssetReference",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.insertVerbatimBlock",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.goToNextAnnotation",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.goToPreviousAnnotation",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.resolveAnnotation",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.toggleAnnotationResolution",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "lex.showPreviewToSide",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToMarkdown",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToHtml",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.importFromMarkdown",
+          "when": "resourceExtname == .md",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToPdf",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "lex.showPreviewToSide",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToMarkdown",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToHtml",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.importFromMarkdown",
+          "when": "resourceExtname == .md",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.exportToPdf",
+          "when": "resourceExtname == .lex",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "lex",
+        "aliases": [
+          "Lex"
+        ],
+        "extensions": [
+          ".lex"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "semanticTokenTypes": [
+      {
+        "id": "DocumentTitle",
+        "description": "Document title"
+      },
+      {
+        "id": "SessionMarker",
+        "description": "Session marker"
+      },
+      {
+        "id": "SessionTitleText",
+        "description": "Session title text"
+      },
+      {
+        "id": "DefinitionSubject",
+        "description": "Definition subject/term"
+      },
+      {
+        "id": "DefinitionContent",
+        "description": "Definition content"
+      },
+      {
+        "id": "ListMarker",
+        "description": "List item marker"
+      },
+      {
+        "id": "ListItemText",
+        "description": "List item text"
+      },
+      {
+        "id": "AnnotationLabel",
+        "description": "Annotation label"
+      },
+      {
+        "id": "AnnotationParameter",
+        "description": "Annotation parameter"
+      },
+      {
+        "id": "AnnotationContent",
+        "description": "Annotation content"
+      },
+      {
+        "id": "InlineStrong",
+        "description": "Strong/bold text"
+      },
+      {
+        "id": "InlineEmphasis",
+        "description": "Emphasized/italic text"
+      },
+      {
+        "id": "InlineCode",
+        "description": "Inline code"
+      },
+      {
+        "id": "InlineMath",
+        "description": "Inline math"
+      },
+      {
+        "id": "Reference",
+        "description": "Reference"
+      },
+      {
+        "id": "ReferenceCitation",
+        "description": "Citation reference"
+      },
+      {
+        "id": "ReferenceFootnote",
+        "description": "Footnote reference"
+      },
+      {
+        "id": "VerbatimSubject",
+        "description": "Verbatim block subject"
+      },
+      {
+        "id": "VerbatimLanguage",
+        "description": "Verbatim language identifier"
+      },
+      {
+        "id": "VerbatimAttribute",
+        "description": "Verbatim attribute"
+      },
+      {
+        "id": "VerbatimContent",
+        "description": "Verbatim content"
+      },
+      {
+        "id": "InlineMarker_strong_start",
+        "description": "Strong/bold opening marker"
+      },
+      {
+        "id": "InlineMarker_strong_end",
+        "description": "Strong/bold closing marker"
+      },
+      {
+        "id": "InlineMarker_emphasis_start",
+        "description": "Emphasis/italic opening marker"
+      },
+      {
+        "id": "InlineMarker_emphasis_end",
+        "description": "Emphasis/italic closing marker"
+      },
+      {
+        "id": "InlineMarker_code_start",
+        "description": "Inline code opening marker"
+      },
+      {
+        "id": "InlineMarker_code_end",
+        "description": "Inline code closing marker"
+      },
+      {
+        "id": "InlineMarker_math_start",
+        "description": "Inline math opening marker"
+      },
+      {
+        "id": "InlineMarker_math_end",
+        "description": "Inline math closing marker"
+      },
+      {
+        "id": "InlineMarker_ref_start",
+        "description": "Reference opening bracket"
+      },
+      {
+        "id": "InlineMarker_ref_end",
+        "description": "Reference closing bracket"
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "lex",
+        "scopes": {
+          "DocumentTitle": ["markup.heading", "entity.name.section"],
+          "SessionMarker": ["punctuation.definition.heading"],
+          "SessionTitleText": ["markup.heading"],
+          "DefinitionSubject": ["variable.other.definition"],
+          "DefinitionContent": ["text"],
+          "ListMarker": ["punctuation.definition.list"],
+          "ListItemText": ["markup.list"],
+          "AnnotationLabel": ["comment.block"],
+          "AnnotationParameter": ["variable.parameter"],
+          "AnnotationContent": ["comment.block"],
+          "InlineStrong": ["markup.bold"],
+          "InlineEmphasis": ["markup.italic"],
+          "InlineCode": ["markup.inline.raw"],
+          "InlineMath": ["constant.numeric"],
+          "Reference": ["markup.underline.link"],
+          "ReferenceCitation": ["markup.underline.link"],
+          "ReferenceFootnote": ["markup.underline.link"],
+          "VerbatimSubject": ["entity.name.section"],
+          "VerbatimLanguage": ["entity.name.tag"],
+          "VerbatimAttribute": ["variable.parameter"],
+          "VerbatimContent": ["markup.raw.block"],
+          "InlineMarker_strong_start": ["punctuation.definition.inline"],
+          "InlineMarker_strong_end": ["punctuation.definition.inline"],
+          "InlineMarker_emphasis_start": ["punctuation.definition.inline"],
+          "InlineMarker_emphasis_end": ["punctuation.definition.inline"],
+          "InlineMarker_code_start": ["punctuation.definition.inline"],
+          "InlineMarker_code_end": ["punctuation.definition.inline"],
+          "InlineMarker_math_start": ["punctuation.definition.inline"],
+          "InlineMarker_math_end": ["punctuation.definition.inline"],
+          "InlineMarker_ref_start": ["punctuation.definition.inline"],
+          "InlineMarker_ref_end": ["punctuation.definition.inline"]
+        }
+      }
+    ],
+    "configuration": {
+      "title": "Lex",
+      "properties": {
+        "lex.lspBinaryPath": {
+          "type": "string",
+          "markdownDescription": "Absolute or workspace-relative path to the lex-lsp binary.",
+          "default": "./resources/lex-lsp"
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[lex]": {
+        "editor.formatOnSave": false
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "bundle": "esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --format=cjs --platform=node --target=node20",
+    "vscode:prepublish": "npm run bundle -- --minify",
+    "pretest": "npm run build && npm run bundle",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node ./out/vscode/test/unit/index.js",
+    "test:integration": "node ./out/vscode/test/runTests.js",
+    "test:vsix": "npm run build && npm run bundle && node ./out/vscode/test/runVsixSmoke.js",
+    "lint": "eslint src test",
+    "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
+    "build:with-binary": "bash ./scripts/build_extension.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lex-lang/lex.git"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "@lex/shared": "file:../shared"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^20.19.25",
+    "@types/vscode": "^1.106.1",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.23.1",
+    "eslint": "^9.39.1",
+    "globals": "^15.15.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  }
+}
