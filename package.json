@@ -2,7 +2,7 @@
   "name": "lex-vscode",
   "displayName": "Lex",
   "description": "Language support for Lex documents via lex-lsp.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "lex",
   "license": "MIT",
   "type": "module",
@@ -432,7 +432,7 @@
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1",
-    "@lex/shared": "file:../shared"
+    "@lex/shared": "file:./shared"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
