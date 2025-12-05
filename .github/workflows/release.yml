@@ -52,6 +52,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Download assets from comms
+        shell: bash
+        run: |
+          COMMS_VERSION="v0.9.1"
+          curl -fsSL -o /tmp/assets.tar.gz "https://github.com/lex-fmt/comms/releases/download/${COMMS_VERSION}/assets.tar.gz"
+          tar -xzf /tmp/assets.tar.gz -C /tmp
+          cp /tmp/assets/logo@128.png icon.png
+
       - name: Download lex-lsp binary
         shell: bash
         run: |
