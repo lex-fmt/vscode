@@ -32,3 +32,6 @@ lerna-debug.log*
 .vscode-test/
 .vscode-test-user-data/
 .padz/
+
+# VSIX packages
+*.vsix

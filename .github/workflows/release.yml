@@ -1,5 +1,6 @@
 # Release workflow for lex-vscode
-# Builds VSIX packages with bundled lex-lsp for each platform
+# Builds VSIX packages for VS Code Marketplace and Open VSX (VSCodium)
+# Both use identical platform-specific packages with bundled lex-lsp binaries
 
 name: Release
 permissions:
@@ -63,8 +64,6 @@ jobs:
       - name: Download lex-lsp binary
         shell: bash
         run: |
-          LEX_LSP_VERSION="${{ github.ref_name }}"
-          # Use the same version tag, or fall back to a known version
           LEX_LSP_RELEASE_VERSION="v0.2.2"
 
           mkdir -p resources
@@ -94,15 +93,25 @@ jobs:
       - name: Build extension
         run: npm run bundle
 
-      - name: Package VSIX
+      - name: Package VSIX for VS Code Marketplace
         run: |
-          npx @vscode/vsce package --target ${{ matrix.target }} -o lex-${{ matrix.target }}.vsix
+          npx @vscode/vsce package --target ${{ matrix.target }} -o lex-vscode-${{ matrix.target }}.vsix
 
-      - name: Upload artifact
+      - name: Package VSIX for Open VSX (VSCodium)
+        run: |
+          npx @vscode/vsce package --target ${{ matrix.target }} -o lex-openvsx-${{ matrix.target }}.vsix
+
+      - name: Upload VS Code artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lex-${{ matrix.target }}
-          path: lex-${{ matrix.target }}.vsix
+          name: vscode-${{ matrix.target }}
+          path: lex-vscode-${{ matrix.target }}.vsix
+
+      - name: Upload Open VSX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openvsx-${{ matrix.target }}
+          path: lex-openvsx-${{ matrix.target }}.vsix
 
   release:
     name: Create Release
@@ -125,5 +134,25 @@ jobs:
         with:
           files: artifacts/*.vsix
           generate_release_notes: true
+          body: |
+            ## Installation
+
+            ### VS Code Marketplace
+            Download the `lex-vscode-<platform>.vsix` file for your platform:
+            - `lex-vscode-darwin-arm64.vsix` - macOS Apple Silicon
+            - `lex-vscode-darwin-x64.vsix` - macOS Intel
+            - `lex-vscode-linux-x64.vsix` - Linux x64
+            - `lex-vscode-linux-arm64.vsix` - Linux ARM64
+            - `lex-vscode-win32-x64.vsix` - Windows x64
+
+            ### Open VSX / VSCodium
+            Download the `lex-openvsx-<platform>.vsix` file for your platform:
+            - `lex-openvsx-darwin-arm64.vsix` - macOS Apple Silicon
+            - `lex-openvsx-darwin-x64.vsix` - macOS Intel
+            - `lex-openvsx-linux-x64.vsix` - Linux x64
+            - `lex-openvsx-linux-arm64.vsix` - Linux ARM64
+            - `lex-openvsx-win32-x64.vsix` - Windows x64
+
+            Install via: `code --install-extension <file>.vsix` or `codium --install-extension <file>.vsix`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

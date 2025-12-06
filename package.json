@@ -489,7 +489,8 @@
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
     "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
-    "build:with-binary": "bash ./scripts/build_extension.sh",
+    "build:vsix": "bash ./scripts/build-vsix.sh",
+    "build:vsix:openvsx": "bash ./scripts/build-vsix.sh --openvsx",
     "prepare": "husky"
   },
   "repository": {
