@@ -2,13 +2,9 @@
   "folders": [
     {
       "path": "./sample-workspace"
-    },
-    {
-      "path": "../../../../specs/v1"
     }
   ],
   "settings": {
-    "lex.lspBinaryPath": "../../target/debug/lex-lsp",
     "workbench.colorTheme": "Default Dark Modern",
     "[lex]": {
       "editor.quickSuggestions": {

@@ -1,0 +1,7 @@
+out
+dist
+node_modules
+shared
+*.md
+*.lex
+package-lock.json

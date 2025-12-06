@@ -27,3 +27,8 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# Test artifacts
+.vscode-test/
+.vscode-test-user-data/
+.padz/

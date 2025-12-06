@@ -2,16 +2,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-EXTENSION_DIR="$REPO_ROOT/editors/vscode"
+EXTENSION_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_FILE="$EXTENSION_DIR/test/fixtures/sample-workspace.code-workspace"
-LEX_LSP_BIN="$REPO_ROOT/target/debug/lex-lsp"
+LEX_LSP_BIN="$EXTENSION_DIR/resources/lex-lsp"
 USER_DATA_DIR="$EXTENSION_DIR/.vscode-test-user-data"
 
+# Download binary if needed
 if [[ ! -x "$LEX_LSP_BIN" ]]; then
-  echo "lex-lsp binary not found at $LEX_LSP_BIN"
-  echo "Run 'cargo build --bin lex-lsp' from the repo root before launching VS Code."
-  exit 1
+  echo "lex-lsp binary not found, downloading..."
+  bash "$SCRIPT_DIR/download-lex-lsp.sh"
 fi
 
 if ! command -v code >/dev/null 2>&1; then
