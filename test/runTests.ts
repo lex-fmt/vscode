@@ -26,11 +26,6 @@ async function main() {
         '--disable-extensions',
         '--disable-workspace-trust',
       ],
-      extensionTestsEnv: {
-        ELECTRON_NO_ATTACH_CONSOLE: '1',
-        // Run in background on macOS - prevents focus stealing
-        LSBackgroundOnly: '1',
-      },
     });
   } catch (error) {
     console.error('Failed to run VS Code extension tests');
