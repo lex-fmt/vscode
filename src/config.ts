@@ -36,8 +36,15 @@ export function defaultLspBinaryPath(
 export function resolveLspBinaryPath(
   extensionPath: string,
   configuredPath?: string | null,
-  platform: NodeJS.Platform = process.platform
+  platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env
 ): string {
+  // Environment variable takes precedence (for local development)
+  const envPath = env.LEX_LSP_PATH;
+  if (envPath && envPath.trim() !== '') {
+    return normalizeWindowsExecutable(envPath, platform);
+  }
+
   if (!configuredPath || configuredPath.trim() === '') {
     return defaultLspBinaryPath(extensionPath, platform);
   }
@@ -55,6 +62,6 @@ export function buildLexExtensionConfig(
   configuredLspPath?: string | null
 ): LexExtensionConfig {
   return {
-    lspBinaryPath: resolveLspBinaryPath(extensionPath, configuredLspPath)
+    lspBinaryPath: resolveLspBinaryPath(extensionPath, configuredLspPath),
   };
 }

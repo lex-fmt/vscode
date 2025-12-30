@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import path from 'node:path';
-import {
-  defaultLspBinaryPath,
-  resolveLspBinaryPath
-} from '../../src/config.js';
+import { defaultLspBinaryPath, resolveLspBinaryPath } from '../../src/config.js';
 
 const fakeExtensionPath = path.join('/', 'tmp', 'lex-extension');
 const linuxPlatform: NodeJS.Platform = 'linux';
@@ -49,4 +46,26 @@ test('resolveLspBinaryPath avoids double .exe suffix', () => {
   const expected = path.resolve(fakeExtensionPath, relative);
   const resolved = resolveLspBinaryPath(fakeExtensionPath, relative, windowsPlatform);
   assert.equal(resolved, expected);
+});
+
+test('resolveLspBinaryPath prefers LEX_LSP_PATH env var over config', () => {
+  const envPath = '/custom/path/lex-lsp';
+  const configPath = './resources/lex-lsp';
+  const env = { LEX_LSP_PATH: envPath };
+  const resolved = resolveLspBinaryPath(fakeExtensionPath, configPath, linuxPlatform, env);
+  assert.equal(resolved, envPath);
+});
+
+test('resolveLspBinaryPath ignores empty LEX_LSP_PATH', () => {
+  const configPath = './resources/lex-lsp';
+  const env = { LEX_LSP_PATH: '  ' };
+  const resolved = resolveLspBinaryPath(fakeExtensionPath, configPath, linuxPlatform, env);
+  assert.equal(resolved, path.resolve(fakeExtensionPath, configPath));
+});
+
+test('resolveLspBinaryPath appends .exe to LEX_LSP_PATH on Windows', () => {
+  const envPath = '/custom/path/lex-lsp';
+  const env = { LEX_LSP_PATH: envPath };
+  const resolved = resolveLspBinaryPath(fakeExtensionPath, undefined, windowsPlatform, env);
+  assert.equal(resolved, `${envPath}.exe`);
 });
