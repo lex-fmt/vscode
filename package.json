@@ -2,7 +2,7 @@
   "name": "lex-vscode",
   "displayName": "Lex",
   "description": "Language support for Lex documents via lex-lsp.",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "publisher": "lex",
   "license": "MIT",
   "icon": "icon.png",

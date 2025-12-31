@@ -9,7 +9,7 @@ EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RESOURCES_DIR="$EXT_DIR/resources"
 
 # lex-lsp version and repository
-LEX_LSP_VERSION="${LEX_LSP_VERSION:-v0.2.2}"
+LEX_LSP_VERSION="${LEX_LSP_VERSION:-v0.2.3}"
 LEX_LSP_REPO="lex-fmt/editors"
 
 detect_platform() {
