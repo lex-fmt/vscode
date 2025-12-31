@@ -12,7 +12,7 @@ Build & Test
 ```
 cargo build --bin lex-lsp
 cargo build --bin lex
-cd editors/vscode
+cd vscode
 npm ci
 npm run lint && npm run build
 npm test               # unit + VS Code integration
@@ -22,16 +22,12 @@ CI mirrors the same sequence via `.github/workflows/test-vscode-plugin.yml`.
 
 Packaging
 ---------
-- `./editors/vscode/scripts/build_extension.sh` builds `lex-lsp` in release mode, copies it into `editors/vscode/resources/lex-lsp`, installs npm dependencies, and runs `npm run bundle`.
+- `./vscode/scripts/build_extension.sh` builds `lex-lsp` in release mode, copies it into `vscode/resources/lex-lsp`, installs npm dependencies, and runs `npm run bundle`.
 - Run `npx vsce package` afterwards to create the VSIX.
 
 Features Covered
 ----------------
-- Activation + handshake with lex-lsp (configurable binary path).
-- Semantic tokens, document symbols, hover info, folding ranges.
-- Go to definition, find references, document links.
-- Whole-document formatting (shares fixtures with lex-lsp tests).
-- Monochrome syntax theme for .lex files (adapts to light/dark mode).
+See [EDITORS.lex](../EDITORS.lex) for the current feature support matrix.
 
 Theming
 -------
