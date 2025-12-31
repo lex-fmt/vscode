@@ -35,3 +35,4 @@ lerna-debug.log*
 
 # VSIX packages
 *.vsix
+.DS_Store
