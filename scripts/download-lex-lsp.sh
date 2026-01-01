@@ -7,10 +7,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RESOURCES_DIR="$EXT_DIR/resources"
+DEPS_FILE="$EXT_DIR/shared/lex-deps.json"
 
-# lex-lsp version and repository
-LEX_LSP_VERSION="lex-lsp-v0.2.7"
-LEX_LSP_REPO="lex-fmt/editors"
+# Read lex-lsp version and repository from shared/lex-deps.json
+if [[ -f "$DEPS_FILE" ]]; then
+  LEX_LSP_VERSION="$(jq -r '.["lex-lsp"]' "$DEPS_FILE")"
+  LEX_LSP_REPO="$(jq -r '.["lex-lsp-repo"]' "$DEPS_FILE")"
+else
+  echo "Error: $DEPS_FILE not found" >&2
+  exit 1
+fi
 
 detect_platform() {
   local os arch

@@ -64,7 +64,10 @@ jobs:
       - name: Download lex-lsp binary
         shell: bash
         run: |
-          LEX_LSP_RELEASE_VERSION="v0.2.2"
+          # Read pinned version from shared/lex-deps.json
+          LEX_LSP_VERSION=$(jq -r '.["lex-lsp"]' shared/lex-deps.json)
+          LEX_LSP_REPO=$(jq -r '.["lex-lsp-repo"]' shared/lex-deps.json)
+          echo "Using lex-lsp version: $LEX_LSP_VERSION from $LEX_LSP_REPO"
 
           mkdir -p resources
 
@@ -76,7 +79,7 @@ jobs:
             BINARY_NAME="lex-lsp"
           fi
 
-          DOWNLOAD_URL="https://github.com/lex-fmt/editors/releases/download/${LEX_LSP_RELEASE_VERSION}/${ARCHIVE_NAME}"
+          DOWNLOAD_URL="https://github.com/${LEX_LSP_REPO}/releases/download/${LEX_LSP_VERSION}/${ARCHIVE_NAME}"
           echo "Downloading from: $DOWNLOAD_URL"
 
           curl -fsSL -o "/tmp/${ARCHIVE_NAME}" "$DOWNLOAD_URL"
