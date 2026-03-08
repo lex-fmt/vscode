@@ -39,8 +39,7 @@ This document demonstrates all semantic token types emitted by lex-lsp and serve
             function example() {
                 return "lex";
             }
-        :: javascript
-
+        :: javascript ::
     2.2. Muted Intensity
 
         Structural elements for navigation:
