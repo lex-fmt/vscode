@@ -1,8 +1,8 @@
 {
   "name": "lex-vscode",
-  "displayName": "Lex",
+  "displayName": "Lex Format",
   "description": "Language support for Lex documents via lex-lsp.",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "publisher": "lex",
   "license": "MIT",
   "icon": "icon.png",
