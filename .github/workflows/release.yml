@@ -159,3 +159,25 @@ jobs:
             Install via: `code --install-extension <file>.vsix` or `codium --install-extension <file>.vsix`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish to VS Code Marketplace
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download VS Code artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: vscode-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Publish to VS Code Marketplace
+        run: npx @vscode/vsce publish --packagePath artifacts/*.vsix
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
