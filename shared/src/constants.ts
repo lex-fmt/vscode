@@ -1,6 +1,8 @@
+import lexDeps from '../lex-deps.json' with { type: 'json' };
+
 // Pinned lex-lsp version - binaries downloaded from https://github.com/lex-fmt/editors/releases
-export const LEX_LSP_VERSION = 'v0.2.2';
-export const LEX_LSP_REPO = 'lex-fmt/editors';
+export const LEX_LSP_VERSION = lexDeps['lex-lsp'];
+export const LEX_LSP_REPO = lexDeps['lex-lsp-repo'];
 
 export const TOKEN_TYPES = [
     "DocumentTitle",
