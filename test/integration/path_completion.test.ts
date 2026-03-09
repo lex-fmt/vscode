@@ -2,11 +2,7 @@ import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
 import type { LexExtensionApi } from '../../src/main.js';
 import { integrationTest } from './harness.js';
-import {
-  closeAllEditors,
-  openWorkspaceDocument,
-  TEST_DOCUMENT_PATH
-} from './helpers.js';
+import { closeAllEditors, openWorkspaceDocument, TEST_DOCUMENT_PATH } from './helpers.js';
 
 integrationTest('provides path completion items when typing @', async () => {
   const document = await openWorkspaceDocument(TEST_DOCUMENT_PATH);
@@ -24,7 +20,7 @@ integrationTest('provides path completion items when typing @', async () => {
   const lastChar = document.lineAt(lastLine).text.length;
   const endPosition = new vscode.Position(lastLine, lastChar);
 
-  await editor.edit(editBuilder => {
+  await editor.edit((editBuilder) => {
     editBuilder.insert(endPosition, '\n@');
   });
 
@@ -45,21 +41,21 @@ integrationTest('provides path completion items when typing @', async () => {
 
   // Verify we get file completions from the LSP
   const fileItems = completions.items.filter(
-    item => item.kind === vscode.CompletionItemKind.File
+    (item) => item.kind === vscode.CompletionItemKind.File
   );
   assert.ok(fileItems.length > 0, 'Should include file completions from LSP');
 
   // Check that workspace files appear in completions
-  const labels = completions.items.map(item =>
+  const labels = completions.items.map((item) =>
     typeof item.label === 'string' ? item.label : item.label.label
   );
-  const hasLexFile = labels.some(label => label.endsWith('.lex') || label.endsWith('.md'));
+  const hasLexFile = labels.some((label) => label.endsWith('.lex') || label.endsWith('.md'));
   assert.ok(hasLexFile, 'Should include .lex or .md files from the workspace');
 
   await closeAllEditors();
 });
 
-integrationTest('@ trigger returns only file completions from LSP', async () => {
+integrationTest('@ trigger returns file and snippet completions from LSP', async () => {
   const document = await openWorkspaceDocument(TEST_DOCUMENT_PATH);
   const editor = vscode.window.activeTextEditor;
   assert.ok(editor, 'Editor should be active');
@@ -74,7 +70,7 @@ integrationTest('@ trigger returns only file completions from LSP', async () => 
   const lastChar = document.lineAt(lastLine).text.length;
   const endPosition = new vscode.Position(lastLine, lastChar);
 
-  await editor.edit(editBuilder => {
+  await editor.edit((editBuilder) => {
     editBuilder.insert(endPosition, '\n@');
   });
 
@@ -89,12 +85,13 @@ integrationTest('@ trigger returns only file completions from LSP', async () => 
 
   assert.ok(completions, 'Completions should be returned');
 
-  // All items should be File kind when triggered by @
+  // All items should be File or Snippet kind when triggered by @
+  // (LSP returns both file-path completions and snippet completions like @image, @note)
+  const allowedKinds = new Set([vscode.CompletionItemKind.File, vscode.CompletionItemKind.Snippet]);
   for (const item of completions.items) {
-    assert.equal(
-      item.kind,
-      vscode.CompletionItemKind.File,
-      `All @ completions should be File kind, got ${item.kind} for "${typeof item.label === 'string' ? item.label : item.label.label}"`
+    assert.ok(
+      allowedKinds.has(item.kind!),
+      `All @ completions should be File or Snippet kind, got ${item.kind} for "${typeof item.label === 'string' ? item.label : item.label.label}"`
     );
   }
 

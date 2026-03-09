@@ -2,7 +2,7 @@
   "name": "lex-vscode",
   "displayName": "Lex",
   "description": "Language support for Lex documents via lex-lsp.",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "publisher": "lex",
   "license": "MIT",
   "icon": "icon.png",
@@ -24,12 +24,14 @@
       {
         "command": "lex.showPreview",
         "title": "Open Preview",
-        "category": "Lex"
+        "category": "Lex",
+        "icon": "$(open-preview)"
       },
       {
         "command": "lex.showPreviewToSide",
         "title": "Open Preview to the Side",
-        "category": "Lex"
+        "category": "Lex",
+        "icon": "$(open-preview)"
       },
       {
         "command": "lex.exportToMarkdown",
@@ -164,6 +166,13 @@
           "command": "lex.toggleAnnotationResolution",
           "when": "editorLangId == lex",
           "group": "1_modification"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "lex.showPreviewToSide",
+          "when": "editorLangId == lex",
+          "group": "navigation"
         }
       ],
       "editor/title/context": [
