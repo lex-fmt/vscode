@@ -96,7 +96,7 @@ function buildSemanticTokenRules(
     'VerbatimContent:lex': colors.normal,
     'ListItemText:lex': colors.normal,
 
-    'DocumentTitle:lex': { foreground: colors.muted, fontStyle: 'bold' },
+    'DocumentTitle:lex': { foreground: colors.normal, fontStyle: 'underline' },
     'SessionMarker:lex': { foreground: colors.muted, fontStyle: 'italic' },
     'ListMarker:lex': { foreground: colors.muted, fontStyle: 'italic' },
     'Reference:lex': { foreground: colors.muted, fontStyle: 'underline' },
@@ -184,11 +184,7 @@ export async function applyLexTheme(): Promise<void> {
 
   await vscode.workspace
     .getConfiguration()
-    .update(
-      SEMANTIC_TOKEN_CONFIG_KEY,
-      updated,
-      vscode.ConfigurationTarget.Global
-    );
+    .update(SEMANTIC_TOKEN_CONFIG_KEY, updated, vscode.ConfigurationTarget.Global);
 }
 
 export function setupThemeListeners(context: vscode.ExtensionContext): void {
