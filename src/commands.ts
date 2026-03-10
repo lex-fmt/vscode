@@ -8,16 +8,13 @@ import { join } from 'node:path';
 import { ExecuteCommandRequest, LanguageClient } from 'vscode-languageclient/node.js';
 import type {
   Location as LspLocation,
-  WorkspaceEdit as LspWorkspaceEdit
+  WorkspaceEdit as LspWorkspaceEdit,
 } from 'vscode-languageserver-types';
 
-async function openConvertedDocument(
-  content: string,
-  languageId: string
-): Promise<void> {
+async function openConvertedDocument(content: string, languageId: string): Promise<void> {
   const doc = await vscode.workspace.openTextDocument({
     content,
-    language: languageId
+    language: languageId,
   });
   await vscode.window.showTextDocument(doc);
 }
@@ -53,13 +50,11 @@ async function exportViaLsp(
   const content = editor.document.getText();
   const sourceUri = editor.document.uri.toString();
 
-  const args = outputPath
-    ? [format, content, sourceUri, outputPath]
-    : [format, content, sourceUri];
+  const args = outputPath ? [format, content, sourceUri, outputPath] : [format, content, sourceUri];
 
   const result = (await client.sendRequest(ExecuteCommandRequest.type, {
     command: 'lex.export',
-    arguments: args
+    arguments: args,
   })) as unknown;
 
   if (typeof result !== 'string') {
@@ -84,7 +79,7 @@ async function importViaLsp(
 
   const result = (await client.sendRequest(ExecuteCommandRequest.type, {
     command: 'lex.import',
-    arguments: [format, content]
+    arguments: [format, content],
   })) as unknown;
 
   if (typeof result !== 'string') {
@@ -136,7 +131,7 @@ function createExportToPdfCommand(
     const saveUri = await vscode.window.showSaveDialog({
       defaultUri: vscode.Uri.file(join(sourceUri.fsPath, '..', defaultName)),
       filters: { 'PDF Documents': ['pdf'] },
-      title: 'Export to PDF'
+      title: 'Export to PDF',
     });
 
     if (!saveUri) {
@@ -153,28 +148,53 @@ function createExportToPdfCommand(
   };
 }
 
-function createImportFromMarkdownCommand(
+const CONVERTIBLE_LANGUAGES: Record<string, string> = {
+  markdown: 'markdown',
+};
+
+function createConvertToLexCommand(
   getClient: () => LanguageClient | undefined,
   waitForClientReady: () => Promise<void>
 ): () => Promise<void> {
   return async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-      vscode.window.showErrorMessage('No active editor with content to import.');
+      vscode.window.showErrorMessage('No active editor with content to convert.');
       return;
     }
 
-    if (editor.document.languageId !== 'markdown') {
-      vscode.window.showErrorMessage('Import from Markdown is only available for .md files.');
+    const format = CONVERTIBLE_LANGUAGES[editor.document.languageId];
+    if (!format) {
+      const supported = Object.keys(CONVERTIBLE_LANGUAGES).join(', ');
+      vscode.window.showErrorMessage(
+        `Convert to Lex is available for: ${supported}. Current file is ${editor.document.languageId}.`
+      );
       return;
+    }
+
+    // Determine default output path: same directory, same base name, .lex extension
+    const sourceUri = editor.document.uri;
+    const sourceName = sourceUri.path.split('/').pop() || 'document';
+    const defaultName = sourceName.replace(/\.[^.]+$/, '.lex');
+
+    const saveUri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file(join(sourceUri.fsPath, '..', defaultName)),
+      filters: { 'Lex Documents': ['lex'] },
+      title: 'Convert to Lex',
+    });
+
+    if (!saveUri) {
+      return; // User cancelled
     }
 
     try {
-      const result = await importViaLsp('markdown', getClient, waitForClientReady);
-      await openConvertedDocument(result, 'lex');
+      const result = await importViaLsp(format, getClient, waitForClientReady);
+      await vscode.workspace.fs.writeFile(saveUri, new TextEncoder().encode(result));
+      const doc = await vscode.workspace.openTextDocument(saveUri);
+      await vscode.window.showTextDocument(doc);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      vscode.window.showErrorMessage(`Import failed: ${message}`);
+      vscode.window.showErrorMessage(`Convert to Lex failed: ${message}`);
     }
   };
 }
@@ -198,8 +218,8 @@ export function registerCommands(
       createExportToPdfCommand(getClient, waitForClientReady)
     ),
     vscode.commands.registerCommand(
-      'lex.importFromMarkdown',
-      createImportFromMarkdownCommand(getClient, waitForClientReady)
+      'lex.convertToLex',
+      createConvertToLexCommand(getClient, waitForClientReady)
     ),
     vscode.commands.registerCommand('lex.insertAssetReference', (uri?: vscode.Uri) =>
       insertAssetReference(uri)
@@ -244,7 +264,7 @@ async function insertAssetReference(providedUri?: vscode.Uri): Promise<void> {
 
   const adapter = new VSCodeEditorAdapter(editor);
   await commands.InsertAssetCommand.execute(adapter, {
-    path: relativePath
+    path: relativePath,
   });
 }
 
@@ -255,7 +275,8 @@ async function insertVerbatimBlock(providedUri?: vscode.Uri): Promise<void> {
     return;
   }
 
-  const fileUri = providedUri ?? (await pickWorkspaceFile('Select file to embed as verbatim block'));
+  const fileUri =
+    providedUri ?? (await pickWorkspaceFile('Select file to embed as verbatim block'));
   if (!fileUri) {
     return;
   }
@@ -269,12 +290,13 @@ async function insertVerbatimBlock(providedUri?: vscode.Uri): Promise<void> {
 
   // Infer language from extension
   const ext = assetPath.split('.').pop() || 'txt';
-  const language = ext === 'py' ? 'python' : ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext;
+  const language =
+    ext === 'py' ? 'python' : ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext;
 
   const adapter = new VSCodeEditorAdapter(editor);
   await commands.InsertVerbatimCommand.execute(adapter, {
     content: content.trim(),
-    language
+    language,
   });
 }
 
@@ -299,7 +321,7 @@ async function navigateAnnotation(
     const protocolPosition = client.code2ProtocolConverter.asPosition(editor.selection.active);
     const response = (await client.sendRequest(ExecuteCommandRequest.type, {
       command: lspCommand,
-      arguments: [editor.document.uri.toString(), protocolPosition]
+      arguments: [editor.document.uri.toString(), protocolPosition],
     })) as unknown;
 
     if (!response) {
@@ -340,7 +362,7 @@ async function applyAnnotationEditCommand(
     const protocolPosition = client.code2ProtocolConverter.asPosition(editor.selection.active);
     const response = (await client.sendRequest(ExecuteCommandRequest.type, {
       command: lspCommand,
-      arguments: [editor.document.uri.toString(), protocolPosition]
+      arguments: [editor.document.uri.toString(), protocolPosition],
     })) as unknown;
 
     if (!response) {
@@ -373,7 +395,7 @@ async function pickWorkspaceFile(title: string): Promise<vscode.Uri | undefined>
     canSelectFolders: false,
     canSelectFiles: true,
     defaultUri: workspaceRoot,
-    openLabel: 'Select'
+    openLabel: 'Select',
   });
 
   return selection?.[0];

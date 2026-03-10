@@ -4,7 +4,7 @@ import { LanguageClient } from 'vscode-languageclient/node.js';
 import {
   buildLexExtensionConfig,
   LEX_CONFIGURATION_SECTION,
-  LSP_BINARY_SETTING
+  LSP_BINARY_SETTING,
 } from './config.js';
 import { createLexClient } from './client.js';
 import { applyLexTheme, setupThemeListeners } from './theme.js';
@@ -16,17 +16,17 @@ import { registerPreviewCommands } from './preview.js';
 import {
   registerPathCompletion,
   getPathCompletionDiagnostics,
-  type PathCompletionDiagnostics
+  type PathCompletionDiagnostics,
 } from './pathCompletion.js';
 
 export interface LexExtensionApi {
-  clientReady(): Promise<void>;
+  clientReady(): Promise<LanguageClient | undefined>;
   pathCompletionDiagnostics(): PathCompletionDiagnostics;
 }
 
 let client: LanguageClient | undefined;
 let resolveClientReady: (() => void) | undefined;
-const clientReadyPromise = new Promise<void>(resolve => {
+const clientReadyPromise = new Promise<void>((resolve) => {
   resolveClientReady = resolve;
 });
 
@@ -40,24 +40,19 @@ function shouldSkipLanguageClient(): boolean {
 
 function createApi(): LexExtensionApi {
   return {
-    clientReady: () => clientReadyPromise,
-    pathCompletionDiagnostics: () => getPathCompletionDiagnostics()
+    clientReady: () => clientReadyPromise.then(() => client),
+    pathCompletionDiagnostics: () => getPathCompletionDiagnostics(),
   };
 }
 
-export async function activate(
-  context: vscode.ExtensionContext
-): Promise<LexExtensionApi> {
+export async function activate(context: vscode.ExtensionContext): Promise<LexExtensionApi> {
   // Apply monochrome theme for .lex files (adapts to light/dark mode)
   await applyLexTheme();
   setupThemeListeners(context);
 
   const config = vscode.workspace.getConfiguration(LEX_CONFIGURATION_SECTION);
   const configuredLspPath = config.get<string | null>(LSP_BINARY_SETTING, null);
-  const resolvedConfig = buildLexExtensionConfig(
-    context.extensionUri.fsPath,
-    configuredLspPath
-  );
+  const resolvedConfig = buildLexExtensionConfig(context.extensionUri.fsPath, configuredLspPath);
 
   // Register import/export commands (requires LSP for conversions)
   registerCommands(
@@ -65,7 +60,11 @@ export async function activate(
     () => client,
     () => clientReadyPromise
   );
-  registerPreviewCommands(context, () => client, () => clientReadyPromise);
+  registerPreviewCommands(
+    context,
+    () => client,
+    () => clientReadyPromise
+  );
   registerPathCompletion();
 
   if (shouldSkipLanguageClient()) {
@@ -75,7 +74,9 @@ export async function activate(
   }
 
   if (!existsSync(resolvedConfig.lspBinaryPath)) {
-    console.warn(`[lex] LSP binary not found at ${resolvedConfig.lspBinaryPath}. Language features disabled.`);
+    console.warn(
+      `[lex] LSP binary not found at ${resolvedConfig.lspBinaryPath}. Language features disabled.`
+    );
     signalClientReady();
     return createApi();
   }

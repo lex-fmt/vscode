@@ -5,8 +5,8 @@ import { integrationTest } from './harness.js';
 import {
   closeAllEditors,
   EXPORT_DOCUMENT_PATH,
-  IMPORT_DOCUMENT_PATH,
-  openWorkspaceDocument
+  IMPORT_MARKDOWN_PATH,
+  openWorkspaceDocument,
 } from './helpers.js';
 
 async function waitForNewUntitledDocument(
@@ -19,7 +19,7 @@ async function waitForNewUntitledDocument(
     // Check all open documents, not just visible editors
     const allDocs = vscode.workspace.textDocuments;
     const matchingDoc = allDocs.find(
-      doc => doc.uri.scheme === 'untitled' && doc.languageId === expectedLanguageId
+      (doc) => doc.uri.scheme === 'untitled' && doc.languageId === expectedLanguageId
     );
 
     if (matchingDoc) {
@@ -27,7 +27,7 @@ async function waitForNewUntitledDocument(
     }
 
     // Wait a bit before checking again
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   return undefined;
@@ -52,11 +52,14 @@ integrationTest('export to markdown produces valid markdown output', async () =>
     // Debug: log all documents if not found
     if (!newDoc) {
       const allDocs = vscode.workspace.textDocuments;
-      console.log('All open documents:', allDocs.map(d => ({
-        uri: d.uri.toString(),
-        languageId: d.languageId,
-        scheme: d.uri.scheme
-      })));
+      console.log(
+        'All open documents:',
+        allDocs.map((d) => ({
+          uri: d.uri.toString(),
+          languageId: d.languageId,
+          scheme: d.uri.scheme,
+        }))
+      );
     }
 
     assert.ok(newDoc, 'Export should open a new untitled markdown document');
@@ -70,38 +73,27 @@ integrationTest('export to markdown produces valid markdown output', async () =>
   }
 });
 
-integrationTest('import from markdown produces valid lex output', async () => {
+integrationTest('convert markdown to lex via LSP produces valid output', async () => {
   const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
   assert.ok(extension, 'Lex extension should be discoverable by VS Code');
 
   const api = await extension.activate();
-  await api?.clientReady();
+  const client = await api?.clientReady();
+  assert.ok(client, 'LSP client should be ready');
 
-  const document = await openWorkspaceDocument(IMPORT_DOCUMENT_PATH);
+  const document = await openWorkspaceDocument(IMPORT_MARKDOWN_PATH);
   assert.strictEqual(document.languageId, 'markdown', 'Document should be recognized as markdown');
 
   try {
-    await vscode.commands.executeCommand('lex.importFromMarkdown');
+    const result = String(
+      await client.sendRequest('workspace/executeCommand', {
+        command: 'lex.import',
+        arguments: ['markdown', document.getText()],
+      })
+    );
 
-    // Wait for new untitled document to appear
-    const newDoc = await waitForNewUntitledDocument('lex');
-
-    // Debug: log all documents if not found
-    if (!newDoc) {
-      const allDocs = vscode.workspace.textDocuments;
-      console.log('All open documents:', allDocs.map(d => ({
-        uri: d.uri.toString(),
-        languageId: d.languageId,
-        scheme: d.uri.scheme
-      })));
-    }
-
-    assert.ok(newDoc, 'Import should open a new untitled lex document');
-
-    const content = newDoc.getText();
-    assert.ok(content.length > 0, 'Imported content should not be empty');
-    // Lex output should contain the document title from markdown
-    assert.ok(content.includes('Sample Markdown'), 'Lex output should contain the original title');
+    assert.ok(result.length > 0, 'Imported content should not be empty');
+    assert.ok(result.includes('Sample Markdown'), 'Lex output should contain the original title');
   } finally {
     await closeAllEditors();
   }
@@ -126,11 +118,14 @@ integrationTest('export to html produces valid html output', async () => {
     // Debug: log all documents if not found
     if (!newDoc) {
       const allDocs = vscode.workspace.textDocuments;
-      console.log('All open documents:', allDocs.map(d => ({
-        uri: d.uri.toString(),
-        languageId: d.languageId,
-        scheme: d.uri.scheme
-      })));
+      console.log(
+        'All open documents:',
+        allDocs.map((d) => ({
+          uri: d.uri.toString(),
+          languageId: d.languageId,
+          scheme: d.uri.scheme,
+        }))
+      );
     }
 
     assert.ok(newDoc, 'Export should open a new untitled html document');
