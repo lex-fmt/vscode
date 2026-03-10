@@ -44,8 +44,8 @@
         "category": "Lex"
       },
       {
-        "command": "lex.importFromMarkdown",
-        "title": "Import from Markdown",
+        "command": "lex.convertToLex",
+        "title": "Convert to Lex",
         "category": "Lex"
       },
       {
@@ -103,7 +103,7 @@
           "when": "editorLangId == lex"
         },
         {
-          "command": "lex.importFromMarkdown",
+          "command": "lex.convertToLex",
           "when": "editorLangId == markdown"
         },
         {
@@ -128,7 +128,7 @@
           "group": "1_modification"
         },
         {
-          "command": "lex.importFromMarkdown",
+          "command": "lex.convertToLex",
           "when": "editorLangId == markdown",
           "group": "1_modification"
         },
@@ -192,7 +192,7 @@
           "group": "1_modification"
         },
         {
-          "command": "lex.importFromMarkdown",
+          "command": "lex.convertToLex",
           "when": "resourceExtname == .md",
           "group": "1_modification"
         },
@@ -219,7 +219,7 @@
           "group": "1_modification"
         },
         {
-          "command": "lex.importFromMarkdown",
+          "command": "lex.convertToLex",
           "when": "resourceExtname == .md",
           "group": "1_modification"
         },

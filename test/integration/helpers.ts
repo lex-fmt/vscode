@@ -8,7 +8,7 @@ export const HOVER_DOCUMENT_PATH = 'documents/semantic-tokens.lex';
 export const NAVIGATION_DOCUMENT_PATH = 'documents/semantic-tokens.lex';
 export const FORMATTING_DOCUMENT_PATH = 'documents/formatting.lex';
 export const EXPORT_DOCUMENT_PATH = 'documents/getting-started.lex';
-export const IMPORT_DOCUMENT_PATH = 'documents/sample.md';
+export const IMPORT_MARKDOWN_PATH = 'documents/sample.md';
 
 export interface PositionMatch {
   line: number;
@@ -41,13 +41,9 @@ export function requireWorkspaceFolder(): vscode.WorkspaceFolder {
   return folder;
 }
 
-export async function openWorkspaceDocument(
-  relativePath: string
-): Promise<vscode.TextDocument> {
+export async function openWorkspaceDocument(relativePath: string): Promise<vscode.TextDocument> {
   const folder = requireWorkspaceFolder();
-  const documentUri = vscode.Uri.file(
-    path.join(folder.uri.fsPath, relativePath)
-  );
+  const documentUri = vscode.Uri.file(path.join(folder.uri.fsPath, relativePath));
   const document = await vscode.workspace.openTextDocument(documentUri);
   await vscode.window.showTextDocument(document);
   return document;
@@ -58,7 +54,7 @@ export async function closeAllEditors(): Promise<void> {
 }
 
 export async function delay(ms: number): Promise<void> {
-  await new Promise(resolve => setTimeout(resolve, ms));
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function typeText(text: string): Promise<void> {
@@ -68,9 +64,7 @@ export async function typeText(text: string): Promise<void> {
 }
 
 function splitRelativePath(relativePath: string): string[] {
-  return relativePath
-    .split('/')
-    .filter(segment => segment.length > 0);
+  return relativePath.split('/').filter((segment) => segment.length > 0);
 }
 
 export async function writeWorkspaceFile(
@@ -80,9 +74,8 @@ export async function writeWorkspaceFile(
   const folder = requireWorkspaceFolder();
   const segments = splitRelativePath(relativePath);
   const fileUri = vscode.Uri.joinPath(folder.uri, ...segments);
-  const dirUri = segments.length > 1
-    ? vscode.Uri.joinPath(folder.uri, ...segments.slice(0, -1))
-    : folder.uri;
+  const dirUri =
+    segments.length > 1 ? vscode.Uri.joinPath(folder.uri, ...segments.slice(0, -1)) : folder.uri;
   await vscode.workspace.fs.createDirectory(dirUri);
   const data = typeof contents === 'string' ? Buffer.from(contents) : contents;
   await vscode.workspace.fs.writeFile(fileUri, data);
@@ -120,7 +113,7 @@ export async function waitForExtensionActivation<T>(
   const pollIntervalMs = 200;
 
   while (Date.now() - start < timeoutMs) {
-    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     if (extension.isActive) {
       return extension;
     }
