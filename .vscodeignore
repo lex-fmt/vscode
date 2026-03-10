@@ -6,6 +6,15 @@ shared/src/**
 shared/node_modules/**
 shared/tsconfig.json
 
+# Comms submodule (only assets needed)
+comms/specs/**
+comms/docs/**
+comms/examples/**
+comms/shared/**
+comms/.git*
+comms/CNAME
+comms/.padz
+
 # Build tooling
 .github/**
 scripts/**

@@ -1,0 +1,11 @@
+{
+  "iconDefinitions": {
+    "lex": {
+      "iconPath": "../comms/assets/logo.svg"
+    }
+  },
+  "fileExtensions": {
+    "lex": "lex",
+    "lexx": "lex"
+  }
+}

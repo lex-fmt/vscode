@@ -5,7 +5,7 @@
   "version": "0.3.13",
   "publisher": "lex",
   "license": "MIT",
-  "icon": "icon.png",
+  "icon": "comms/assets/logo@128.png",
   "type": "module",
   "private": true,
   "main": "./out/src/main.cjs",
@@ -230,6 +230,13 @@
         }
       ]
     },
+    "iconThemes": [
+      {
+        "id": "lex-icons",
+        "label": "Lex File Icons",
+        "path": "./icons/lex-file-icon-theme.json"
+      }
+    ],
     "languages": [
       {
         "id": "lex",
