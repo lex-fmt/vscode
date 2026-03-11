@@ -488,7 +488,106 @@
     },
     "configurationDefaults": {
       "[lex]": {
-        "editor.formatOnSave": false
+        "editor.formatOnSave": false,
+        "editor.semanticHighlighting.enabled": true
+      },
+      "editor.semanticTokenColorCustomizations": {
+        "rules": {
+          "SessionTitleText:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "bold"
+          },
+          "DefinitionSubject:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "italic"
+          },
+          "DefinitionContent:lex": "#e0e0e0",
+          "InlineStrong:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "bold"
+          },
+          "InlineEmphasis:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "italic"
+          },
+          "InlineCode:lex": "#e0e0e0",
+          "InlineMath:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "italic"
+          },
+          "VerbatimContent:lex": "#e0e0e0",
+          "ListItemText:lex": "#e0e0e0",
+          "DocumentTitle:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "underline"
+          },
+          "SessionMarker:lex": {
+            "foreground": "#888888",
+            "fontStyle": "italic"
+          },
+          "ListMarker:lex": {
+            "foreground": "#888888",
+            "fontStyle": "italic"
+          },
+          "Reference:lex": {
+            "foreground": "#888888",
+            "fontStyle": "underline"
+          },
+          "ReferenceCitation:lex": {
+            "foreground": "#888888",
+            "fontStyle": "underline"
+          },
+          "ReferenceFootnote:lex": {
+            "foreground": "#888888",
+            "fontStyle": "underline"
+          },
+          "AnnotationLabel:lex": "#666666",
+          "AnnotationParameter:lex": "#666666",
+          "AnnotationContent:lex": "#666666",
+          "VerbatimSubject:lex": "#666666",
+          "VerbatimLanguage:lex": "#666666",
+          "VerbatimAttribute:lex": "#666666",
+          "InlineMarker_strong_start:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_strong_end:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_emphasis_start:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_emphasis_end:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_code_start:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_code_end:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_math_start:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_math_end:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_ref_start:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          },
+          "InlineMarker_ref_end:lex": {
+            "foreground": "#555555",
+            "fontStyle": "italic"
+          }
+        }
       }
     }
   },
