@@ -23,7 +23,8 @@ EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROFILE_DIR="$HOME/.lex-vscode-test"
 EXTENSIONS_DIR="$PROFILE_DIR/extensions"
 EXTENSIONS_LIST="$SCRIPT_DIR/try-lex-extension-extensions.txt"
-OPEN_DIR="$HOME/h/lex/comms/specs"
+# This assumes that this repo and the core ones are under the same dir in the file system
+OPEN_DIR="$SCRIPT_DIR/../../core/comms/specs"
 OPEN_ONLY=false
 RESET=false
 
