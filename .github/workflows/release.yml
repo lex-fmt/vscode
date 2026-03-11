@@ -87,6 +87,10 @@ jobs:
           cp "/tmp/${BINARY_NAME}" "resources/${BINARY_NAME}"
           chmod +x "resources/${BINARY_NAME}" || true
 
+      - name: Set version from tag
+        shell: bash
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+
       - name: Build extension
         run: npm run bundle
 
