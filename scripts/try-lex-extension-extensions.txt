@@ -1,0 +1,6 @@
+# Extra extensions to install in the isolated test VS Code.
+# One extension ID per line. Lines starting with # are comments.
+#
+# Find IDs on the marketplace or via: code --list-extensions
+
+yzhang.markdown-all-in-one
