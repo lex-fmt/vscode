@@ -488,6 +488,7 @@
     },
     "configurationDefaults": {
       "[lex]": {
+        "editor.defaultFormatter": "lex.lex-vscode",
         "editor.formatOnSave": false,
         "editor.semanticHighlighting.enabled": true
       },
