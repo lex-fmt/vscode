@@ -22,33 +22,6 @@ function normalizeWindowsExecutable(
   return `${binaryPath}${WINDOWS_EXECUTABLE_SUFFIX}`;
 }
 
-/**
- * Detect the lex workspace root by looking for the characteristic structure:
- * a directory containing core/, editors/, tools/ subdirectories.
- * Returns null if not in a lex workspace.
- */
-function detectLexWorkspace(
-  startDir: string,
-  existsSync: (p: string) => boolean = fs.existsSync
-): string | null {
-  let current = startDir;
-  const { root } = path.parse(current);
-
-  while (current !== root) {
-    const parent = path.dirname(current);
-    if (
-      existsSync(path.join(parent, 'core')) &&
-      existsSync(path.join(parent, 'editors')) &&
-      existsSync(path.join(parent, 'tools'))
-    ) {
-      return parent;
-    }
-    current = parent;
-  }
-
-  return null;
-}
-
 export interface LexExtensionConfig {
   lspBinaryPath: string;
   warning?: string;
@@ -64,10 +37,9 @@ export function defaultLspBinaryPath(
 
 /**
  * Binary resolution priority:
- * 1. LEX_LSP_PATH env var (explicit override)
- * 2. Workspace binary at {workspace}/target/local/lex-lsp (dev convenience)
- * 3. User config setting
- * 4. Bundled: resources/lex-lsp
+ * 1. LEX_LSP_PATH env var (explicit override, e.g. for local dev builds)
+ * 2. User config setting (lex.lspBinaryPath)
+ * 3. Bundled: resources/lex-lsp
  */
 export function resolveLspBinaryPath(
   extensionPath: string,
@@ -76,8 +48,6 @@ export function resolveLspBinaryPath(
   env: NodeJS.ProcessEnv = process.env,
   existsSync: (p: string) => boolean = fs.existsSync
 ): { path: string; warning?: string } {
-  const binaryName = platform === 'win32' ? 'lex-lsp.exe' : 'lex-lsp';
-
   // 1. Environment variable takes precedence (for CI and explicit override)
   const envPath = env.LEX_LSP_PATH;
   if (envPath && envPath.trim() !== '') {
@@ -88,30 +58,7 @@ export function resolveLspBinaryPath(
     return { path: resolved };
   }
 
-  // 2. Check for workspace binary (dev mode)
-  const workspaceOverride = env.LEX_WORKSPACE_ROOT;
-  const workspace =
-    workspaceOverride && existsSync(workspaceOverride)
-      ? workspaceOverride
-      : detectLexWorkspace(extensionPath, existsSync);
-
-  if (workspace) {
-    const workspaceBinary = path.join(workspace, 'target', 'local', binaryName);
-    if (existsSync(workspaceBinary)) {
-      return { path: workspaceBinary };
-    }
-    // Workspace detected but no binary - warn but continue to fallback
-    const warning = `Lex workspace detected at ${workspace} but no dev binary found. Run ./scripts/build-local.sh to build it.`;
-
-    // Fall through to bundled with warning
-    const bundled = defaultLspBinaryPath(extensionPath, platform);
-    if (existsSync(bundled)) {
-      return { path: bundled, warning };
-    }
-    return { path: bundled, warning };
-  }
-
-  // 3. User config setting
+  // 2. User config setting
   if (configuredPath && configuredPath.trim() !== '') {
     if (path.isAbsolute(configuredPath)) {
       return { path: normalizeWindowsExecutable(configuredPath, platform) };
@@ -120,7 +67,7 @@ export function resolveLspBinaryPath(
     return { path: normalizeWindowsExecutable(resolved, platform) };
   }
 
-  // 4. Bundled binary
+  // 3. Bundled binary
   return { path: defaultLspBinaryPath(extensionPath, platform) };
 }
 

@@ -137,36 +137,3 @@ test('resolveLspBinaryPath appends .exe to LEX_LSP_PATH on Windows', () => {
   );
   assert.equal(resolved.path, `${envPath}.exe`);
 });
-
-test('resolveLspBinaryPath detects workspace and warns when binary missing', () => {
-  // Simulate being in a workspace: parent has core/, editors/, tools/
-  const workspaceRoot = '/home/user/lex';
-  const extPath = `${workspaceRoot}/vscode`;
-  const mockExists = (p: string) => {
-    // Workspace directories exist
-    if (p === `${workspaceRoot}/core`) return true;
-    if (p === `${workspaceRoot}/editors`) return true;
-    if (p === `${workspaceRoot}/tools`) return true;
-    // But workspace binary does not exist
-    return false;
-  };
-  const resolved = resolveLspBinaryPath(extPath, undefined, linuxPlatform, {}, mockExists);
-  assert.ok(resolved.warning?.includes('workspace detected'));
-  assert.ok(resolved.warning?.includes('build-local.sh'));
-});
-
-test('resolveLspBinaryPath uses workspace binary when it exists', () => {
-  const workspaceRoot = '/home/user/lex';
-  const extPath = `${workspaceRoot}/vscode`;
-  const workspaceBinary = `${workspaceRoot}/target/local/lex-lsp`;
-  const mockExists = (p: string) => {
-    if (p === `${workspaceRoot}/core`) return true;
-    if (p === `${workspaceRoot}/editors`) return true;
-    if (p === `${workspaceRoot}/tools`) return true;
-    if (p === workspaceBinary) return true;
-    return false;
-  };
-  const resolved = resolveLspBinaryPath(extPath, undefined, linuxPlatform, {}, mockExists);
-  assert.equal(resolved.path, workspaceBinary);
-  assert.equal(resolved.warning, undefined);
-});
