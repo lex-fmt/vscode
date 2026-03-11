@@ -52,7 +52,7 @@ export function createLexClient(
   configWatcher.onDidCreate(onConfigFile);
   configWatcher.onDidDelete(onConfigFile);
 
-  // Notify LSP when VS Code lex.formatting.* settings change
+  // Notify LSP when VS Code lex.* settings change
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration(LEX_CONFIGURATION_SECTION)) {

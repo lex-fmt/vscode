@@ -484,56 +484,16 @@
           "markdownDescription": "Absolute or workspace-relative path to the lex-lsp binary.",
           "default": "./resources/lex-lsp"
         },
-        "lex.formatting.indentString": {
-          "type": "string",
-          "default": "    ",
-          "markdownDescription": "Whitespace string for each indentation level."
-        },
-        "lex.formatting.sessionBlankLinesBefore": {
-          "type": "integer",
-          "default": 1,
-          "minimum": 0,
-          "markdownDescription": "Number of blank lines inserted before a session title."
-        },
-        "lex.formatting.sessionBlankLinesAfter": {
-          "type": "integer",
-          "default": 1,
-          "minimum": 0,
-          "markdownDescription": "Number of blank lines inserted after a session title."
-        },
-        "lex.formatting.normalizeSeqMarkers": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Normalize list markers to predictable markers."
-        },
-        "lex.formatting.unorderedSeqMarker": {
-          "type": "string",
-          "default": "-",
-          "maxLength": 1,
-          "markdownDescription": "Character for unordered list items when normalization is enabled."
-        },
-        "lex.formatting.maxBlankLines": {
-          "type": "integer",
-          "default": 2,
-          "minimum": 0,
-          "markdownDescription": "Maximum consecutive blank lines kept in output."
-        },
-        "lex.formatting.preserveTrailingBlanks": {
+        "lex.formatOnSave": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Preserve trailing blank lines at the end of a document."
-        },
-        "lex.formatting.normalizeVerbatimMarkers": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Normalize verbatim fences back to canonical `::` form."
+          "markdownDescription": "Automatically format Lex documents when saving. Formatting rules are configured in `.lex.toml`."
         }
       }
     },
     "configurationDefaults": {
       "[lex]": {
         "editor.defaultFormatter": "lex.lex-vscode",
-        "editor.formatOnSave": false,
         "editor.semanticHighlighting.enabled": true
       },
       "editor.semanticTokenColorCustomizations": {

@@ -54,6 +54,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   const configuredLspPath = config.get<string | null>(LSP_BINARY_SETTING, null);
   const resolvedConfig = buildLexExtensionConfig(context.extensionUri.fsPath, configuredLspPath);
 
+  // Sync lex.formatOnSave → editor.formatOnSave for [lex] files
+  applyFormatOnSave();
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('lex.formatOnSave')) {
+        applyFormatOnSave();
+      }
+    })
+  );
+
   // Register import/export commands (requires LSP for conversions)
   registerCommands(
     context,
@@ -86,6 +96,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   await client.start();
   signalClientReady();
   return createApi();
+}
+
+function applyFormatOnSave(): void {
+  const lexConfig = vscode.workspace.getConfiguration(LEX_CONFIGURATION_SECTION);
+  const enabled = lexConfig.get<boolean>('formatOnSave', false);
+  const editorConfig = vscode.workspace.getConfiguration('editor', { languageId: 'lex' });
+  void editorConfig.update('formatOnSave', enabled, vscode.ConfigurationTarget.Global, true);
 }
 
 export async function deactivate(): Promise<void> {
