@@ -558,28 +558,8 @@
         }
       },
       {
-        "id": "lex.injection.constant",
-        "description": "Color for constants (true, false, null) in embedded code blocks",
-        "defaults": {
-          "dark": "#569cd6",
-          "light": "#0000ff",
-          "highContrast": "#569cd6",
-          "highContrastLight": "#0000ff"
-        }
-      },
-      {
         "id": "lex.injection.operator",
         "description": "Color for operators in embedded code blocks",
-        "defaults": {
-          "dark": "#d4d4d4",
-          "light": "#000000",
-          "highContrast": "#d4d4d4",
-          "highContrastLight": "#000000"
-        }
-      },
-      {
-        "id": "lex.injection.punctuation",
-        "description": "Color for punctuation in embedded code blocks",
         "defaults": {
           "dark": "#d4d4d4",
           "light": "#000000",

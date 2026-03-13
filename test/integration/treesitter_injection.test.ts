@@ -60,7 +60,7 @@ integrationTest('injection highlighter applies decorations', async () => {
   await delay(300);
 
   // Force a refresh to ensure decorations are applied
-  hl.refresh();
+  await hl.refresh();
   await delay(100);
 
   // Verify injection zones were detected
@@ -91,7 +91,7 @@ integrationTest('injection highlighter respects config toggle', async () => {
 
   await openWorkspaceDocument(INJECTION_DOCUMENT_PATH);
   await delay(300);
-  hl.refresh();
+  await hl.refresh();
   await delay(100);
 
   // Zones should be populated when enabled (default)
@@ -102,7 +102,7 @@ integrationTest('injection highlighter respects config toggle', async () => {
   const config = vscode.workspace.getConfiguration('lex');
   await config.update('injectionHighlighting', false, vscode.ConfigurationTarget.Global);
   await delay(200);
-  hl.refresh();
+  await hl.refresh();
   await delay(100);
 
   const disabledZones = hl.getInjectionZones();
@@ -111,7 +111,7 @@ integrationTest('injection highlighter respects config toggle', async () => {
   // Re-enable
   await config.update('injectionHighlighting', true, vscode.ConfigurationTarget.Global);
   await delay(200);
-  hl.refresh();
+  await hl.refresh();
   await delay(100);
 
   const reenabledZones = hl.getInjectionZones();
