@@ -71,6 +71,19 @@ mkdir -p "$PROFILE_DIR" "$EXTENSIONS_DIR"
 
 # ── Build & Install VSIX ──────────────────────────────────────────────────────
 if [[ "$OPEN_ONLY" == "false" ]]; then
+  # Clean previous Lex extension to avoid VS Code's "restart required" error.
+  # Must remove both the directory AND the extensions.json entry.
+  rm -rf "$EXTENSIONS_DIR"/lex.lex-vscode-*
+  if [[ -f "$EXTENSIONS_DIR/extensions.json" ]]; then
+    node -e "
+      const fs = require('fs');
+      const p = '$EXTENSIONS_DIR/extensions.json';
+      const exts = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const filtered = exts.filter(e => e.identifier?.id !== 'lex.lex-vscode');
+      fs.writeFileSync(p, JSON.stringify(filtered));
+    "
+  fi
+
   cd "$EXT_DIR"
 
   # Ensure lex-lsp binary is present
