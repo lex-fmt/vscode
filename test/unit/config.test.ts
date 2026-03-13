@@ -98,7 +98,7 @@ test('resolveLspBinaryPath prefers LEX_LSP_PATH env var over config', () => {
   assert.equal(resolved.warning, undefined);
 });
 
-test('resolveLspBinaryPath warns when LEX_LSP_PATH does not exist', () => {
+test('resolveLspBinaryPath falls through when LEX_LSP_PATH does not exist', () => {
   const envPath = '/custom/path/lex-lsp';
   const env = { LEX_LSP_PATH: envPath };
   const resolved = resolveLspBinaryPath(
@@ -108,8 +108,8 @@ test('resolveLspBinaryPath warns when LEX_LSP_PATH does not exist', () => {
     env,
     noFilesExist
   );
-  assert.equal(resolved.path, envPath);
-  assert.ok(resolved.warning?.includes('not found'));
+  // Should fall through to bundled binary, not use the missing env path
+  assert.equal(resolved.path, `${fakeExtensionPath}/resources/lex-lsp`);
 });
 
 test('resolveLspBinaryPath ignores empty LEX_LSP_PATH', () => {
@@ -128,12 +128,13 @@ test('resolveLspBinaryPath ignores empty LEX_LSP_PATH', () => {
 test('resolveLspBinaryPath appends .exe to LEX_LSP_PATH on Windows', () => {
   const envPath = '/custom/path/lex-lsp';
   const env = { LEX_LSP_PATH: envPath };
+  const allFilesExist = () => true;
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
     undefined,
     windowsPlatform,
     env,
-    noFilesExist
+    allFilesExist
   );
   assert.equal(resolved.path, `${envPath}.exe`);
 });

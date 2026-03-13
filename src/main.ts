@@ -54,13 +54,24 @@ function createApi(): LexExtensionApi {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<LexExtensionApi> {
+  const log = vscode.window.createOutputChannel('Lex');
+  context.subscriptions.push(log);
+  log.appendLine(`[lex] Activating from: ${context.extensionUri.fsPath}`);
+  log.appendLine(`[lex] Extension mode: ${context.extensionMode}`);
+
   // Apply monochrome theme for .lex files (adapts to light/dark mode)
   await applyLexTheme();
   setupThemeListeners(context);
 
   const config = vscode.workspace.getConfiguration(LEX_CONFIGURATION_SECTION);
   const configuredLspPath = config.get<string | null>(LSP_BINARY_SETTING, null);
+  log.appendLine(`[lex] Configured LSP path: ${configuredLspPath ?? '(default)'}`);
   const resolvedConfig = buildLexExtensionConfig(context.extensionUri.fsPath, configuredLspPath);
+  log.appendLine(`[lex] Resolved LSP path: ${resolvedConfig.lspBinaryPath}`);
+  log.appendLine(`[lex] Binary exists: ${existsSync(resolvedConfig.lspBinaryPath)}`);
+  if (resolvedConfig.warning) {
+    log.appendLine(`[lex] Warning: ${resolvedConfig.warning}`);
+  }
 
   // Sync lex.formatOnSave → editor.formatOnSave for [lex] files
   applyFormatOnSave();
@@ -96,22 +107,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   }
 
   if (shouldSkipLanguageClient()) {
-    console.info('[lex] Skipping language client startup (LEX_VSCODE_SKIP_SERVER=1).');
+    log.appendLine('[lex] Skipping language client (LEX_VSCODE_SKIP_SERVER=1)');
     signalClientReady();
     return createApi();
   }
 
   if (!existsSync(resolvedConfig.lspBinaryPath)) {
-    console.warn(
-      `[lex] LSP binary not found at ${resolvedConfig.lspBinaryPath}. Language features disabled.`
+    log.appendLine(
+      `[lex] LSP binary NOT FOUND at ${resolvedConfig.lspBinaryPath} — language features disabled`
     );
     signalClientReady();
     return createApi();
   }
 
+  log.appendLine(`[lex] Starting LSP client with binary: ${resolvedConfig.lspBinaryPath}`);
   client = createLexClient(resolvedConfig.lspBinaryPath, context);
   context.subscriptions.push(client);
-  await client.start();
+  try {
+    await client.start();
+    log.appendLine('[lex] LSP client started successfully');
+  } catch (err) {
+    log.appendLine(`[lex] LSP client failed to start: ${String(err)}`);
+  }
   signalClientReady();
   return createApi();
 }

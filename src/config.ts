@@ -49,13 +49,14 @@ export function resolveLspBinaryPath(
   existsSync: (p: string) => boolean = fs.existsSync
 ): { path: string; warning?: string } {
   // 1. Environment variable takes precedence (for CI and explicit override)
+  //    Falls through to bundled binary if the env path doesn't exist.
   const envPath = env.LEX_LSP_PATH;
   if (envPath && envPath.trim() !== '') {
     const resolved = normalizeWindowsExecutable(envPath, platform);
-    if (!existsSync(resolved)) {
-      return { path: resolved, warning: `LEX_LSP_PATH set but binary not found: ${resolved}` };
+    if (existsSync(resolved)) {
+      return { path: resolved };
     }
-    return { path: resolved };
+    // Env var set but binary missing — fall through to bundled binary
   }
 
   // 2. User config setting
