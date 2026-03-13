@@ -70,7 +70,15 @@ This document tests tree-sitter injection highlighting for embedded code in verb
         }
     :: rust ::
 
-5. Plain Verbatim (no injection)
+5. Grouped Verbatim (multiple subjects, shared annotation)
+
+    Install:
+        $ brew install lex
+    Run:
+        $ lex help
+    :: bash ::
+
+6. Plain Verbatim (no injection)
 
     Plain Text:
         This is just plain text in a verbatim block.
