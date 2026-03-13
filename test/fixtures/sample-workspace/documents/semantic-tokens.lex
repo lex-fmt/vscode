@@ -69,7 +69,7 @@ This document demonstrates all semantic token types emitted by lex-lsp and serve
         Verbatim block metadata is faint:
             # This content is normal intensity
             echo "hello"
-        :: bash language=shell
+        :: bash language=shell ::
 
         Inline syntax markers are faintest - the *, _, `, #, [] characters
         that delimit inline formatting should nearly disappear, leaving

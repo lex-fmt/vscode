@@ -15,6 +15,7 @@ async function main() {
     'test/fixtures/sample-workspace.code-workspace'
   );
   await ensureLexBinary(extensionDevelopmentPath);
+  ensureTreeSitter(extensionDevelopmentPath);
 
   try {
     await runTests({
@@ -64,6 +65,26 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
   console.error(`lex-lsp binary not found at ${lexBinaryPath}`);
   console.error("Run 'bash scripts/download-lex-lsp.sh' to download the binary.");
   process.exit(1);
+}
+
+function ensureTreeSitter(extensionDevelopmentPath: string): void {
+  const wasmPath = path.resolve(extensionDevelopmentPath, 'resources/tree-sitter-lex.wasm');
+  if (existsSync(wasmPath)) {
+    return;
+  }
+
+  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-tree-sitter.sh');
+  if (existsSync(downloadScript)) {
+    console.log('Downloading tree-sitter artifacts...');
+    try {
+      execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
+      return;
+    } catch {
+      console.error('Failed to download tree-sitter artifacts');
+    }
+  }
+
+  console.warn(`tree-sitter WASM not found at ${wasmPath} — tree-sitter tests will be skipped.`);
 }
 
 main();

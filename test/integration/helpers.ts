@@ -7,6 +7,7 @@ export const SEMANTIC_TOKENS_DOCUMENT_PATH = 'documents/semantic-tokens.lex';
 export const HOVER_DOCUMENT_PATH = 'documents/semantic-tokens.lex';
 export const NAVIGATION_DOCUMENT_PATH = 'documents/semantic-tokens.lex';
 export const FORMATTING_DOCUMENT_PATH = 'documents/formatting.lex';
+export const PARITY_DOCUMENT_PATH = 'documents/kitchensink.lex';
 export const EXPORT_DOCUMENT_PATH = 'documents/getting-started.lex';
 export const IMPORT_MARKDOWN_PATH = 'documents/sample.md';
 

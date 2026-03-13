@@ -11,19 +11,13 @@ import { defaultCachePath } from '@vscode/test-electron/out/download.js';
 async function main() {
   const currentFile = fileURLToPath(import.meta.url);
   const currentDir = path.dirname(currentFile);
-  const extensionRoot = path.resolve(currentDir, '..', '..', '..');
+  const extensionRoot = path.resolve(currentDir, '..', '..');
   const workspacePath = path.resolve(
     extensionRoot,
     'test/fixtures/sample-workspace-vsix.code-workspace'
   );
-  const harnessExtensionPath = path.resolve(
-    extensionRoot,
-    'test/vsix-smoke-extension'
-  );
-  const testRunnerPath = path.resolve(
-    extensionRoot,
-    'out/vscode/test/vsix-smoke/index.js'
-  );
+  const harnessExtensionPath = path.resolve(extensionRoot, 'test/vsix-smoke-extension');
+  const testRunnerPath = path.resolve(extensionRoot, 'out/test/vsix-smoke/index.js');
 
   const keepProfile = process.env.LEX_VSIX_KEEP_PROFILE === '1';
 
@@ -33,7 +27,7 @@ async function main() {
   try {
     await resetTestProfile();
     const vscodeExecutablePath = await downloadAndUnzipVSCode({
-      cachePath: defaultCachePath
+      cachePath: defaultCachePath,
     });
 
     console.log('Installing VSIX into VS Code test profile...');
@@ -45,7 +39,7 @@ async function main() {
       extensionDevelopmentPath: harnessExtensionPath,
       extensionTestsPath: testRunnerPath,
       launchArgs: [workspacePath],
-      reuseMachineInstall: false
+      reuseMachineInstall: false,
     });
   } finally {
     await cleanup();
@@ -61,45 +55,39 @@ async function packageVsix(extensionRoot: string) {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'lex-vsix-smoke-'));
   const vsixPath = path.join(tempDir, 'lex-vscode-smoke.vsix');
   await runCommand('npx', ['vsce', 'package', '--no-dependencies', '--out', vsixPath], {
-    cwd: extensionRoot
+    cwd: extensionRoot,
   });
 
   return {
     vsixPath,
-    cleanup: () => rm(tempDir, { recursive: true, force: true })
+    cleanup: () => rm(tempDir, { recursive: true, force: true }),
   };
 }
 
 async function installVsix(vscodeExecutablePath: string, vsixPath: string) {
-  const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(
-    vscodeExecutablePath
-  );
+  const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
   await runCommand(cli, [...cliArgs, '--install-extension', vsixPath, '--force']);
 }
 
 async function resetTestProfile() {
   const targets = ['extensions', 'user-data'];
   await Promise.all(
-    targets.map(target =>
+    targets.map((target) =>
       rm(path.join(defaultCachePath, target), { recursive: true, force: true })
     )
   );
 }
 
-async function runCommand(
-  command: string,
-  args: string[],
-  options: SpawnOptionsWithoutStdio = {}
-) {
+async function runCommand(command: string, args: string[], options: SpawnOptionsWithoutStdio = {}) {
   const resolvedCommand = resolveCommand(command);
   await new Promise<void>((resolve, reject) => {
     const child = spawn(resolvedCommand, args, {
       stdio: 'inherit',
-      ...options
+      ...options,
     });
 
     child.on('error', reject);
-    child.on('exit', code => {
+    child.on('exit', (code) => {
       if (code === 0) {
         resolve();
       } else {
@@ -123,7 +111,7 @@ function resolveCommand(command: string): string {
   return `${command}.cmd`;
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error('VSIX smoke tests failed');
   console.error(error);
   process.exitCode = 1;
