@@ -18,13 +18,19 @@ import {
   getPathCompletionDiagnostics,
   type PathCompletionDiagnostics,
 } from './pathCompletion.js';
+import { initTreeSitter, type LexTreeSitter } from './treesitter.js';
+import { createInjectionHighlighter, type InjectionHighlighterApi } from './injections.js';
 
 export interface LexExtensionApi {
   clientReady(): Promise<LanguageClient | undefined>;
   pathCompletionDiagnostics(): PathCompletionDiagnostics;
+  treeSitter(): LexTreeSitter | null;
+  injectionHighlighter(): InjectionHighlighterApi | null;
 }
 
 let client: LanguageClient | undefined;
+let treeSitter: LexTreeSitter | null = null;
+let injectionHl: InjectionHighlighterApi | null = null;
 let resolveClientReady: (() => void) | undefined;
 const clientReadyPromise = new Promise<void>((resolve) => {
   resolveClientReady = resolve;
@@ -42,6 +48,8 @@ function createApi(): LexExtensionApi {
   return {
     clientReady: () => clientReadyPromise.then(() => client),
     pathCompletionDiagnostics: () => getPathCompletionDiagnostics(),
+    treeSitter: () => treeSitter,
+    injectionHighlighter: () => injectionHl,
   };
 }
 
@@ -76,6 +84,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
     () => clientReadyPromise
   );
   registerPathCompletion();
+
+  // Initialize tree-sitter (optional — extension works without it)
+  treeSitter = await initTreeSitter(context.extensionUri.fsPath);
+  if (treeSitter) {
+    context.subscriptions.push({ dispose: () => treeSitter?.dispose() });
+
+    // Initialize injection highlighting (tree-sitter powered)
+    injectionHl = createInjectionHighlighter(treeSitter);
+    context.subscriptions.push({ dispose: () => injectionHl?.dispose() });
+  }
 
   if (shouldSkipLanguageClient()) {
     console.info('[lex] Skipping language client startup (LEX_VSCODE_SKIP_SERVER=1).');

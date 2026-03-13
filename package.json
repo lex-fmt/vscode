@@ -488,9 +488,106 @@
           "type": "boolean",
           "default": false,
           "markdownDescription": "Automatically format Lex documents when saving. Formatting rules are configured in `.lex.toml`."
+        },
+        "lex.injectionHighlighting": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable syntax highlighting for embedded code in verbatim blocks (e.g., Python, JavaScript). Uses tree-sitter to detect language annotations."
         }
       }
     },
+    "colors": [
+      {
+        "id": "lex.injection.keyword",
+        "description": "Color for keywords in embedded code blocks",
+        "defaults": {
+          "dark": "#569cd6",
+          "light": "#0000ff",
+          "highContrast": "#569cd6",
+          "highContrastLight": "#0000ff"
+        }
+      },
+      {
+        "id": "lex.injection.string",
+        "description": "Color for strings in embedded code blocks",
+        "defaults": {
+          "dark": "#ce9178",
+          "light": "#a31515",
+          "highContrast": "#ce9178",
+          "highContrastLight": "#a31515"
+        }
+      },
+      {
+        "id": "lex.injection.comment",
+        "description": "Color for comments in embedded code blocks",
+        "defaults": {
+          "dark": "#6a9955",
+          "light": "#008000",
+          "highContrast": "#7ca668",
+          "highContrastLight": "#008000"
+        }
+      },
+      {
+        "id": "lex.injection.number",
+        "description": "Color for numeric literals in embedded code blocks",
+        "defaults": {
+          "dark": "#b5cea8",
+          "light": "#098658",
+          "highContrast": "#b5cea8",
+          "highContrastLight": "#098658"
+        }
+      },
+      {
+        "id": "lex.injection.type",
+        "description": "Color for type names in embedded code blocks",
+        "defaults": {
+          "dark": "#4ec9b0",
+          "light": "#267f99",
+          "highContrast": "#4ec9b0",
+          "highContrastLight": "#267f99"
+        }
+      },
+      {
+        "id": "lex.injection.function",
+        "description": "Color for function names in embedded code blocks",
+        "defaults": {
+          "dark": "#dcdcaa",
+          "light": "#795e26",
+          "highContrast": "#dcdcaa",
+          "highContrastLight": "#795e26"
+        }
+      },
+      {
+        "id": "lex.injection.constant",
+        "description": "Color for constants (true, false, null) in embedded code blocks",
+        "defaults": {
+          "dark": "#569cd6",
+          "light": "#0000ff",
+          "highContrast": "#569cd6",
+          "highContrastLight": "#0000ff"
+        }
+      },
+      {
+        "id": "lex.injection.operator",
+        "description": "Color for operators in embedded code blocks",
+        "defaults": {
+          "dark": "#d4d4d4",
+          "light": "#000000",
+          "highContrast": "#d4d4d4",
+          "highContrastLight": "#000000"
+        }
+      },
+      {
+        "id": "lex.injection.punctuation",
+        "description": "Color for punctuation in embedded code blocks",
+        "defaults": {
+          "dark": "#d4d4d4",
+          "light": "#000000",
+          "highContrast": "#d4d4d4",
+          "highContrastLight": "#000000"
+        }
+      }
+    ],
     "configurationDefaults": {
       "[lex]": {
         "editor.defaultFormatter": "lex.lex-vscode",
@@ -599,7 +696,8 @@
   "scripts": {
     "build": "tsc -p .",
     "watch": "tsc -watch -p .",
-    "bundle": "esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --format=cjs --platform=node --target=node20",
+    "copy-wasm": "cp node_modules/web-tree-sitter/tree-sitter.wasm resources/tree-sitter.wasm",
+    "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --format=cjs --platform=node --target=node20",
     "vscode:prepublish": "npm run bundle -- --minify",
     "pretest": "npm run build && npm run bundle",
     "test": "npm run test:unit && npm run test:integration",
@@ -619,7 +717,8 @@
   },
   "dependencies": {
     "@lex/shared": "file:./shared",
-    "vscode-languageclient": "^9.0.1"
+    "vscode-languageclient": "^9.0.1",
+    "web-tree-sitter": "^0.25.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

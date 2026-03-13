@@ -5,9 +5,12 @@ node_modules
 /build
 /tmp
 
-# Downloaded binaries
+# Downloaded binaries and artifacts
 /resources/lex-lsp
 /resources/lex-lsp.exe
+/resources/tree-sitter-lex.wasm
+/resources/tree-sitter.wasm
+/resources/queries/
 
 # Logs
 logs
