@@ -113,9 +113,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   }
 
   if (!existsSync(resolvedConfig.lspBinaryPath)) {
-    log.appendLine(
-      `[lex] LSP binary NOT FOUND at ${resolvedConfig.lspBinaryPath} — language features disabled`
-    );
+    const msg = `Lex language server not found at ${resolvedConfig.lspBinaryPath}. Language features (outline, formatting, diagnostics) are disabled.`;
+    log.appendLine(`[lex] ${msg}`);
+    log.show(true);
+    void vscode.window.showWarningMessage(msg, 'Open Settings').then((choice) => {
+      if (choice === 'Open Settings') {
+        void vscode.commands.executeCommand('workbench.action.openSettings', 'lex.lspBinaryPath');
+      }
+    });
     signalClientReady();
     return createApi();
   }
