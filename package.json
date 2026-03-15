@@ -82,6 +82,11 @@
         "command": "lex.toggleAnnotationResolution",
         "title": "Toggle Annotation Resolution",
         "category": "Lex"
+      },
+      {
+        "command": "lex.formatTable",
+        "title": "Format Table",
+        "category": "Lex"
       }
     ],
     "menus": {
@@ -108,6 +113,10 @@
         },
         {
           "command": "lex.exportToPdf",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.formatTable",
           "when": "editorLangId == lex"
         }
       ],
@@ -164,6 +173,11 @@
         },
         {
           "command": "lex.toggleAnnotationResolution",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.formatTable",
           "when": "editorLangId == lex",
           "group": "1_modification"
         }
@@ -230,6 +244,24 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "lex.table.nextCell",
+        "key": "tab",
+        "when": "editorLangId == lex && lex.inTableCell"
+      },
+      {
+        "command": "lex.table.previousCell",
+        "key": "shift+tab",
+        "when": "editorLangId == lex && lex.inTableCell"
+      },
+      {
+        "command": "lex.formatTable",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "editorLangId == lex"
+      }
+    ],
     "iconThemes": [
       {
         "id": "lex-icons",

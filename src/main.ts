@@ -84,6 +84,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
     })
   );
 
+  // Track whether cursor is inside a table pipe row (for Tab hijacking)
+  context.subscriptions.push(
+    vscode.window.onDidChangeTextEditorSelection((e) => {
+      if (e.textEditor.document.languageId !== 'lex') {
+        return;
+      }
+      const line = e.textEditor.document.lineAt(e.selections[0].active.line);
+      const inTable = line.text.trim().startsWith('|');
+      void vscode.commands.executeCommand('setContext', 'lex.inTableCell', inTable);
+    })
+  );
+
   // Register import/export commands (requires LSP for conversions)
   registerCommands(
     context,

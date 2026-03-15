@@ -238,7 +238,12 @@ export function registerCommands(
     ),
     vscode.commands.registerCommand('lex.toggleAnnotationResolution', () =>
       applyAnnotationEditCommand('lex.toggle_annotations', getClient, waitForClientReady)
-    )
+    ),
+    vscode.commands.registerCommand('lex.formatTable', () =>
+      formatTableAtCursor(getClient, waitForClientReady)
+    ),
+    vscode.commands.registerCommand('lex.table.nextCell', () => navigateTableCell('next')),
+    vscode.commands.registerCommand('lex.table.previousCell', () => navigateTableCell('previous'))
   );
 }
 
@@ -384,6 +389,142 @@ async function applyAnnotationEditCommand(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(`Failed to update annotation: ${message}`);
+  }
+}
+
+async function formatTableAtCursor(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'lex') {
+    return;
+  }
+
+  try {
+    const client = await getReadyClient(getClient, waitForClientReady);
+    const content = editor.document.getText();
+    const position = editor.selection.active;
+
+    const result = (await client.sendRequest(ExecuteCommandRequest.type, {
+      command: 'lex.table.format',
+      arguments: [content, position.line, position.character],
+    })) as { start: number; end: number; newText: string } | null;
+
+    if (!result) {
+      vscode.window.showInformationMessage('No table found at cursor position.');
+      return;
+    }
+
+    // Convert byte offsets to VS Code positions
+    const startPos = editor.document.positionAt(result.start);
+    const endPos = editor.document.positionAt(result.end);
+    const range = new vscode.Range(startPos, endPos);
+
+    await editor.edit((editBuilder) => {
+      editBuilder.replace(range, result.newText);
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(`Format table failed: ${message}`);
+  }
+}
+
+async function navigateTableCell(direction: 'next' | 'previous'): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'lex') {
+    return;
+  }
+
+  const position = editor.selection.active;
+  const line = editor.document.lineAt(position.line);
+  const lineText = line.text;
+
+  // Check if we're in a pipe row
+  if (!lineText.trim().startsWith('|')) {
+    // Not in a table — fall through to default Tab behavior
+    if (direction === 'next') {
+      await vscode.commands.executeCommand('tab');
+    } else {
+      await vscode.commands.executeCommand('outdent');
+    }
+    return;
+  }
+
+  // Find pipe positions in the current line
+  const pipePositions: number[] = [];
+  for (let i = 0; i < lineText.length; i++) {
+    if (lineText[i] === '|') {
+      pipePositions.push(i);
+    }
+  }
+
+  if (pipePositions.length < 2) {
+    return;
+  }
+
+  // Find which cell we're in (between which pipes)
+  const cursorCol = position.character;
+
+  if (direction === 'next') {
+    // Find the next pipe after cursor, then position after it + 1 space
+    const nextPipe = pipePositions.find((p) => p > cursorCol);
+    if (nextPipe !== undefined) {
+      const nextPipeIdx = pipePositions.indexOf(nextPipe);
+      if (nextPipeIdx < pipePositions.length - 1) {
+        // Move to content of next cell (after pipe + space)
+        const targetCol = nextPipe + 2;
+        const newPos = new vscode.Position(position.line, Math.min(targetCol, lineText.length));
+        editor.selection = new vscode.Selection(newPos, newPos);
+        return;
+      }
+    }
+
+    // We're in the last cell — move to first cell of next row
+    const nextLine = position.line + 1;
+    if (nextLine < editor.document.lineCount) {
+      const nextLineText = editor.document.lineAt(nextLine).text;
+      if (nextLineText.trim().startsWith('|')) {
+        const firstPipe = nextLineText.indexOf('|');
+        const targetCol = firstPipe + 2;
+        const newPos = new vscode.Position(nextLine, Math.min(targetCol, nextLineText.length));
+        editor.selection = new vscode.Selection(newPos, newPos);
+        return;
+      }
+    }
+  } else {
+    // Find the pipe before cursor, then find the pipe before that
+    const prevPipes = pipePositions.filter((p) => p < cursorCol);
+    if (prevPipes.length >= 2) {
+      // Move to content of previous cell
+      const targetPipe = prevPipes[prevPipes.length - 2];
+      const targetCol = targetPipe + 2;
+      const newPos = new vscode.Position(position.line, Math.min(targetCol, lineText.length));
+      editor.selection = new vscode.Selection(newPos, newPos);
+      return;
+    }
+
+    // We're in the first cell — move to last cell of previous row
+    const prevLine = position.line - 1;
+    if (prevLine >= 0) {
+      const prevLineText = editor.document.lineAt(prevLine).text;
+      if (prevLineText.trim().startsWith('|')) {
+        const prevPipePositions: number[] = [];
+        for (let i = 0; i < prevLineText.length; i++) {
+          if (prevLineText[i] === '|') {
+            prevPipePositions.push(i);
+          }
+        }
+        if (prevPipePositions.length >= 2) {
+          // Move to last cell content
+          const targetPipe = prevPipePositions[prevPipePositions.length - 2];
+          const targetCol = targetPipe + 2;
+          const newPos = new vscode.Position(prevLine, Math.min(targetCol, prevLineText.length));
+          editor.selection = new vscode.Selection(newPos, newPos);
+          return;
+        }
+      }
+    }
   }
 }
 
