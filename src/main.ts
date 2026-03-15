@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { LanguageClient } from 'vscode-languageclient/node.js';
 import {
   buildLexExtensionConfig,
+  defaultLspBinaryPath,
   LEX_CONFIGURATION_SECTION,
   LSP_BINARY_SETTING,
 } from './config.js';
@@ -134,6 +135,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   } catch (err) {
     log.appendLine(`[lex] LSP client failed to start: ${String(err)}`);
   }
+
+  // Show status bar when using a custom (non-bundled) LSP binary
+  const lspSource = process.env.LEX_LSP_SOURCE;
+  const isCustom =
+    lspSource || resolvedConfig.lspBinaryPath !== defaultLspBinaryPath(context.extensionUri.fsPath);
+  if (isCustom) {
+    const label = lspSource ?? resolvedConfig.lspBinaryPath;
+    const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
+    item.text = '$(beaker) lex-lsp: custom';
+    item.tooltip = `LSP binary: ${label}`;
+    item.name = 'Lex LSP Binary';
+    item.show();
+    context.subscriptions.push(item);
+    log.appendLine(`[lex] Custom LSP binary indicator shown: ${label}`);
+  }
+
   signalClientReady();
   return createApi();
 }

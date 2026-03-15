@@ -12,6 +12,8 @@
 #   ./scripts/try-lex-extension.sh --open-only        # Skip rebuild, just open
 #   ./scripts/try-lex-extension.sh --dir ~/my/project # Open a different directory
 #   ./scripts/try-lex-extension.sh --reset            # Wipe the test profile and start fresh
+#   ./scripts/try-lex-extension.sh --lsp-path ../core # Build lex-lsp from Cargo workspace
+#   ./scripts/try-lex-extension.sh --lsp-path /path/to/target/release  # Use pre-built binary
 #
 # Extra extensions are read from scripts/try-lex-extension-extensions.txt (one ID per line).
 
@@ -27,6 +29,7 @@ EXTENSIONS_LIST="$SCRIPT_DIR/try-lex-extension-extensions.txt"
 OPEN_DIR="$SCRIPT_DIR/../../core/comms/specs"
 OPEN_ONLY=false
 RESET=false
+LSP_PATH=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -38,12 +41,16 @@ while [[ $# -gt 0 ]]; do
       OPEN_DIR="$2"
       shift 2
       ;;
+    --lsp-path)
+      LSP_PATH="$2"
+      shift 2
+      ;;
     --reset)
       RESET=true
       shift
       ;;
     -h|--help)
-      head -17 "$0" | tail -15 | sed 's/^# \?//'
+      head -19 "$0" | tail -17 | sed 's/^# \?//'
       exit 0
       ;;
     *)
@@ -86,9 +93,39 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
 
   cd "$EXT_DIR"
 
-  # Ensure lex-lsp binary is present
+  # ── Resolve lex-lsp binary ──────────────────────────────────────────────
   LEX_LSP_BIN="$EXT_DIR/resources/lex-lsp"
-  if [[ ! -x "$LEX_LSP_BIN" ]]; then
+  LSP_SOURCE=""
+
+  if [[ -n "$LSP_PATH" ]]; then
+    LSP_PATH="$(cd "$LSP_PATH" 2>/dev/null && pwd || echo "$LSP_PATH")"
+
+    if [[ -x "$LSP_PATH/lex-lsp" ]]; then
+      # Case 1: directory containing a lex-lsp binary (e.g. target/release/)
+      echo "Using lex-lsp binary from: $LSP_PATH/lex-lsp"
+      cp "$LSP_PATH/lex-lsp" "$LEX_LSP_BIN"
+      chmod +x "$LEX_LSP_BIN"
+      LSP_SOURCE="$LSP_PATH/lex-lsp"
+
+    elif [[ -f "$LSP_PATH/Cargo.toml" ]] && grep -q 'lex-lsp' "$LSP_PATH/Cargo.toml"; then
+      # Case 2: Cargo workspace root — build lex-lsp from source
+      echo "Building lex-lsp from Cargo workspace: $LSP_PATH"
+      cargo build --release -p lex-lsp --manifest-path "$LSP_PATH/Cargo.toml"
+      BUILT="$LSP_PATH/target/release/lex-lsp"
+      if [[ ! -x "$BUILT" ]]; then
+        echo "Error: cargo build succeeded but binary not found at $BUILT" >&2
+        exit 1
+      fi
+      cp "$BUILT" "$LEX_LSP_BIN"
+      chmod +x "$LEX_LSP_BIN"
+      LSP_SOURCE="$BUILT (built from source)"
+
+    else
+      echo "Error: --lsp-path '$LSP_PATH' is neither a directory with a lex-lsp binary" >&2
+      echo "       nor a Cargo workspace containing lex-lsp." >&2
+      exit 1
+    fi
+  elif [[ ! -x "$LEX_LSP_BIN" ]]; then
     echo "lex-lsp binary not found, downloading..."
     bash "$SCRIPT_DIR/download-lex-lsp.sh"
   fi
@@ -130,8 +167,14 @@ echo ""
 echo "Opening isolated VS Code on: $OPEN_DIR"
 echo "  Profile dir:    $PROFILE_DIR"
 echo "  Extensions dir: $EXTENSIONS_DIR"
+if [[ -n "$LSP_SOURCE" ]]; then
+  echo "  LSP binary:     $LSP_SOURCE"
+fi
 echo ""
 
+if [[ -n "$LSP_SOURCE" ]]; then
+  export LEX_LSP_SOURCE="$LSP_SOURCE"
+fi
 exec code \
   --user-data-dir "$PROFILE_DIR" \
   --extensions-dir "$EXTENSIONS_DIR" \
