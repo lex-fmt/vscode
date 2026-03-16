@@ -1,6 +1,6 @@
 {
-  "lex-lsp": "v0.5.9",
+  "lex-lsp": "v0.6.0",
   "lex-lsp-repo": "lex-fmt/lex",
-  "tree-sitter": "v0.5.9",
+  "tree-sitter": "v0.6.0",
   "tree-sitter-repo": "lex-fmt/tree-sitter-lex"
 }
