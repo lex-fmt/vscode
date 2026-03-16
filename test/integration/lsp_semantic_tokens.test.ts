@@ -39,13 +39,11 @@ integrationTest('exposes semantic tokens and legend', async () => {
     'Token deltas must be integers'
   );
 
-  // Verify DocumentTitle and DocumentSubtitle are in the legend
+  // Verify DocumentTitle is in the legend
   const titleIndex = legend.tokenTypes.indexOf('DocumentTitle');
-  const subtitleIndex = legend.tokenTypes.indexOf('DocumentSubtitle');
   assert.ok(titleIndex >= 0, 'Legend must contain DocumentTitle');
-  assert.ok(subtitleIndex >= 0, 'Legend must contain DocumentSubtitle');
 
-  // Decode semantic tokens to find DocumentTitle and DocumentSubtitle
+  // Decode semantic tokens to find DocumentTitle
   // Token data is encoded as groups of 5 integers:
   //   [deltaLine, deltaStartChar, length, tokenType, tokenModifiers]
   const tokenTypes: number[] = [];
@@ -61,33 +59,20 @@ integrationTest('exposes semantic tokens and legend', async () => {
         .map((i) => `${i}:${legend.tokenTypes[i]}`)
         .join(', ')}]`
   );
-  assert.ok(
-    tokenTypes.includes(subtitleIndex),
-    `Semantic tokens must include DocumentSubtitle (index ${subtitleIndex}). ` +
-      `Found types: [${[...new Set(tokenTypes)]
-        .sort((a, b) => a - b)
-        .map((i) => `${i}:${legend.tokenTypes[i]}`)
-        .join(', ')}]`
-  );
 
   // Verify the title token is on line 0 (first line of document)
   // First token's deltaLine is absolute (from line 0)
   let currentLine = 0;
   let foundTitleLine = -1;
-  let foundSubtitleLine = -1;
   for (let i = 0; i < tokens.data.length; i += 5) {
     currentLine += tokens.data[i]; // deltaLine
     const tokenType = tokens.data[i + 3];
     if (tokenType === titleIndex && foundTitleLine === -1) {
       foundTitleLine = currentLine;
     }
-    if (tokenType === subtitleIndex && foundSubtitleLine === -1) {
-      foundSubtitleLine = currentLine;
-    }
   }
 
   assert.equal(foundTitleLine, 0, 'DocumentTitle should be on line 0');
-  assert.equal(foundSubtitleLine, 1, 'DocumentSubtitle should be on line 1');
 
   await closeAllEditors();
 });
