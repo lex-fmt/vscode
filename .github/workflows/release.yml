@@ -87,6 +87,26 @@ jobs:
           cp "/tmp/${BINARY_NAME}" "resources/${BINARY_NAME}"
           chmod +x "resources/${BINARY_NAME}" || true
 
+      - name: Download tree-sitter artifact
+        shell: bash
+        run: |
+          TS_VERSION=$(jq -r '.["tree-sitter"]' shared/lex-deps.json)
+          TS_REPO=$(jq -r '.["tree-sitter-repo"]' shared/lex-deps.json)
+          echo "Using tree-sitter version: $TS_VERSION from $TS_REPO"
+
+          DOWNLOAD_URL="https://github.com/${TS_REPO}/releases/download/${TS_VERSION}/tree-sitter.tar.gz"
+          echo "Downloading from: $DOWNLOAD_URL"
+
+          TMP_DIR="$(mktemp -d)"
+          curl -fsSL -o "$TMP_DIR/tree-sitter.tar.gz" "$DOWNLOAD_URL"
+          mkdir -p "$TMP_DIR/extracted"
+          tar -xzf "$TMP_DIR/tree-sitter.tar.gz" -C "$TMP_DIR/extracted"
+
+          mkdir -p resources/queries
+          cp "$TMP_DIR/extracted/tree-sitter-lex.wasm" resources/tree-sitter-lex.wasm
+          cp "$TMP_DIR/extracted/queries/"*.scm resources/queries/
+          rm -rf "$TMP_DIR"
+
       - name: Set version from tag
         shell: bash
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version

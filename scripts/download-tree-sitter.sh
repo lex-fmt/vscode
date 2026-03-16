@@ -10,7 +10,7 @@ DEPS_FILE="$EXT_DIR/shared/lex-deps.json"
 
 if [[ -f "$DEPS_FILE" ]]; then
   TS_VERSION="$(jq -r '.["tree-sitter"]' "$DEPS_FILE")"
-  TS_REPO="$(jq -r '.["lex-lsp-repo"]' "$DEPS_FILE")"
+  TS_REPO="$(jq -r '.["tree-sitter-repo"]' "$DEPS_FILE")"
 else
   echo "Error: $DEPS_FILE not found" >&2
   exit 1
