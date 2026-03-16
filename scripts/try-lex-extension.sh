@@ -26,7 +26,7 @@ PROFILE_DIR="$HOME/.lex-vscode-test"
 EXTENSIONS_DIR="$PROFILE_DIR/extensions"
 EXTENSIONS_LIST="$SCRIPT_DIR/try-lex-extension-extensions.txt"
 # This assumes that this repo and the core ones are under the same dir in the file system
-OPEN_DIR="$SCRIPT_DIR/../../core/comms/specs"
+OPEN_DIR="$SCRIPT_DIR/../comms/specs"
 OPEN_ONLY=false
 RESET=false
 LSP_PATH=""

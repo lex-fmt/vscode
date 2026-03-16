@@ -45,6 +45,7 @@ const LEX_RULE_KEYS = [
   'VerbatimContent:lex',
   'ListItemText:lex',
   'DocumentTitle:lex',
+  'DocumentSubtitle:lex',
   'SessionMarker:lex',
   'ListMarker:lex',
   'Reference:lex',
@@ -86,7 +87,8 @@ function buildLightRules(): Record<string, string | SemanticTokenRule> {
     'VerbatimContent:lex': c.normal,
     'ListItemText:lex': c.normal,
 
-    'DocumentTitle:lex': { foreground: c.normal, fontStyle: 'underline' },
+    'DocumentTitle:lex': { foreground: c.normal, fontStyle: 'bold underline' },
+    'DocumentSubtitle:lex': { foreground: c.normal, fontStyle: 'italic' },
     'SessionMarker:lex': { foreground: c.muted, fontStyle: 'italic' },
     'ListMarker:lex': { foreground: c.muted, fontStyle: 'italic' },
     'Reference:lex': { foreground: c.muted, fontStyle: 'underline' },

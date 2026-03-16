@@ -14,7 +14,8 @@ import { closeAllEditors, openWorkspaceDocument, PARITY_DOCUMENT_PATH } from './
  * - reference → all reference types (tree-sitter can't classify subtypes yet, see #409)
  */
 const TS_TO_LSP: Record<string, string[]> = {
-  'markup.heading': ['SessionTitleText', 'SessionMarker'],
+  'markup.heading': ['SessionTitleText', 'SessionMarker', 'DocumentTitle'],
+  'markup.heading.subtitle': ['DocumentSubtitle'],
   'variable.other.definition': ['DefinitionSubject'],
   'markup.raw.block': ['VerbatimSubject'],
   'markup.bold': ['InlineStrong'],

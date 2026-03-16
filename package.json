@@ -287,6 +287,10 @@
         "description": "Document title"
       },
       {
+        "id": "DocumentSubtitle",
+        "description": "Document subtitle"
+      },
+      {
         "id": "SessionMarker",
         "description": "Session marker"
       },
@@ -412,6 +416,10 @@
         "language": "lex",
         "scopes": {
           "DocumentTitle": [
+            "markup.heading",
+            "entity.name.section"
+          ],
+          "DocumentSubtitle": [
             "markup.heading",
             "entity.name.section"
           ],
@@ -633,7 +641,11 @@
           "ListItemText:lex": "#e0e0e0",
           "DocumentTitle:lex": {
             "foreground": "#e0e0e0",
-            "fontStyle": "underline"
+            "fontStyle": "bold underline"
+          },
+          "DocumentSubtitle:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "italic"
           },
           "SessionMarker:lex": {
             "foreground": "#888888",
