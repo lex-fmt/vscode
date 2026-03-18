@@ -14,6 +14,8 @@
 #   ./scripts/try-lex-extension.sh --reset            # Wipe the test profile and start fresh
 #   ./scripts/try-lex-extension.sh --lsp-path ../core # Build lex-lsp from Cargo workspace
 #   ./scripts/try-lex-extension.sh --lsp-path /path/to/target/release  # Use pre-built binary
+#   ./scripts/try-lex-extension.sh --ts-path ../tree-sitter-lex       # Build WASM from local grammar
+#   ./scripts/try-lex-extension.sh --ts-path /path/to/tree-sitter-lex # Same, absolute path
 #
 # Extra extensions are read from scripts/try-lex-extension-extensions.txt (one ID per line).
 
@@ -30,6 +32,7 @@ OPEN_DIR="$SCRIPT_DIR/../comms/specs"
 OPEN_ONLY=false
 RESET=false
 LSP_PATH=""
+TS_PATH=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -45,12 +48,16 @@ while [[ $# -gt 0 ]]; do
       LSP_PATH="$2"
       shift 2
       ;;
+    --ts-path)
+      TS_PATH="$2"
+      shift 2
+      ;;
     --reset)
       RESET=true
       shift
       ;;
     -h|--help)
-      head -19 "$0" | tail -17 | sed 's/^# \?//'
+      head -21 "$0" | tail -19 | sed 's/^# \?//'
       exit 0
       ;;
     *)
@@ -130,6 +137,38 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
     bash "$SCRIPT_DIR/download-lex-lsp.sh"
   fi
 
+  # ── Resolve tree-sitter grammar ───────────────────────────────────────
+  TS_SOURCE=""
+
+  if [[ -n "$TS_PATH" ]]; then
+    TS_PATH="$(cd "$TS_PATH" 2>/dev/null && pwd || echo "$TS_PATH")"
+
+    if [[ -f "$TS_PATH/grammar.js" ]]; then
+      echo "Building tree-sitter WASM from: $TS_PATH"
+      (cd "$TS_PATH" && npx tree-sitter generate >/dev/null 2>&1 && npx tree-sitter build --wasm 2>&1)
+      WASM="$TS_PATH/tree-sitter-lex.wasm"
+      if [[ ! -f "$WASM" ]]; then
+        echo "Error: WASM build succeeded but file not found at $WASM" >&2
+        exit 1
+      fi
+      cp "$WASM" "$EXT_DIR/resources/tree-sitter-lex.wasm"
+      if [[ -d "$TS_PATH/queries" ]]; then
+        cp "$TS_PATH/queries/"*.scm "$EXT_DIR/resources/queries/"
+      fi
+      TS_SOURCE="$TS_PATH (built from source)"
+    elif [[ -f "$TS_PATH/tree-sitter-lex.wasm" ]]; then
+      echo "Using pre-built WASM from: $TS_PATH"
+      cp "$TS_PATH/tree-sitter-lex.wasm" "$EXT_DIR/resources/tree-sitter-lex.wasm"
+      if [[ -d "$TS_PATH/queries" ]]; then
+        cp "$TS_PATH/queries/"*.scm "$EXT_DIR/resources/queries/"
+      fi
+      TS_SOURCE="$TS_PATH/tree-sitter-lex.wasm"
+    else
+      echo "Error: --ts-path '$TS_PATH' has neither grammar.js nor tree-sitter-lex.wasm" >&2
+      exit 1
+    fi
+  fi
+
   # Build VSIX (universal, for local testing)
   VSIX_FILE="$EXT_DIR/dist/lex-test.vsix"
   mkdir -p "$EXT_DIR/dist"
@@ -169,6 +208,9 @@ echo "  Profile dir:    $PROFILE_DIR"
 echo "  Extensions dir: $EXTENSIONS_DIR"
 if [[ -n "$LSP_SOURCE" ]]; then
   echo "  LSP binary:     $LSP_SOURCE"
+fi
+if [[ -n "$TS_SOURCE" ]]; then
+  echo "  Tree-sitter:    $TS_SOURCE"
 fi
 echo ""
 
