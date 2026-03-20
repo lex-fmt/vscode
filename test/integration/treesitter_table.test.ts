@@ -21,8 +21,8 @@ integrationTest('table blocks are not treated as injection zones', async () => {
   const tree = ts.parse(document.getText());
   const zones = ts.queryInjections(tree);
 
-  // The fixture has table blocks (:: table ::) and a python block (:: python ::)
-  // Only python should appear as an injection zone — table should be excluded
+  // The fixture has table blocks (definitions with pipe rows) and a python block (:: python ::)
+  // Only python should appear as an injection zone — tables should be excluded
   const languages = zones.map((z) => z.language);
   assert.ok(languages.includes('python'), 'Should detect python injection');
   assert.ok(!languages.includes('table'), 'Table block should NOT be an injection zone');
@@ -38,7 +38,7 @@ integrationTest('table blocks are not treated as injection zones', async () => {
   await closeAllEditors();
 });
 
-integrationTest('table blocks parse as verbatim_block in tree-sitter', async () => {
+integrationTest('table captions are highlighted as markup.heading', async () => {
   const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
   assert.ok(extension, 'Lex extension should be discoverable');
 
@@ -54,14 +54,10 @@ integrationTest('table blocks parse as verbatim_block in tree-sitter', async () 
   const highlights = ts.queryHighlights(tree);
 
   // Table caption ("Results") should be highlighted as markup.heading
+  // (tables parse as definitions; definition subjects are markup.heading)
   const headingCaptures = highlights.filter((h) => h.name === 'markup.heading');
   const hasCaption = headingCaptures.some((h) => h.text.includes('Results'));
   assert.ok(hasCaption, 'Table caption should be captured as markup.heading');
-
-  // Table closing annotation should be captured as keyword
-  const keywordCaptures = highlights.filter((h) => h.name === 'keyword');
-  const hasTableKeyword = keywordCaptures.some((h) => h.text.includes('table'));
-  assert.ok(hasTableKeyword, 'Table closing annotation should be captured as keyword');
 
   tree.delete();
   await closeAllEditors();
