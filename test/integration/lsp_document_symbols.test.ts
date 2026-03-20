@@ -5,7 +5,8 @@ import { integrationTest } from './harness.js';
 import {
   closeAllEditors,
   openWorkspaceDocument,
-  SEMANTIC_TOKENS_DOCUMENT_PATH
+  SEMANTIC_TOKENS_DOCUMENT_PATH,
+  TABLE_DOCUMENT_PATH,
 } from './helpers.js';
 
 function flattenSymbols(symbols: vscode.DocumentSymbol[]): vscode.DocumentSymbol[] {
@@ -39,23 +40,72 @@ integrationTest('provides hierarchical document symbols', async () => {
   assert.ok(symbols.length >= 2, 'Document should report multiple top-level symbols');
 
   const flattened = flattenSymbols(symbols);
-  const titles = flattened.map(symbol => symbol.name);
+  const titles = flattened.map((symbol) => symbol.name);
   assert.ok(
-    titles.some(name => name.includes('Highlighting Philosophy')),
+    titles.some((name) => name.includes('Highlighting Philosophy')),
     'Outline should include the Highlighting Philosophy session'
   );
   assert.ok(
-    titles.some(name => name.includes('Token Types')),
+    titles.some((name) => name.includes('Token Types')),
     'Outline should include Token Types session'
   );
   assert.ok(
-    titles.some(name => name.includes('All Token Types Reference')),
+    titles.some((name) => name.includes('All Token Types Reference')),
     'Outline should include All Token Types Reference session'
   );
 
   assert.ok(
-    flattened.some(symbol => symbol.children && symbol.children.length > 0),
+    flattened.some((symbol) => symbol.children && symbol.children.length > 0),
     'At least one symbol should expose nested children'
+  );
+
+  await closeAllEditors();
+});
+
+integrationTest('table symbols include rows and cells as children', async () => {
+  const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
+  assert.ok(extension, 'Lex extension should be discoverable by VS Code');
+
+  const api = await extension.activate();
+  await api?.clientReady();
+
+  const document = await openWorkspaceDocument(TABLE_DOCUMENT_PATH);
+  const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[] | undefined>(
+    'vscode.executeDocumentSymbolProvider',
+    document.uri
+  );
+
+  if (!symbols || symbols.length === 0) {
+    throw new Error('Document symbols request should return entries');
+  }
+
+  const flattened = flattenSymbols(symbols);
+  const names = flattened.map((s) => s.name);
+
+  // Tables should appear as symbols with their caption
+  assert.ok(
+    names.some((name) => name.includes('Table:') && name.includes('Results')),
+    'Outline should include the Results table symbol'
+  );
+
+  // Find the Results table symbol
+  const tableSymbol = flattened.find(
+    (s) => s.name.includes('Table:') && s.name.includes('Results')
+  );
+  assert.ok(tableSymbol, 'Results table symbol should exist');
+
+  // Table should have row children (not be terminal)
+  assert.ok(
+    tableSymbol.children && tableSymbol.children.length > 0,
+    'Table symbol should have children (rows) — tables are NOT terminal nodes'
+  );
+
+  // Row children should have cell children
+  const rowSymbol = tableSymbol.children.find((s) => s.name.includes('Row'));
+  assert.ok(rowSymbol, 'Table should contain Row symbols');
+  assert.ok(
+    rowSymbol.children && rowSymbol.children.length > 0,
+    'Row symbol should have children (cells)'
   );
 
   await closeAllEditors();

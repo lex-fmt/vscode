@@ -10,6 +10,7 @@ export const FORMATTING_DOCUMENT_PATH = 'documents/formatting.lex';
 export const PARITY_DOCUMENT_PATH = 'documents/kitchensink.lex';
 export const EXPORT_DOCUMENT_PATH = 'documents/getting-started.lex';
 export const IMPORT_MARKDOWN_PATH = 'documents/sample.md';
+export const TABLE_DOCUMENT_PATH = 'documents/table-test.lex';
 
 export interface PositionMatch {
   line: number;
