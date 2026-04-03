@@ -140,6 +140,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get release notes from tag annotation
+        id: notes
+        run: |
+          BODY=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")
+          {
+            echo "body<<RELEASE_NOTES_EOF"
+            echo "$BODY"
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -154,8 +166,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: artifacts/*.vsix
-          generate_release_notes: true
           body: |
+            ${{ steps.notes.outputs.body }}
+
             ## Installation
 
             ### VS Code Marketplace

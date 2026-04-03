@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Create a release: validate, update CHANGELOG.md, clear UNRELEASED.md,
+# commit, create annotated tag (with release notes), and push.
+#
+# The CI release workflow reads the tag annotation to populate the
+# GitHub release body — no file parsing on the server side.
+
+usage() {
+  echo "Usage: $(basename "$0") <version>"
+  echo ""
+  echo "  version   Tag name, e.g. v0.7.5"
+  echo ""
+  echo "Reads UNRELEASED.md for release notes, prepends them to"
+  echo "CHANGELOG.md, commits, tags (annotated), and pushes."
+}
+
+if [[ $# -ne 1 ]]; then
+  usage >&2
+  exit 1
+fi
+
+VERSION="$1"
+
+if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "error: version must match vX.Y.Z (got: $VERSION)" >&2
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+# --- Guards ---
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "error: working tree is not clean" >&2
+  exit 1
+fi
+
+if git rev-parse "$VERSION" >/dev/null 2>&1; then
+  echo "error: tag $VERSION already exists" >&2
+  exit 1
+fi
+
+# --- Read release notes ---
+
+UNRELEASED="$REPO_ROOT/UNRELEASED.md"
+if [[ ! -f "$UNRELEASED" ]]; then
+  echo "error: UNRELEASED.md not found" >&2
+  exit 1
+fi
+
+# Strip HTML comment lines, trim leading/trailing blank lines
+NOTES=$(grep -v '^<!--.*-->$' "$UNRELEASED" | sed -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+
+if [[ -z "$NOTES" ]]; then
+  echo "error: UNRELEASED.md has no release notes" >&2
+  exit 1
+fi
+
+echo "Release notes for $VERSION:"
+echo "---"
+echo "$NOTES"
+echo "---"
+echo ""
+
+# --- Update CHANGELOG.md ---
+
+CHANGELOG="$REPO_ROOT/CHANGELOG.md"
+DATE=$(date +%Y-%m-%d)
+ENTRY="## $VERSION ($DATE)
+
+$NOTES"
+
+if [[ -f "$CHANGELOG" ]]; then
+  # Preserve header line, insert new entry after it
+  TAIL=$(tail -n +2 "$CHANGELOG")
+  printf '%s\n\n%s\n%s\n' "# Changelog" "$ENTRY" "$TAIL" > "$CHANGELOG"
+else
+  printf '%s\n\n%s\n' "# Changelog" "$ENTRY" > "$CHANGELOG"
+fi
+
+# --- Reset UNRELEASED.md ---
+
+cat > "$UNRELEASED" <<'TEMPLATE'
+<!-- Release notes for the next version. -->
+<!-- Updated as work is done; consumed by scripts/create-release. -->
+TEMPLATE
+
+# --- Commit, tag, push ---
+
+git add CHANGELOG.md UNRELEASED.md
+git commit -m "Release $VERSION"
+git tag -a "$VERSION" -m "$NOTES"
+git push
+git push origin "$VERSION"
+
+echo ""
+echo "Released $VERSION — CI will create the GitHub release."
