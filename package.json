@@ -355,6 +355,10 @@
         "description": "Footnote reference"
       },
       {
+        "id": "ReferenceAnnotation",
+        "description": "Annotation reference"
+      },
+      {
         "id": "VerbatimSubject",
         "description": "Verbatim block subject"
       },
@@ -469,6 +473,9 @@
             "markup.underline.link"
           ],
           "ReferenceFootnote": [
+            "markup.underline.link"
+          ],
+          "ReferenceAnnotation": [
             "markup.underline.link"
           ],
           "VerbatimSubject": [
@@ -664,6 +671,10 @@
             "fontStyle": "underline"
           },
           "ReferenceFootnote:lex": {
+            "foreground": "#888888",
+            "fontStyle": "underline"
+          },
+          "ReferenceAnnotation:lex": {
             "foreground": "#888888",
             "fontStyle": "underline"
           },

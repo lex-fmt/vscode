@@ -35,7 +35,8 @@ export const TOKEN_TYPES = [
     "InlineMarker_math_start",
     "InlineMarker_math_end",
     "InlineMarker_ref_start",
-    "InlineMarker_ref_end"
+    "InlineMarker_ref_end",
+    "ReferenceAnnotation"
 ];
 
 export const TOKEN_MODIFIERS: string[] = [];
