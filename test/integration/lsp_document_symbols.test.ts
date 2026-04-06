@@ -82,19 +82,20 @@ integrationTest('table symbols include rows and cells as children', async () => 
   const flattened = flattenSymbols(symbols);
   const names = flattened.map((s) => s.name);
 
-  // Results fixture now parses as Definition (:: table :: inside block)
-  // Check it appears in the outline as a definition symbol
+  // Tables should appear as symbols with their caption
   assert.ok(
-    names.some((name) => name.includes('Results')),
-    'Outline should include the Results symbol'
+    names.some((name) => name.includes('Table:') && name.includes('Results')),
+    'Outline should include the Results table symbol'
   );
 
-  // Find the Results symbol (may be Definition or Table depending on fixture)
-  const tableSymbol = flattened.find((s) => s.name.includes('Results'));
-  assert.ok(tableSymbol, 'Results symbol should exist');
+  // Find the Results table symbol
+  const tableSymbol = flattened.find(
+    (s) => s.name.includes('Table:') && s.name.includes('Results')
+  );
+  assert.ok(tableSymbol, 'Results table symbol should exist');
 
-  // Fixture should produce multiple top-level symbols
-  assert.ok(symbols.length >= 1, 'Table fixture should produce at least one symbol');
+  // Table symbol should exist as a non-terminal node in the outline
+  assert.ok(tableSymbol.children !== undefined, 'Table symbol should expose a children array');
 
   await closeAllEditors();
 });

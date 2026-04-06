@@ -2,8 +2,7 @@ Results:
     | Name    | Score |
     | Alpha   | 100   |
     | Beta    | 200   |
-
-    :: table header=1 ::
+:: table header=1 ::
 
 Formatted:
     | *Name*  | `Code` |
