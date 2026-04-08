@@ -51,6 +51,7 @@ const LEX_RULE_KEYS = [
   'Reference:lex',
   'ReferenceCitation:lex',
   'ReferenceFootnote:lex',
+  'ReferenceAnnotation:lex',
   'AnnotationLabel:lex',
   'AnnotationParameter:lex',
   'AnnotationContent:lex',
@@ -94,6 +95,7 @@ function buildLightRules(): Record<string, string | SemanticTokenRule> {
     'Reference:lex': { foreground: c.muted, fontStyle: 'underline' },
     'ReferenceCitation:lex': { foreground: c.muted, fontStyle: 'underline' },
     'ReferenceFootnote:lex': { foreground: c.muted, fontStyle: 'underline' },
+    'ReferenceAnnotation:lex': { foreground: c.muted, fontStyle: 'underline' },
 
     'AnnotationLabel:lex': c.faint,
     'AnnotationParameter:lex': c.faint,

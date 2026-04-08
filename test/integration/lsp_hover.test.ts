@@ -6,7 +6,7 @@ import {
   closeAllEditors,
   findPosition,
   openWorkspaceDocument,
-  HOVER_DOCUMENT_PATH
+  HOVER_DOCUMENT_PATH,
 } from './helpers.js';
 
 interface HoverExpectation {
@@ -15,9 +15,9 @@ interface HoverExpectation {
 }
 
 const EXPECTATIONS: HoverExpectation[] = [
-  { search: '^footnote', description: 'footnote reference hover' },
+  { search: '::annotation', description: 'annotation reference hover' },
   { search: '@citation', description: 'citation hover' },
-  { search: 'Cache]', description: 'definition / reference hover' }
+  { search: 'Cache]', description: 'definition / reference hover' },
 ];
 
 integrationTest('provides hover content for references and annotations', async () => {
@@ -34,18 +34,19 @@ integrationTest('provides hover content for references and annotations', async (
     assert.ok(positionInfo, `Could not locate text for ${expectation.description}`);
 
     const position = new vscode.Position(positionInfo.line, positionInfo.character);
-    const hoverResults = await vscode.commands.executeCommand<
-      vscode.Hover[] | undefined
-    >(
+    const hoverResults = await vscode.commands.executeCommand<vscode.Hover[] | undefined>(
       'vscode.executeHoverProvider',
       document.uri,
       position
     );
 
-    assert.ok(hoverResults && hoverResults.length > 0, `Hover result missing for ${expectation.description}`);
+    assert.ok(
+      hoverResults && hoverResults.length > 0,
+      `Hover result missing for ${expectation.description}`
+    );
     const contents = hoverResults
-      .flatMap(result => result.contents)
-      .map(item => {
+      .flatMap((result) => result.contents)
+      .map((item) => {
         if (typeof item === 'string') {
           return item;
         }
@@ -57,7 +58,7 @@ integrationTest('provides hover content for references and annotations', async (
         return '';
       });
     assert.ok(
-      contents.some(value => value.trim().length > 0),
+      contents.some((value) => value.trim().length > 0),
       `Hover content should not be empty for ${expectation.description}`
     );
   }

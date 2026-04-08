@@ -22,7 +22,7 @@ const TS_TO_LSP: Record<string, string[]> = {
   'markup.italic': ['InlineEmphasis'],
   'markup.raw.inline': ['InlineCode'],
   'markup.math': ['InlineMath'],
-  'markup.link': ['Reference', 'ReferenceCitation', 'ReferenceFootnote'],
+  'markup.link': ['Reference', 'ReferenceCitation', 'ReferenceFootnote', 'ReferenceAnnotation'],
   'markup.list': ['ListMarker', 'ListItemText'],
   'punctuation.special': ['AnnotationLabel'],
   comment: ['AnnotationLabel', 'AnnotationParameter', 'AnnotationContent'],
