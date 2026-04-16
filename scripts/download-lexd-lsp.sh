@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Downloads lex-lsp binary from GitHub releases
+# Downloads lexd-lsp binary from GitHub releases
 # Can be used standalone or sourced by other scripts
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,10 +9,10 @@ EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RESOURCES_DIR="$EXT_DIR/resources"
 DEPS_FILE="$EXT_DIR/shared/lex-deps.json"
 
-# Read lex-lsp version and repository from shared/lex-deps.json
+# Read lexd-lsp version and repository from shared/lex-deps.json
 if [[ -f "$DEPS_FILE" ]]; then
-  LEX_LSP_VERSION="$(jq -r '.["lex-lsp"]' "$DEPS_FILE")"
-  LEX_LSP_REPO="$(jq -r '.["lex-lsp-repo"]' "$DEPS_FILE")"
+  LEX_LSP_VERSION="$(jq -r '.["lexd-lsp"]' "$DEPS_FILE")"
+  LEX_LSP_REPO="$(jq -r '.["lexd-lsp-repo"]' "$DEPS_FILE")"
 else
   echo "Error: $DEPS_FILE not found" >&2
   exit 1
@@ -48,28 +48,28 @@ detect_platform() {
   esac
 }
 
-download_lex_lsp() {
+download_lexd_lsp() {
   local target="${1:-$(detect_platform)}"
 
   mkdir -p "$RESOURCES_DIR"
 
   # Check if binary already exists
-  if [[ -x "$RESOURCES_DIR/lex-lsp" ]] || [[ -x "$RESOURCES_DIR/lex-lsp.exe" ]]; then
-    echo "lex-lsp already exists in $RESOURCES_DIR"
+  if [[ -x "$RESOURCES_DIR/lexd-lsp" ]] || [[ -x "$RESOURCES_DIR/lexd-lsp.exe" ]]; then
+    echo "lexd-lsp already exists in $RESOURCES_DIR"
     return 0
   fi
 
-  echo "Downloading lex-lsp $LEX_LSP_VERSION for $target..."
+  echo "Downloading lexd-lsp $LEX_LSP_VERSION for $target..."
 
   local download_url="https://github.com/$LEX_LSP_REPO/releases/download/$LEX_LSP_VERSION"
   local archive_name binary_name
 
   if [[ "$target" == *windows* ]]; then
-    archive_name="lex-lsp-$target.zip"
-    binary_name="lex-lsp.exe"
+    archive_name="lexd-lsp-$target.zip"
+    binary_name="lexd-lsp.exe"
   else
-    archive_name="lex-lsp-$target.tar.gz"
-    binary_name="lex-lsp"
+    archive_name="lexd-lsp-$target.tar.gz"
+    binary_name="lexd-lsp"
   fi
 
   local archive_url="$download_url/$archive_name"
@@ -111,18 +111,18 @@ download_lex_lsp() {
   chmod +x "$dest_path"
 
   rm -rf "$tmp_dir"
-  echo "lex-lsp $LEX_LSP_VERSION installed to $dest_path"
+  echo "lexd-lsp $LEX_LSP_VERSION installed to $dest_path"
 }
 
 # Function to check if binary exists (for use by other scripts)
-ensure_lex_lsp() {
-  if [[ -x "$RESOURCES_DIR/lex-lsp" ]] || [[ -x "$RESOURCES_DIR/lex-lsp.exe" ]]; then
+ensure_lexd_lsp() {
+  if [[ -x "$RESOURCES_DIR/lexd-lsp" ]] || [[ -x "$RESOURCES_DIR/lexd-lsp.exe" ]]; then
     return 0
   fi
-  download_lex_lsp "$@"
+  download_lexd_lsp "$@"
 }
 
 # Run if executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  download_lex_lsp "$@"
+  download_lexd_lsp "$@"
 fi

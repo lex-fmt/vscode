@@ -4,7 +4,7 @@ import fs from 'node:fs';
 export const LEX_CONFIGURATION_SECTION = 'lex';
 export const LSP_BINARY_SETTING = 'lspBinaryPath';
 // Default path to bundled LSP binary (matches package.json default)
-const DEFAULT_LSP_BINARY = './resources/lex-lsp';
+const DEFAULT_LSP_BINARY = './resources/lexd-lsp';
 const WINDOWS_EXECUTABLE_SUFFIX = '.exe';
 
 function normalizeWindowsExecutable(
@@ -39,7 +39,7 @@ export function defaultLspBinaryPath(
  * Binary resolution priority:
  * 1. LEX_LSP_PATH env var (explicit override, e.g. for local dev builds)
  * 2. User config setting (lex.lspBinaryPath)
- * 3. Bundled: resources/lex-lsp
+ * 3. Bundled: resources/lexd-lsp
  */
 export function resolveLspBinaryPath(
   extensionPath: string,

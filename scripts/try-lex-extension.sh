@@ -12,7 +12,7 @@
 #   ./scripts/try-lex-extension.sh --open-only        # Skip rebuild, just open
 #   ./scripts/try-lex-extension.sh --dir ~/my/project # Open a different directory
 #   ./scripts/try-lex-extension.sh --reset            # Wipe the test profile and start fresh
-#   ./scripts/try-lex-extension.sh --lsp-path ../core # Build lex-lsp from Cargo workspace
+#   ./scripts/try-lex-extension.sh --lsp-path ../core # Build lexd-lsp from Cargo workspace
 #   ./scripts/try-lex-extension.sh --lsp-path /path/to/target/release  # Use pre-built binary
 #   ./scripts/try-lex-extension.sh --ts-path ../tree-sitter-lex       # Build WASM from local grammar
 #   ./scripts/try-lex-extension.sh --ts-path /path/to/tree-sitter-lex # Same, absolute path
@@ -100,25 +100,25 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
 
   cd "$EXT_DIR"
 
-  # ── Resolve lex-lsp binary ──────────────────────────────────────────────
-  LEX_LSP_BIN="$EXT_DIR/resources/lex-lsp"
+  # ── Resolve lexd-lsp binary ──────────────────────────────────────────────
+  LEX_LSP_BIN="$EXT_DIR/resources/lexd-lsp"
   LSP_SOURCE=""
 
   if [[ -n "$LSP_PATH" ]]; then
     LSP_PATH="$(cd "$LSP_PATH" 2>/dev/null && pwd || echo "$LSP_PATH")"
 
-    if [[ -x "$LSP_PATH/lex-lsp" ]]; then
-      # Case 1: directory containing a lex-lsp binary (e.g. target/release/)
-      echo "Using lex-lsp binary from: $LSP_PATH/lex-lsp"
-      cp "$LSP_PATH/lex-lsp" "$LEX_LSP_BIN"
+    if [[ -x "$LSP_PATH/lexd-lsp" ]]; then
+      # Case 1: directory containing a lexd-lsp binary (e.g. target/release/)
+      echo "Using lexd-lsp binary from: $LSP_PATH/lexd-lsp"
+      cp "$LSP_PATH/lexd-lsp" "$LEX_LSP_BIN"
       chmod +x "$LEX_LSP_BIN"
-      LSP_SOURCE="$LSP_PATH/lex-lsp"
+      LSP_SOURCE="$LSP_PATH/lexd-lsp"
 
-    elif [[ -f "$LSP_PATH/Cargo.toml" ]] && grep -q 'lex-lsp' "$LSP_PATH/Cargo.toml"; then
-      # Case 2: Cargo workspace root — build lex-lsp from source
-      echo "Building lex-lsp from Cargo workspace: $LSP_PATH"
-      cargo build --release -p lex-lsp --manifest-path "$LSP_PATH/Cargo.toml"
-      BUILT="$LSP_PATH/target/release/lex-lsp"
+    elif [[ -f "$LSP_PATH/Cargo.toml" ]] && grep -q 'lexd-lsp' "$LSP_PATH/Cargo.toml"; then
+      # Case 2: Cargo workspace root — build lexd-lsp from source
+      echo "Building lexd-lsp from Cargo workspace: $LSP_PATH"
+      cargo build --release -p lexd-lsp --manifest-path "$LSP_PATH/Cargo.toml"
+      BUILT="$LSP_PATH/target/release/lexd-lsp"
       if [[ ! -x "$BUILT" ]]; then
         echo "Error: cargo build succeeded but binary not found at $BUILT" >&2
         exit 1
@@ -128,13 +128,13 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
       LSP_SOURCE="$BUILT (built from source)"
 
     else
-      echo "Error: --lsp-path '$LSP_PATH' is neither a directory with a lex-lsp binary" >&2
-      echo "       nor a Cargo workspace containing lex-lsp." >&2
+      echo "Error: --lsp-path '$LSP_PATH' is neither a directory with a lexd-lsp binary" >&2
+      echo "       nor a Cargo workspace containing lexd-lsp." >&2
       exit 1
     fi
   elif [[ ! -x "$LEX_LSP_BIN" ]]; then
-    echo "lex-lsp binary not found, downloading..."
-    bash "$SCRIPT_DIR/download-lex-lsp.sh"
+    echo "lexd-lsp binary not found, downloading..."
+    bash "$SCRIPT_DIR/download-lexd-lsp.sh"
   fi
 
   # ── Resolve tree-sitter grammar ───────────────────────────────────────

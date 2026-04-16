@@ -11,12 +11,12 @@ const windowsPlatform: NodeJS.Platform = 'win32';
 const noFilesExist = () => false;
 
 test('defaultLspBinaryPath resolves relative binary path inside workspace', () => {
-  const expected = path.resolve(fakeExtensionPath, './resources/lex-lsp');
+  const expected = path.resolve(fakeExtensionPath, './resources/lexd-lsp');
   assert.equal(defaultLspBinaryPath(fakeExtensionPath, linuxPlatform), expected);
 });
 
 test('defaultLspBinaryPath appends .exe on Windows', () => {
-  const expected = path.resolve(fakeExtensionPath, './resources/lex-lsp.exe');
+  const expected = path.resolve(fakeExtensionPath, './resources/lexd-lsp.exe');
   assert.equal(defaultLspBinaryPath(fakeExtensionPath, windowsPlatform), expected);
 });
 
@@ -32,7 +32,7 @@ test('resolveLspBinaryPath falls back to default when unset', () => {
 });
 
 test('resolveLspBinaryPath leaves absolute paths untouched', () => {
-  const absolute = '/usr/local/bin/lex-lsp';
+  const absolute = '/usr/local/bin/lexd-lsp';
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
     absolute,
@@ -44,7 +44,7 @@ test('resolveLspBinaryPath leaves absolute paths untouched', () => {
 });
 
 test('resolveLspBinaryPath resolves relative paths against extension root', () => {
-  const relative = './bin/lex-lsp';
+  const relative = './bin/lexd-lsp';
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
     relative,
@@ -56,7 +56,7 @@ test('resolveLspBinaryPath resolves relative paths against extension root', () =
 });
 
 test('resolveLspBinaryPath appends .exe to configured Windows paths', () => {
-  const relative = './resources/lex-lsp';
+  const relative = './resources/lexd-lsp';
   const expected = `${path.resolve(fakeExtensionPath, relative)}.exe`;
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
@@ -69,7 +69,7 @@ test('resolveLspBinaryPath appends .exe to configured Windows paths', () => {
 });
 
 test('resolveLspBinaryPath avoids double .exe suffix', () => {
-  const relative = './bin/lex-lsp.exe';
+  const relative = './bin/lexd-lsp.exe';
   const expected = path.resolve(fakeExtensionPath, relative);
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
@@ -82,8 +82,8 @@ test('resolveLspBinaryPath avoids double .exe suffix', () => {
 });
 
 test('resolveLspBinaryPath prefers LEX_LSP_PATH env var over config', () => {
-  const envPath = '/custom/path/lex-lsp';
-  const configPath = './resources/lex-lsp';
+  const envPath = '/custom/path/lexd-lsp';
+  const configPath = './resources/lexd-lsp';
   const env = { LEX_LSP_PATH: envPath };
   // When env path exists, no warning
   const existingEnvPath = (p: string) => p === envPath;
@@ -99,7 +99,7 @@ test('resolveLspBinaryPath prefers LEX_LSP_PATH env var over config', () => {
 });
 
 test('resolveLspBinaryPath falls through when LEX_LSP_PATH does not exist', () => {
-  const envPath = '/custom/path/lex-lsp';
+  const envPath = '/custom/path/lexd-lsp';
   const env = { LEX_LSP_PATH: envPath };
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
@@ -109,11 +109,11 @@ test('resolveLspBinaryPath falls through when LEX_LSP_PATH does not exist', () =
     noFilesExist
   );
   // Should fall through to bundled binary, not use the missing env path
-  assert.equal(resolved.path, `${fakeExtensionPath}/resources/lex-lsp`);
+  assert.equal(resolved.path, `${fakeExtensionPath}/resources/lexd-lsp`);
 });
 
 test('resolveLspBinaryPath ignores empty LEX_LSP_PATH', () => {
-  const configPath = './resources/lex-lsp';
+  const configPath = './resources/lexd-lsp';
   const env = { LEX_LSP_PATH: '  ' };
   const resolved = resolveLspBinaryPath(
     fakeExtensionPath,
@@ -126,7 +126,7 @@ test('resolveLspBinaryPath ignores empty LEX_LSP_PATH', () => {
 });
 
 test('resolveLspBinaryPath appends .exe to LEX_LSP_PATH on Windows', () => {
-  const envPath = '/custom/path/lex-lsp';
+  const envPath = '/custom/path/lexd-lsp';
   const env = { LEX_LSP_PATH: envPath };
   const allFilesExist = () => true;
   const resolved = resolveLspBinaryPath(

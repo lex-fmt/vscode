@@ -3,14 +3,14 @@ Lex VS Code Plugin
 
 Scope
 -----
-- Thin VS Code extension that shells out to `lex-lsp`; no TypeScript-side language logic.
+- Thin VS Code extension that shells out to `lexd-lsp`; no TypeScript-side language logic.
 - Language client + config live under `src/`; integration + fixture workspaces under `test/`.
 - All editor features are exercised through LSP requests so behaviour matches the Neovim client and CLI.
 
 Build & Test
 ------------
 ```
-cargo build --bin lex-lsp
+cargo build --bin lexd-lsp
 cargo build --bin lex
 cd vscode
 npm ci
@@ -22,7 +22,7 @@ CI mirrors the same sequence via `.github/workflows/test-vscode-plugin.yml`.
 
 Packaging
 ---------
-- `./vscode/scripts/build_extension.sh` builds `lex-lsp` in release mode, copies it into `vscode/resources/lex-lsp`, installs npm dependencies, and runs `npm run bundle`.
+- `./vscode/scripts/build_extension.sh` builds `lexd-lsp` in release mode, copies it into `vscode/resources/lexd-lsp`, installs npm dependencies, and runs `npm run bundle`.
 - Run `npx vsce package` afterwards to create the VSIX.
 
 Features Covered

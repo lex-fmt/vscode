@@ -36,8 +36,8 @@ async function main() {
 }
 
 async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> {
-  const lexBinaryPath = path.resolve(extensionDevelopmentPath, 'resources/lex-lsp');
-  const lexBinaryPathExe = path.resolve(extensionDevelopmentPath, 'resources/lex-lsp.exe');
+  const lexBinaryPath = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp');
+  const lexBinaryPathExe = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp.exe');
 
   // Check if binary exists
   try {
@@ -51,19 +51,19 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
   }
 
   // Try to download using the script
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-lex-lsp.sh');
+  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-lexd-lsp.sh');
   if (existsSync(downloadScript)) {
-    console.log('Downloading lex-lsp binary...');
+    console.log('Downloading lexd-lsp binary...');
     try {
       execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
       return;
     } catch {
-      console.error('Failed to download lex-lsp binary');
+      console.error('Failed to download lexd-lsp binary');
     }
   }
 
-  console.error(`lex-lsp binary not found at ${lexBinaryPath}`);
-  console.error("Run 'bash scripts/download-lex-lsp.sh' to download the binary.");
+  console.error(`lexd-lsp binary not found at ${lexBinaryPath}`);
+  console.error("Run 'bash scripts/download-lexd-lsp.sh' to download the binary.");
   process.exit(1);
 }
 

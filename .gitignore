@@ -6,8 +6,8 @@ node_modules
 /tmp
 
 # Downloaded binaries and artifacts
-/resources/lex-lsp
-/resources/lex-lsp.exe
+/resources/lexd-lsp
+/resources/lexd-lsp.exe
 /resources/tree-sitter-lex.wasm
 /resources/tree-sitter.wasm
 /resources/queries/

@@ -1,6 +1,6 @@
 # Release workflow for lex-vscode
 # Builds VSIX packages for VS Code Marketplace and Open VSX (VSCodium)
-# Both use identical platform-specific packages with bundled lex-lsp binaries
+# Both use identical platform-specific packages with bundled lexd-lsp binaries
 
 name: Release
 permissions:
@@ -55,22 +55,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download lex-lsp binary
+      - name: Download lexd-lsp binary
         shell: bash
         run: |
           # Read pinned version from shared/lex-deps.json
-          LEX_LSP_VERSION=$(jq -r '.["lex-lsp"]' shared/lex-deps.json)
-          LEX_LSP_REPO=$(jq -r '.["lex-lsp-repo"]' shared/lex-deps.json)
-          echo "Using lex-lsp version: $LEX_LSP_VERSION from $LEX_LSP_REPO"
+          LEX_LSP_VERSION=$(jq -r '.["lexd-lsp"]' shared/lex-deps.json)
+          LEX_LSP_REPO=$(jq -r '.["lexd-lsp-repo"]' shared/lex-deps.json)
+          echo "Using lexd-lsp version: $LEX_LSP_VERSION from $LEX_LSP_REPO"
 
           mkdir -p resources
 
           if [[ "${{ matrix.target }}" == win32-* ]]; then
-            ARCHIVE_NAME="lex-lsp-${{ matrix.lex_lsp_target }}.zip"
-            BINARY_NAME="lex-lsp.exe"
+            ARCHIVE_NAME="lexd-lsp-${{ matrix.lex_lsp_target }}.zip"
+            BINARY_NAME="lexd-lsp.exe"
           else
-            ARCHIVE_NAME="lex-lsp-${{ matrix.lex_lsp_target }}.tar.gz"
-            BINARY_NAME="lex-lsp"
+            ARCHIVE_NAME="lexd-lsp-${{ matrix.lex_lsp_target }}.tar.gz"
+            BINARY_NAME="lexd-lsp"
           fi
 
           DOWNLOAD_URL="https://github.com/${LEX_LSP_REPO}/releases/download/${LEX_LSP_VERSION}/${ARCHIVE_NAME}"

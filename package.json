@@ -1,7 +1,7 @@
 {
   "name": "lex-vscode",
   "displayName": "Lex Format",
-  "description": "Language support for Lex documents via lex-lsp.",
+  "description": "Language support for Lex documents via lexd-lsp.",
   "version": "0.0.0-dev",
   "publisher": "lex",
   "license": "MIT",
@@ -528,8 +528,8 @@
       "properties": {
         "lex.lspBinaryPath": {
           "type": "string",
-          "markdownDescription": "Absolute or workspace-relative path to the lex-lsp binary.",
-          "default": "./resources/lex-lsp"
+          "markdownDescription": "Absolute or workspace-relative path to the lexd-lsp binary.",
+          "default": "./resources/lexd-lsp"
         },
         "lex.formatOnSave": {
           "type": "boolean",
