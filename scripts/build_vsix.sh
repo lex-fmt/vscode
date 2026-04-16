@@ -45,27 +45,27 @@ done
 echo "Building VS Code extension..."
 
 if ! command -v cargo >/dev/null 2>&1; then
-  echo "cargo is required to build lex-lsp" >&2
+  echo "cargo is required to build lexd-lsp" >&2
   exit 1
 fi
 
-echo "Building lex-lsp (release)..."
+echo "Building lexd-lsp (release)..."
 pushd "$REPO_ROOT" >/dev/null
-cargo build --bin lex-lsp --release
+cargo build --bin lexd-lsp --release
 popd >/dev/null
 
 mkdir -p "$RESOURCES_DIR"
-BINARY_SRC="$REPO_ROOT/target/release/lex-lsp"
+BINARY_SRC="$REPO_ROOT/target/release/lexd-lsp"
 if [[ ! -f "$BINARY_SRC" && -f "$BINARY_SRC.exe" ]]; then
   BINARY_SRC="$BINARY_SRC.exe"
 fi
 
 if [[ ! -f "$BINARY_SRC" ]]; then
-  echo "lex-lsp binary not found at $BINARY_SRC" >&2
+  echo "lexd-lsp binary not found at $BINARY_SRC" >&2
   exit 1
 fi
 
-DEST_PATH="$RESOURCES_DIR/lex-lsp"
+DEST_PATH="$RESOURCES_DIR/lexd-lsp"
 if [[ "$BINARY_SRC" == *.exe ]]; then
   DEST_PATH="$DEST_PATH.exe"
 fi
@@ -73,7 +73,7 @@ fi
 cp "$BINARY_SRC" "$DEST_PATH"
 chmod +x "$DEST_PATH"
 
-echo "lex-lsp copied to $DEST_PATH"
+echo "lexd-lsp copied to $DEST_PATH"
 
 pushd "$EXT_DIR" >/dev/null
 

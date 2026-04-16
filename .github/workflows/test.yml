@@ -39,5 +39,5 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
-      # Note: Integration tests require display and lex-lsp binary
+      # Note: Integration tests require display and lexd-lsp binary
       # These are run locally via pre-commit hook

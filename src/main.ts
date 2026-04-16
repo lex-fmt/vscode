@@ -155,7 +155,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   if (isCustom) {
     const label = lspSource ?? resolvedConfig.lspBinaryPath;
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
-    item.text = '$(beaker) lex-lsp: custom';
+    item.text = '$(beaker) lexd-lsp: custom';
     item.tooltip = `LSP binary: ${label}`;
     item.name = 'Lex LSP Binary';
     item.show();

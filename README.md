@@ -6,7 +6,7 @@ VS Code extension for [Lex](https://github.com/lex-fmt/lex) — a plain text for
 
 ## Features
 
-All language features are provided by `lex-lsp` — no TypeScript-side language logic:
+All language features are provided by `lexd-lsp` — no TypeScript-side language logic:
 
 - Semantic highlighting (monochrome theme, adapts to light/dark)
 - Document symbols and outline

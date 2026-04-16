@@ -8,7 +8,7 @@ import {
   TEST_DOCUMENT_PATH
 } from './helpers.js';
 
-integrationTest('establishes lex-lsp handshake', async () => {
+integrationTest('establishes lexd-lsp handshake', async () => {
   const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
   assert.ok(extension, 'Lex extension should be discoverable by VS Code');
 

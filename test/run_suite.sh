@@ -16,12 +16,12 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEST_FILE="$SCRIPT_DIR/lex_vscode_extension.bats"
 EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-LEX_BINARY="$EXT_DIR/resources/lex-lsp"
+LEX_BINARY="$EXT_DIR/resources/lexd-lsp"
 
 # Download binary if needed
 if [[ ! -x "$LEX_BINARY" ]]; then
-  echo "lex-lsp binary not found, downloading..."
-  bash "$EXT_DIR/scripts/download-lex-lsp.sh"
+  echo "lexd-lsp binary not found, downloading..."
+  bash "$EXT_DIR/scripts/download-lexd-lsp.sh"
 fi
 
 if ! command -v bats &> /dev/null; then

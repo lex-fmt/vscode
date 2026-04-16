@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RESOURCES_DIR="$EXT_DIR/resources"
 
-# lex-lsp version and repository (keep in sync with shared/src/constants.ts)
+# lexd-lsp version and repository (keep in sync with shared/src/constants.ts)
 LEX_LSP_VERSION="${LEX_LSP_VERSION:-v0.2.2}"
 LEX_LSP_REPO="lex-fmt/editors"
 
@@ -47,7 +47,7 @@ usage() {
   cat <<USAGE
 Usage: $(basename "$0") [--target <triple>] [--from-source]
 
-Downloads the lex-lsp binary from GitHub releases (or builds from source),
+Downloads the lexd-lsp binary from GitHub releases (or builds from source),
 copies it into the VS Code extension resources directory, and bundles
 the TypeScript sources.
 
@@ -90,17 +90,17 @@ if [[ "$BUILD_FROM_SOURCE" == true ]]; then
   REPO_ROOT="$(cd "$EXT_DIR/../.." && pwd)"
 
   if ! command -v cargo >/dev/null 2>&1; then
-    echo "cargo is required to build lex-lsp from source" >&2
+    echo "cargo is required to build lexd-lsp from source" >&2
     exit 1
   fi
 
   pushd "$REPO_ROOT" >/dev/null
   if [[ -n "$TARGET_TRIPLE" ]]; then
-    cargo build --bin lex-lsp --release --target "$TARGET_TRIPLE"
-    BINARY_SRC="$REPO_ROOT/target/$TARGET_TRIPLE/release/lex-lsp"
+    cargo build --bin lexd-lsp --release --target "$TARGET_TRIPLE"
+    BINARY_SRC="$REPO_ROOT/target/$TARGET_TRIPLE/release/lexd-lsp"
   else
-    cargo build --bin lex-lsp --release
-    BINARY_SRC="$REPO_ROOT/target/release/lex-lsp"
+    cargo build --bin lexd-lsp --release
+    BINARY_SRC="$REPO_ROOT/target/release/lexd-lsp"
   fi
   popd >/dev/null
 
@@ -109,7 +109,7 @@ if [[ "$BUILD_FROM_SOURCE" == true ]]; then
   fi
 
   if [[ ! -f "$BINARY_SRC" ]]; then
-    echo "lex-lsp binary not found at $BINARY_SRC" >&2
+    echo "lexd-lsp binary not found at $BINARY_SRC" >&2
     exit 1
   fi
 else
@@ -118,16 +118,16 @@ else
     TARGET_TRIPLE="$(detect_platform)"
   fi
 
-  echo "Downloading lex-lsp $LEX_LSP_VERSION for $TARGET_TRIPLE..."
+  echo "Downloading lexd-lsp $LEX_LSP_VERSION for $TARGET_TRIPLE..."
 
   DOWNLOAD_URL="https://github.com/$LEX_LSP_REPO/releases/download/$LEX_LSP_VERSION"
 
   if [[ "$TARGET_TRIPLE" == *windows* ]]; then
-    ARCHIVE_NAME="lex-lsp-$TARGET_TRIPLE.zip"
-    BINARY_NAME="lex-lsp.exe"
+    ARCHIVE_NAME="lexd-lsp-$TARGET_TRIPLE.zip"
+    BINARY_NAME="lexd-lsp.exe"
   else
-    ARCHIVE_NAME="lex-lsp-$TARGET_TRIPLE.tar.gz"
-    BINARY_NAME="lex-lsp"
+    ARCHIVE_NAME="lexd-lsp-$TARGET_TRIPLE.tar.gz"
+    BINARY_NAME="lexd-lsp"
   fi
 
   ARCHIVE_URL="$DOWNLOAD_URL/$ARCHIVE_NAME"
@@ -164,7 +164,7 @@ else
 fi
 
 # Copy binary to resources
-DEST_PATH="$RESOURCES_DIR/lex-lsp"
+DEST_PATH="$RESOURCES_DIR/lexd-lsp"
 if [[ "$BINARY_SRC" == *.exe ]]; then
   DEST_PATH="$DEST_PATH.exe"
 fi
@@ -177,7 +177,7 @@ if [[ -n "${TMP_DIR:-}" ]]; then
   rm -rf "$TMP_DIR"
 fi
 
-echo "lex-lsp $LEX_LSP_VERSION copied to $DEST_PATH"
+echo "lexd-lsp $LEX_LSP_VERSION copied to $DEST_PATH"
 
 # Build TypeScript
 pushd "$EXT_DIR" >/dev/null
