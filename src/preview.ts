@@ -182,9 +182,15 @@ function createPreview(
   waitForClientReady: WaitForClientReady,
   viewColumn: vscode.ViewColumn
 ): PreviewState {
+  // Track the URI separately so that file renames can update both the
+  // map key in `activePreviews` and the stored `sourceUri`. Without this,
+  // a second invocation of the preview command on the renamed document
+  // would not find the existing panel and would create a duplicate.
+  let currentUri = document.uri;
+
   const panel = vscode.window.createWebviewPanel(
     PREVIEW_VIEW_TYPE,
-    getPreviewTitle(document.uri),
+    getPreviewTitle(currentUri),
     viewColumn,
     {
       enableScripts: false,
@@ -193,6 +199,7 @@ function createPreview(
   );
 
   const disposables: vscode.Disposable[] = [];
+  const state: PreviewState = { panel, sourceUri: currentUri, disposables };
 
   // Initial render
   void updatePreview(panel, document, getClient, waitForClientReady);
@@ -201,7 +208,7 @@ function createPreview(
   const debouncedUpdate = debounce(() => {
     // Find the current document (it may have been closed and reopened)
     const currentDoc = vscode.workspace.textDocuments.find(
-      (d) => d.uri.toString() === document.uri.toString()
+      (d) => d.uri.toString() === currentUri.toString()
     );
     if (currentDoc) {
       void updatePreview(panel, currentDoc, getClient, waitForClientReady);
@@ -211,18 +218,24 @@ function createPreview(
   // Listen for document changes
   disposables.push(
     vscode.workspace.onDidChangeTextDocument((e) => {
-      if (e.document.uri.toString() === document.uri.toString()) {
+      if (e.document.uri.toString() === currentUri.toString()) {
         debouncedUpdate();
       }
     })
   );
 
-  // Update title if document is renamed
+  // Update title and re-key `activePreviews` when the document is renamed.
   disposables.push(
     vscode.workspace.onDidRenameFiles((e) => {
       for (const file of e.files) {
-        if (file.oldUri.toString() === document.uri.toString()) {
-          panel.title = getPreviewTitle(file.newUri);
+        if (file.oldUri.toString() === currentUri.toString()) {
+          const oldKey = currentUri.toString();
+          currentUri = file.newUri;
+          panel.title = getPreviewTitle(currentUri);
+          state.sourceUri = currentUri;
+          if (activePreviews.delete(oldKey)) {
+            activePreviews.set(currentUri.toString(), state);
+          }
         }
       }
     })
@@ -233,10 +246,10 @@ function createPreview(
     for (const d of disposables) {
       d.dispose();
     }
-    activePreviews.delete(document.uri.toString());
+    activePreviews.delete(currentUri.toString());
   });
 
-  return { panel, sourceUri: document.uri, disposables };
+  return state;
 }
 
 function createShowPreviewCommand(

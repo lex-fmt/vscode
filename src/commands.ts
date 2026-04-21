@@ -175,8 +175,14 @@ async function listFormats(
     command: 'lex.formats.list',
     arguments: [],
   })) as FormatDescriptor[] | null;
-  formatsCache = Array.isArray(result) ? result : [];
-  return formatsCache;
+  if (Array.isArray(result)) {
+    // Only persist the cache on a valid response. If the server returned
+    // `null` or some unexpected payload — a transient error, for example —
+    // leave `formatsCache` unset so a later call can retry.
+    formatsCache = result;
+    return formatsCache;
+  }
+  return [];
 }
 
 /**
@@ -348,7 +354,8 @@ async function insertVerbatimBlock(
 
   try {
     const client = await getReadyClient(getClient, waitForClientReady);
-    const protocolPosition = client.code2ProtocolConverter.asPosition(editor.selection.active);
+    const insertionPosition = editor.selection.active;
+    const protocolPosition = client.code2ProtocolConverter.asPosition(insertionPosition);
     const result = (await client.sendRequest(ExecuteCommandRequest.type, {
       command: 'lex.insert_verbatim',
       arguments: [editor.document.uri.toString(), protocolPosition, fileUri.fsPath],
@@ -358,9 +365,19 @@ async function insertVerbatimBlock(
       return;
     }
 
-    await editor.edit((edit) => {
-      edit.insert(editor.selection.active, result.text);
+    // Anchor the insertion to a byte offset so we can place the cursor
+    // at `insertionOffset + cursorOffset` after the edit, which is what
+    // the server's snippet builder expects (the caret lands just past
+    // the initial indent, so the user can edit the subject line first).
+    const insertionOffset = editor.document.offsetAt(insertionPosition);
+    const applied = await editor.edit((edit) => {
+      edit.insert(insertionPosition, result.text);
     });
+    if (applied && Number.isFinite(result.cursorOffset)) {
+      const targetOffset = insertionOffset + Math.max(0, Math.floor(result.cursorOffset));
+      const newPos = editor.document.positionAt(targetOffset);
+      editor.selection = new vscode.Selection(newPos, newPos);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(`Insert verbatim block failed: ${message}`);

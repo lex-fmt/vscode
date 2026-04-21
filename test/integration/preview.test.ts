@@ -54,5 +54,10 @@ integrationTest('lex.showPreviewToSide opens a webview for .lex documents', asyn
     while (Date.now() < deadline && api.activePreviewCount() > before) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
+    assert.strictEqual(
+      api.activePreviewCount(),
+      before,
+      'Preview cleanup should dispose all preview panels before the test completes'
+    );
   }
 });
