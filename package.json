@@ -87,6 +87,11 @@
         "command": "lex.formatTable",
         "title": "Format Table",
         "category": "Lex"
+      },
+      {
+        "command": "lex.reorderFootnotes",
+        "title": "Reorder Footnotes",
+        "category": "Lex"
       }
     ],
     "menus": {
@@ -117,6 +122,10 @@
         },
         {
           "command": "lex.formatTable",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.reorderFootnotes",
           "when": "editorLangId == lex"
         }
       ],
@@ -178,6 +187,11 @@
         },
         {
           "command": "lex.formatTable",
+          "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.reorderFootnotes",
           "when": "editorLangId == lex",
           "group": "1_modification"
         }

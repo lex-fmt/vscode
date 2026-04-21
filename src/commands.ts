@@ -148,9 +148,63 @@ function createExportToPdfCommand(
   };
 }
 
-const CONVERTIBLE_LANGUAGES: Record<string, string> = {
-  markdown: 'markdown',
-};
+interface FormatDescriptor {
+  name: string;
+  description: string;
+  supportsParsing: boolean;
+  supportsSerialization: boolean;
+  fileExtensions: string[];
+}
+
+/**
+ * Cache the LSP's format registry after the first query. Formats are built
+ * into the server binary; they don't change at runtime, so one lookup per
+ * session is enough.
+ */
+let formatsCache: FormatDescriptor[] | undefined;
+
+async function listFormats(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<FormatDescriptor[]> {
+  if (formatsCache) {
+    return formatsCache;
+  }
+  const client = await getReadyClient(getClient, waitForClientReady);
+  const result = (await client.sendRequest(ExecuteCommandRequest.type, {
+    command: 'lex.formats.list',
+    arguments: [],
+  })) as FormatDescriptor[] | null;
+  if (Array.isArray(result)) {
+    // Only persist the cache on a valid response. If the server returned
+    // `null` or some unexpected payload — a transient error, for example —
+    // leave `formatsCache` unset so a later call can retry.
+    formatsCache = result;
+    return formatsCache;
+  }
+  return [];
+}
+
+/**
+ * Languages a VS Code document can be imported *from* into Lex. Derived from
+ * the LSP's format registry: everything that supports parsing, minus Lex
+ * itself (importing Lex into Lex is a no-op). The mapping is
+ * `vscode-languageId -> lex-format-name`; for current formats they coincide.
+ */
+async function convertibleLanguages(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<Map<string, string>> {
+  const formats = await listFormats(getClient, waitForClientReady);
+  const map = new Map<string, string>();
+  for (const format of formats) {
+    if (!format.supportsParsing || format.name === 'lex') {
+      continue;
+    }
+    map.set(format.name, format.name);
+  }
+  return map;
+}
 
 function createConvertToLexCommand(
   getClient: () => LanguageClient | undefined,
@@ -163,9 +217,10 @@ function createConvertToLexCommand(
       return;
     }
 
-    const format = CONVERTIBLE_LANGUAGES[editor.document.languageId];
+    const sources = await convertibleLanguages(getClient, waitForClientReady);
+    const format = sources.get(editor.document.languageId);
     if (!format) {
-      const supported = Object.keys(CONVERTIBLE_LANGUAGES).join(', ');
+      const supported = Array.from(sources.keys()).join(', ') || '(none available)';
       vscode.window.showErrorMessage(
         `Convert to Lex is available for: ${supported}. Current file is ${editor.document.languageId}.`
       );
@@ -225,7 +280,10 @@ export function registerCommands(
       insertAssetReference(uri)
     ),
     vscode.commands.registerCommand('lex.insertVerbatimBlock', (uri?: vscode.Uri) =>
-      insertVerbatimBlock(uri)
+      insertVerbatimBlock(getClient, waitForClientReady, uri)
+    ),
+    vscode.commands.registerCommand('lex.reorderFootnotes', () =>
+      reorderFootnotes(getClient, waitForClientReady)
     ),
     vscode.commands.registerCommand('lex.goToNextAnnotation', () =>
       navigateAnnotation('lex.next_annotation', getClient, waitForClientReady)
@@ -242,8 +300,12 @@ export function registerCommands(
     vscode.commands.registerCommand('lex.formatTable', () =>
       formatTableAtCursor(getClient, waitForClientReady)
     ),
-    vscode.commands.registerCommand('lex.table.nextCell', () => navigateTableCell('next')),
-    vscode.commands.registerCommand('lex.table.previousCell', () => navigateTableCell('previous'))
+    vscode.commands.registerCommand('lex.table.nextCell', () =>
+      navigateTableCell('next', getClient, waitForClientReady)
+    ),
+    vscode.commands.registerCommand('lex.table.previousCell', () =>
+      navigateTableCell('previous', getClient, waitForClientReady)
+    )
   );
 }
 
@@ -273,7 +335,11 @@ async function insertAssetReference(providedUri?: vscode.Uri): Promise<void> {
   });
 }
 
-async function insertVerbatimBlock(providedUri?: vscode.Uri): Promise<void> {
+async function insertVerbatimBlock(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>,
+  providedUri?: vscode.Uri
+): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage('Open a Lex document before running this command.');
@@ -286,23 +352,69 @@ async function insertVerbatimBlock(providedUri?: vscode.Uri): Promise<void> {
     return;
   }
 
-  const assetPath = fileUri.fsPath;
+  try {
+    const client = await getReadyClient(getClient, waitForClientReady);
+    const insertionPosition = editor.selection.active;
+    const protocolPosition = client.code2ProtocolConverter.asPosition(insertionPosition);
+    const result = (await client.sendRequest(ExecuteCommandRequest.type, {
+      command: 'lex.insert_verbatim',
+      arguments: [editor.document.uri.toString(), protocolPosition, fileUri.fsPath],
+    })) as { text: string; cursorOffset: number } | null;
 
-  // Read file content
-  const fileContent = await vscode.workspace.fs.readFile(fileUri);
-  const decoder = new TextDecoder();
-  const content = decoder.decode(fileContent);
+    if (!result) {
+      return;
+    }
 
-  // Infer language from extension
-  const ext = assetPath.split('.').pop() || 'txt';
-  const language =
-    ext === 'py' ? 'python' : ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext;
+    // Anchor the insertion to a byte offset so we can place the cursor
+    // at `insertionOffset + cursorOffset` after the edit, which is what
+    // the server's snippet builder expects (the caret lands just past
+    // the initial indent, so the user can edit the subject line first).
+    const insertionOffset = editor.document.offsetAt(insertionPosition);
+    const applied = await editor.edit((edit) => {
+      edit.insert(insertionPosition, result.text);
+    });
+    if (applied && Number.isFinite(result.cursorOffset)) {
+      const targetOffset = insertionOffset + Math.max(0, Math.floor(result.cursorOffset));
+      const newPos = editor.document.positionAt(targetOffset);
+      editor.selection = new vscode.Selection(newPos, newPos);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(`Insert verbatim block failed: ${message}`);
+  }
+}
 
-  const adapter = new VSCodeEditorAdapter(editor);
-  await commands.InsertVerbatimCommand.execute(adapter, {
-    content: content.trim(),
-    language,
-  });
+async function reorderFootnotes(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'lex') {
+    vscode.window.showErrorMessage('Reorder Footnotes is only available for .lex files.');
+    return;
+  }
+
+  try {
+    const client = await getReadyClient(getClient, waitForClientReady);
+    const original = editor.document.getText();
+    const result = (await client.sendRequest(ExecuteCommandRequest.type, {
+      command: 'lex.footnotes.reorder',
+      arguments: [original],
+    })) as unknown;
+
+    if (typeof result !== 'string' || result === original) {
+      return;
+    }
+
+    const fullRange = new vscode.Range(
+      new vscode.Position(0, 0),
+      editor.document.positionAt(original.length)
+    );
+    await editor.edit((edit) => edit.replace(fullRange, result));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(`Reorder Footnotes failed: ${message}`);
+  }
 }
 
 async function navigateAnnotation(
@@ -430,102 +542,52 @@ async function formatTableAtCursor(
   }
 }
 
-async function navigateTableCell(direction: 'next' | 'previous'): Promise<void> {
+interface TableNavOutcome {
+  inTable: boolean;
+  position: { line: number; column: number } | null;
+}
+
+async function navigateTableCell(
+  direction: 'next' | 'previous',
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document.languageId !== 'lex') {
     return;
   }
 
-  const position = editor.selection.active;
-  const line = editor.document.lineAt(position.line);
-  const lineText = line.text;
+  const lspCommand = direction === 'next' ? 'lex.table.next_cell' : 'lex.table.previous_cell';
+  const fallthroughCommand = direction === 'next' ? 'tab' : 'outdent';
 
-  // Check if we're in a pipe row
-  if (!lineText.trim().startsWith('|')) {
-    // Not in a table — fall through to default Tab behavior
-    if (direction === 'next') {
-      await vscode.commands.executeCommand('tab');
-    } else {
-      await vscode.commands.executeCommand('outdent');
-    }
+  let outcome: TableNavOutcome | null = null;
+  try {
+    const client = await getReadyClient(getClient, waitForClientReady);
+    const position = editor.selection.active;
+    outcome = (await client.sendRequest(ExecuteCommandRequest.type, {
+      command: lspCommand,
+      arguments: [editor.document.getText(), position.line, position.character],
+    })) as TableNavOutcome | null;
+  } catch {
+    // If the LSP is unreachable, fall back to the editor's default Tab
+    // behaviour rather than swallowing the keypress.
+    await vscode.commands.executeCommand(fallthroughCommand);
     return;
   }
 
-  // Find pipe positions in the current line
-  const pipePositions: number[] = [];
-  for (let i = 0; i < lineText.length; i++) {
-    if (lineText[i] === '|') {
-      pipePositions.push(i);
-    }
-  }
-
-  if (pipePositions.length < 2) {
+  if (!outcome || !outcome.inTable) {
+    // Cursor is not on a pipe row — defer to the editor's default.
+    await vscode.commands.executeCommand(fallthroughCommand);
     return;
   }
 
-  // Find which cell we're in (between which pipes)
-  const cursorCol = position.character;
-
-  if (direction === 'next') {
-    // Find the next pipe after cursor, then position after it + 1 space
-    const nextPipe = pipePositions.find((p) => p > cursorCol);
-    if (nextPipe !== undefined) {
-      const nextPipeIdx = pipePositions.indexOf(nextPipe);
-      if (nextPipeIdx < pipePositions.length - 1) {
-        // Move to content of next cell (after pipe + space)
-        const targetCol = nextPipe + 2;
-        const newPos = new vscode.Position(position.line, Math.min(targetCol, lineText.length));
-        editor.selection = new vscode.Selection(newPos, newPos);
-        return;
-      }
-    }
-
-    // We're in the last cell — move to first cell of next row
-    const nextLine = position.line + 1;
-    if (nextLine < editor.document.lineCount) {
-      const nextLineText = editor.document.lineAt(nextLine).text;
-      if (nextLineText.trim().startsWith('|')) {
-        const firstPipe = nextLineText.indexOf('|');
-        const targetCol = firstPipe + 2;
-        const newPos = new vscode.Position(nextLine, Math.min(targetCol, nextLineText.length));
-        editor.selection = new vscode.Selection(newPos, newPos);
-        return;
-      }
-    }
-  } else {
-    // Find the pipe before cursor, then find the pipe before that
-    const prevPipes = pipePositions.filter((p) => p < cursorCol);
-    if (prevPipes.length >= 2) {
-      // Move to content of previous cell
-      const targetPipe = prevPipes[prevPipes.length - 2];
-      const targetCol = targetPipe + 2;
-      const newPos = new vscode.Position(position.line, Math.min(targetCol, lineText.length));
-      editor.selection = new vscode.Selection(newPos, newPos);
-      return;
-    }
-
-    // We're in the first cell — move to last cell of previous row
-    const prevLine = position.line - 1;
-    if (prevLine >= 0) {
-      const prevLineText = editor.document.lineAt(prevLine).text;
-      if (prevLineText.trim().startsWith('|')) {
-        const prevPipePositions: number[] = [];
-        for (let i = 0; i < prevLineText.length; i++) {
-          if (prevLineText[i] === '|') {
-            prevPipePositions.push(i);
-          }
-        }
-        if (prevPipePositions.length >= 2) {
-          // Move to last cell content
-          const targetPipe = prevPipePositions[prevPipePositions.length - 2];
-          const targetCol = targetPipe + 2;
-          const newPos = new vscode.Position(prevLine, Math.min(targetCol, prevLineText.length));
-          editor.selection = new vscode.Selection(newPos, newPos);
-          return;
-        }
-      }
-    }
+  if (!outcome.position) {
+    // On a pipe row but no valid move (table edge / malformed row).
+    return;
   }
+
+  const newPos = new vscode.Position(outcome.position.line, outcome.position.column);
+  editor.selection = new vscode.Selection(newPos, newPos);
 }
 
 async function pickWorkspaceFile(title: string): Promise<vscode.Uri | undefined> {

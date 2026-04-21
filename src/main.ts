@@ -12,7 +12,7 @@ import { applyLexTheme, setupThemeListeners } from './theme.js';
 // Import/export commands - see README.lex "Import & Export Commands" for docs
 import { registerCommands } from './commands.js';
 // Live preview - see README.lex "Preview" for docs
-import { registerPreviewCommands } from './preview.js';
+import { registerPreviewCommands, getActivePreviewCount } from './preview.js';
 // Path completion - triggered by @ in lex files
 import {
   registerPathCompletion,
@@ -27,6 +27,7 @@ export interface LexExtensionApi {
   pathCompletionDiagnostics(): PathCompletionDiagnostics;
   treeSitter(): LexTreeSitter | null;
   injectionHighlighter(): InjectionHighlighterApi | null;
+  activePreviewCount(): number;
 }
 
 let client: LanguageClient | undefined;
@@ -51,6 +52,7 @@ function createApi(): LexExtensionApi {
     pathCompletionDiagnostics: () => getPathCompletionDiagnostics(),
     treeSitter: () => treeSitter,
     injectionHighlighter: () => injectionHl,
+    activePreviewCount: () => getActivePreviewCount(),
   };
 }
 

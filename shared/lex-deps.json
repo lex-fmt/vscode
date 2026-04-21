@@ -1,5 +1,5 @@
 {
-  "lexd-lsp": "v0.8.0",
+  "lexd-lsp": "v0.8.3",
   "lexd-lsp-repo": "lex-fmt/lex",
   "tree-sitter": "v0.8.3",
   "tree-sitter-repo": "lex-fmt/tree-sitter-lex"
