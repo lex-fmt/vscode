@@ -20,6 +20,15 @@ interface PreviewState {
 
 const activePreviews = new Map<string, PreviewState>();
 
+/**
+ * Number of live-preview panels the extension currently tracks. Exposed
+ * via the extension API so integration tests can assert that the preview
+ * command actually opened a webview without scraping VS Code's UI state.
+ */
+export function getActivePreviewCount(): number {
+  return activePreviews.size;
+}
+
 function getPreviewTitle(uri: vscode.Uri): string {
   const filename = uri.path.split('/').pop() || 'Untitled';
   return `Preview: ${filename}`;
@@ -132,7 +141,7 @@ async function convertToHtmlViaLsp(
 
   const result = (await client.sendRequest(ExecuteCommandRequest.type, {
     command: 'lex.export',
-    arguments: ['html', content]
+    arguments: ['html', content],
   })) as unknown;
 
   if (typeof result !== 'string') {
@@ -179,7 +188,7 @@ function createPreview(
     viewColumn,
     {
       enableScripts: false,
-      retainContextWhenHidden: true
+      retainContextWhenHidden: true,
     }
   );
 
@@ -192,7 +201,7 @@ function createPreview(
   const debouncedUpdate = debounce(() => {
     // Find the current document (it may have been closed and reopened)
     const currentDoc = vscode.workspace.textDocuments.find(
-      d => d.uri.toString() === document.uri.toString()
+      (d) => d.uri.toString() === document.uri.toString()
     );
     if (currentDoc) {
       void updatePreview(panel, currentDoc, getClient, waitForClientReady);
@@ -201,7 +210,7 @@ function createPreview(
 
   // Listen for document changes
   disposables.push(
-    vscode.workspace.onDidChangeTextDocument(e => {
+    vscode.workspace.onDidChangeTextDocument((e) => {
       if (e.document.uri.toString() === document.uri.toString()) {
         debouncedUpdate();
       }
@@ -210,7 +219,7 @@ function createPreview(
 
   // Update title if document is renamed
   disposables.push(
-    vscode.workspace.onDidRenameFiles(e => {
+    vscode.workspace.onDidRenameFiles((e) => {
       for (const file of e.files) {
         if (file.oldUri.toString() === document.uri.toString()) {
           panel.title = getPreviewTitle(file.newUri);
@@ -258,9 +267,7 @@ function createShowPreviewCommand(
     }
 
     // Create new preview
-    const viewColumn = beside
-      ? vscode.ViewColumn.Beside
-      : vscode.ViewColumn.Active;
+    const viewColumn = beside ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active;
 
     const state = createPreview(document, getClient, waitForClientReady, viewColumn);
     activePreviews.set(uriKey, state);
