@@ -60,11 +60,19 @@ function formatReason(raw: unknown): string {
   if (typeof raw === 'string') {
     return raw;
   }
+  // `JSON.stringify` is typed as `string | undefined` and *does*
+  // return `undefined` for things like `undefined`, functions, and
+  // symbols. Always return a string so downstream `.includes(...)`
+  // calls in `isExpected()` are safe.
   try {
-    return JSON.stringify(raw);
+    const json = JSON.stringify(raw);
+    if (json !== undefined) {
+      return json;
+    }
   } catch {
-    return String(raw);
+    // fall through
   }
+  return String(raw);
 }
 
 function record(source: CapturedRuntimeError['source'], raw: unknown): void {

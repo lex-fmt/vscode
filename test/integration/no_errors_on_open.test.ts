@@ -10,15 +10,17 @@ import { closeAllEditors, TEST_DOCUMENT_PATH, openWorkspaceDocument } from './he
 // `vim.lsp.semantic_tokens.enable` hard-erroring on Neovim 0.12.1+
 // while the nvim plugin's test suite stayed green).
 //
-// The harness installs shims on `vscode.window.showErrorMessage`,
-// `showWarningMessage`, and `process`-level unhandled exceptions /
-// rejections (see `./runtime_errors.ts`) and auto-asserts after every
-// test. This spec is the minimum deliberate exercise of that guard:
-// activate the extension, open a .lex document, wait for the LSP
-// handshake, and confirm nothing landed in the error collector. If a
-// future change starts calling `showErrorMessage` or throws an
-// unhandled rejection during activation or LSP attach, this test will
-// surface the offending message verbatim.
+// The harness installs `process`-level `unhandledRejection` and
+// `uncaughtException` listeners (see `./runtime_errors.ts`) and
+// auto-asserts after every test. Note that VS Code's test-electron
+// runs the extension-under-test and the test extension in separate
+// module contexts, so per-API shims on `vscode.window.showErrorMessage`
+// don't cross the boundary — popups surfaced through that channel are
+// *not* covered here. What this spec does cover: activate the
+// extension, open a .lex document, wait for the LSP handshake, and
+// confirm no unhandled rejection or uncaught exception fired during
+// activation or post-attach async work. If a future change introduces
+// one, the offending message is printed verbatim in the failure.
 integrationTest('no runtime errors fire while activating and opening a .lex document', async () => {
   const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
   assert.ok(extension, 'Lex extension should be discoverable by VS Code');
