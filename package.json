@@ -92,6 +92,11 @@
         "command": "lex.reorderFootnotes",
         "title": "Reorder Footnotes",
         "category": "Lex"
+      },
+      {
+        "command": "lex.injection.dumpStatus",
+        "title": "Dump Injection Status",
+        "category": "Lex"
       }
     ],
     "menus": {
@@ -126,6 +131,10 @@
         },
         {
           "command": "lex.reorderFootnotes",
+          "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.injection.dumpStatus",
           "when": "editorLangId == lex"
         }
       ],

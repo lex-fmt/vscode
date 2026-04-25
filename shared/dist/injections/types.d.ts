@@ -57,3 +57,52 @@ export interface InjectionHostAdapter {
     getRegisteredLanguages(): Promise<Set<string>>;
     getSemanticTokens(zoneIndex: number, content: string, langId: string): Promise<SemanticTokens | null>;
 }
+/**
+ * Per-zone diagnostic record. Captured by the host adapter on every refresh
+ * so external observers (debug commands, tests, telemetry) can answer
+ * "why did this verbatim block fail to highlight?" without re-running the
+ * pipeline.
+ *
+ * Each boolean flag corresponds to a specific stage in the pipeline:
+ *   - resolvedLanguageId !== null  →  the annotation matched a host language
+ *   - requestedTokens               →  `getSemanticTokens` was called
+ *   - receivedTokens                →  the call returned a non-null payload
+ *   - tokenCount > 0                →  the payload actually contained tokens
+ *
+ * If the pipeline silently produces no highlighting, the first flag that
+ * flipped from "true" back to "false" identifies the failing stage.
+ */
+export interface ZoneDiagnostic {
+    index: number;
+    /** Language as detected by tree-sitter (already lowercased / first-word). */
+    annotationLanguage: string;
+    /** Host language ID after alias resolution, or null if no provider claims it. */
+    resolvedLanguageId: string | null;
+    /** Zero-based real-document range of the zone. */
+    range: InjectionRange;
+    /** Bytes of zone content sent to the provider. */
+    contentLength: number;
+    requestedTokens: boolean;
+    receivedTokens: boolean;
+    /** Decoded token count (= data.length / 5). */
+    tokenCount: number;
+    /** Error message if `getSemanticTokens` threw. */
+    error?: string;
+}
+/**
+ * Snapshot of the most recent injection refresh, exposed by the highlighter
+ * so external code (debug commands, tests) can inspect what happened without
+ * re-running the pipeline.
+ */
+export interface InjectionStatus {
+    enabled: boolean;
+    documentUri: string | null;
+    /** ms since epoch when the refresh completed. */
+    timestamp: number;
+    zoneCount: number;
+    zones: ZoneDiagnostic[];
+    /** Number of host-registered language IDs at the time of the refresh. */
+    registeredLanguageCount: number;
+    /** Decoration ranges per category from the most recent compute. */
+    rangesByCategory: Map<DecorationCategory, InjectionRange[]>;
+}

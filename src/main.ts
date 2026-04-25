@@ -21,17 +21,27 @@ import {
 } from './pathCompletion.js';
 import { initTreeSitter, type LexTreeSitter } from './treesitter.js';
 import { createInjectionHighlighter, type InjectionHighlighterApi } from './injections.js';
+import { injections } from '@lex/shared';
+
+export interface TreeSitterInitFailure {
+  stage: string;
+  error: string;
+  resourcesDir: string;
+}
 
 export interface LexExtensionApi {
   clientReady(): Promise<LanguageClient | undefined>;
   pathCompletionDiagnostics(): PathCompletionDiagnostics;
   treeSitter(): LexTreeSitter | null;
+  treeSitterInitError(): TreeSitterInitFailure | null;
   injectionHighlighter(): InjectionHighlighterApi | null;
+  injectionStatus(): injections.InjectionStatus | null;
   activePreviewCount(): number;
 }
 
 let client: LanguageClient | undefined;
 let treeSitter: LexTreeSitter | null = null;
+let treeSitterInitFailure: TreeSitterInitFailure | null = null;
 let injectionHl: InjectionHighlighterApi | null = null;
 let resolveClientReady: (() => void) | undefined;
 const clientReadyPromise = new Promise<void>((resolve) => {
@@ -51,7 +61,9 @@ function createApi(): LexExtensionApi {
     clientReady: () => clientReadyPromise.then(() => client),
     pathCompletionDiagnostics: () => getPathCompletionDiagnostics(),
     treeSitter: () => treeSitter,
+    treeSitterInitError: () => treeSitterInitFailure,
     injectionHighlighter: () => injectionHl,
+    injectionStatus: () => injectionHl?.getStatus() ?? null,
     activePreviewCount: () => getActivePreviewCount(),
   };
 }
@@ -111,15 +123,55 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   );
   registerPathCompletion();
 
-  // Initialize tree-sitter (optional — extension works without it)
-  treeSitter = await initTreeSitter(context.extensionUri.fsPath);
-  if (treeSitter) {
+  // Initialize tree-sitter (optional — extension works without it).
+  // The init logger writes one breadcrumb per stage to the Lex channel so
+  // failures are attributable instead of swallowed by `console.warn`.
+  const tsResult = await initTreeSitter(context.extensionUri.fsPath, (msg) => log.appendLine(msg));
+  if (tsResult.ok) {
+    treeSitter = tsResult.ts;
     context.subscriptions.push({ dispose: () => treeSitter?.dispose() });
 
     // Initialize injection highlighting (tree-sitter powered)
     injectionHl = createInjectionHighlighter(treeSitter);
     context.subscriptions.push({ dispose: () => injectionHl?.dispose() });
+  } else {
+    treeSitterInitFailure = {
+      stage: tsResult.stage,
+      error: tsResult.error,
+      resourcesDir: tsResult.resourcesDir,
+    };
   }
+
+  // Debug command: dump injection status to the Lex output channel.
+  // Visible in manual exploration via Command Palette → "Lex: Dump Injection
+  // Status". Tests use `api.injectionStatus()` directly.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('lex.injection.dumpStatus', async () => {
+      log.appendLine('');
+      if (!injectionHl) {
+        log.appendLine('[lex] Injection highlighter not initialized.');
+        if (treeSitterInitFailure) {
+          log.appendLine(
+            `[lex]   tree-sitter init failed at stage "${treeSitterInitFailure.stage}":`
+          );
+          log.appendLine(`[lex]   ${treeSitterInitFailure.error}`);
+          log.appendLine(`[lex]   resources dir = ${treeSitterInitFailure.resourcesDir}`);
+        } else {
+          log.appendLine('[lex] No init failure recorded — extension may not have activated.');
+        }
+        log.show(true);
+        return;
+      }
+      await injectionHl.refresh();
+      const status = injectionHl.getStatus();
+      if (!status) {
+        log.appendLine('[lex] Injection status unavailable (no document refreshed yet).');
+      } else {
+        log.appendLine(injections.formatInjectionStatus(status));
+      }
+      log.show(true);
+    })
+  );
 
   if (shouldSkipLanguageClient()) {
     log.appendLine('[lex] Skipping language client (LEX_VSCODE_SKIP_SERVER=1)');

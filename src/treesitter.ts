@@ -29,32 +29,104 @@ export interface LexTreeSitter {
   dispose(): void;
 }
 
-export async function initTreeSitter(extensionPath: string): Promise<LexTreeSitter | null> {
+/**
+ * Result of a tree-sitter init attempt. On failure, `stage` identifies which
+ * step blew up so callers can produce useful diagnostics rather than a
+ * generic "tree-sitter unavailable" message.
+ */
+export type TreeSitterInitResult =
+  | { ok: true; ts: LexTreeSitter }
+  | { ok: false; stage: string; error: string; resourcesDir: string };
+
+/**
+ * Optional logger; called with one line per stage so the activation channel
+ * has a breadcrumb trail when initialization fails.
+ */
+export type InitLogger = (msg: string) => void;
+
+function describeError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.stack ? `${err.message}\n${err.stack}` : err.message;
+  }
+  return String(err);
+}
+
+export async function initTreeSitter(
+  extensionPath: string,
+  log?: InitLogger
+): Promise<TreeSitterInitResult> {
   const resourcesDir = path.join(extensionPath, 'resources');
   const runtimeWasm = path.join(resourcesDir, 'tree-sitter.wasm');
   const langWasm = path.join(resourcesDir, 'tree-sitter-lex.wasm');
   const highlightsPath = path.join(resourcesDir, 'queries', 'highlights.scm');
   const injectionsPath = path.join(resourcesDir, 'queries', 'injections.scm');
 
+  log?.(`[lex] tree-sitter: resources dir = ${resourcesDir}`);
+
+  // Each block names the stage so a failure is attributable. Pre-flight
+  // checks for missing files run synchronously before the async init paths
+  // so the user sees "missing X" instead of an opaque WASM load error.
+  if (!existsSync(runtimeWasm)) {
+    return failure('runtime-wasm-missing', `tree-sitter.wasm not found at ${runtimeWasm}`);
+  }
+  if (!existsSync(langWasm)) {
+    return failure('lang-wasm-missing', `tree-sitter-lex.wasm not found at ${langWasm}`);
+  }
+  if (!existsSync(highlightsPath)) {
+    return failure('highlights-missing', `highlights.scm not found at ${highlightsPath}`);
+  }
+
+  let parser: Parser;
+  let language: Language;
+  let highlightsQuery: Query;
+  let injectionsQuery: Query | null = null;
+
   try {
+    log?.(`[lex] tree-sitter: Parser.init (runtime=${runtimeWasm})`);
     await Parser.init({
       locateFile: () => runtimeWasm,
     });
+  } catch (err) {
+    return failure('parser-init', describeError(err));
+  }
 
-    const language = await Language.load(langWasm);
-    const parser = new Parser();
+  try {
+    log?.(`[lex] tree-sitter: Language.load (${langWasm})`);
+    language = await Language.load(langWasm);
+  } catch (err) {
+    return failure('language-load', describeError(err));
+  }
+
+  try {
+    parser = new Parser();
     parser.setLanguage(language);
+  } catch (err) {
+    return failure('parser-set-language', describeError(err));
+  }
 
+  try {
     const highlightsSrc = readFileSync(highlightsPath, 'utf-8');
-    const highlightsQuery = new Query(language, highlightsSrc);
+    highlightsQuery = new Query(language, highlightsSrc);
+  } catch (err) {
+    return failure('highlights-query', describeError(err));
+  }
 
-    let injectionsQuery: Query | null = null;
-    if (existsSync(injectionsPath)) {
+  if (existsSync(injectionsPath)) {
+    try {
       const injectionsSrc = readFileSync(injectionsPath, 'utf-8');
       injectionsQuery = new Query(language, injectionsSrc);
+    } catch (err) {
+      return failure('injections-query', describeError(err));
     }
+  } else {
+    log?.(`[lex] tree-sitter: injections.scm not present at ${injectionsPath} — skipping`);
+  }
 
-    return {
+  log?.('[lex] tree-sitter: ready');
+
+  return {
+    ok: true,
+    ts: {
       parse(text: string): Tree {
         const tree = parser.parse(text);
         if (!tree) throw new Error('tree-sitter parse returned null');
@@ -143,9 +215,11 @@ export async function initTreeSitter(extensionPath: string): Promise<LexTreeSitt
         highlightsQuery.delete();
         injectionsQuery?.delete();
       },
-    };
-  } catch (err) {
-    console.warn('[lex] Failed to initialize tree-sitter:', err);
-    return null;
+    },
+  };
+
+  function failure(stage: string, error: string): TreeSitterInitResult {
+    log?.(`[lex] tree-sitter: ${stage} failed: ${error}`);
+    return { ok: false, stage, error, resourcesDir };
   }
 }

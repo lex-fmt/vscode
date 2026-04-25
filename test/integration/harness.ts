@@ -5,13 +5,27 @@ export type IntegrationTest = () => Promise<void> | void;
 interface TestEntry {
   name: string;
   fn: IntegrationTest;
+  skip: boolean;
 }
 
 const tests: TestEntry[] = [];
 
-export function integrationTest(name: string, fn: IntegrationTest): void {
-  tests.push({ name, fn });
+interface IntegrationTestApi {
+  (name: string, fn: IntegrationTest): void;
+  /**
+   * Register a test that will be reported but not executed. Used for
+   * failing tests that document a known issue we're not ready to fix yet.
+   */
+  skip(name: string, fn: IntegrationTest): void;
 }
+
+export const integrationTest: IntegrationTestApi = ((name: string, fn: IntegrationTest) => {
+  tests.push({ name, fn, skip: false });
+}) as IntegrationTestApi;
+
+integrationTest.skip = (name: string, fn: IntegrationTest): void => {
+  tests.push({ name, fn, skip: true });
+};
 
 export async function runRegisteredTests(): Promise<void> {
   // Install the runtime-error capture once for the whole suite. The
@@ -37,6 +51,10 @@ export async function runRegisteredTests(): Promise<void> {
 
   for (const test of tests) {
     const label = `VSCode Integration :: ${test.name}`;
+    if (test.skip) {
+      console.log(`⊘ ${label} (skipped)`);
+      continue;
+    }
     try {
       await test.fn();
     } catch (error) {
