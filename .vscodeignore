@@ -24,6 +24,19 @@ node_modules/**
 !resources/tree-sitter-lex.wasm
 !resources/tree-sitter.wasm
 !resources/queries/**
+
+# web-tree-sitter is marked --external in the bundle so the runtime
+# `require('web-tree-sitter')` resolves a real file with a usable
+# `import.meta.url` (esbuild's CJS bundler stubs it to undefined, which
+# breaks Parser.init). Ship just the runtime files; trim the dev surface.
+!node_modules/web-tree-sitter/**
+node_modules/web-tree-sitter/debug/**
+node_modules/web-tree-sitter/lib/**
+node_modules/web-tree-sitter/src/**
+node_modules/web-tree-sitter/*.map
+node_modules/web-tree-sitter/*.d.ts
+node_modules/web-tree-sitter/README.md
+
 *.ts
 !*.d.ts
 tsconfig.json

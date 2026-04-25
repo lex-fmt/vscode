@@ -16,10 +16,24 @@ else
   exit 1
 fi
 
+VERSION_STAMP="$RESOURCES_DIR/.tree-sitter-version"
+
+# True iff the cached artifacts on disk are for the currently-pinned version.
+# We track a sidecar version stamp because the wasm + .scm files have no
+# embedded version. Without this, bumping `tree-sitter` in lex-deps.json
+# silently left the old wasm in place — the queries got refreshed via other
+# paths and started referencing node names the stale wasm grammar didn't
+# define, producing `Bad node name X` at extension activation.
+artifacts_match_pinned_version() {
+  [[ -f "$RESOURCES_DIR/tree-sitter-lex.wasm" ]] \
+    && [[ -d "$RESOURCES_DIR/queries" ]] \
+    && [[ -f "$VERSION_STAMP" ]] \
+    && [[ "$(cat "$VERSION_STAMP")" == "$TS_VERSION" ]]
+}
+
 download_tree_sitter() {
-  # Check if already downloaded
-  if [[ -f "$RESOURCES_DIR/tree-sitter-lex.wasm" ]] && [[ -d "$RESOURCES_DIR/queries" ]]; then
-    echo "tree-sitter artifacts already exist in $RESOURCES_DIR"
+  if artifacts_match_pinned_version; then
+    echo "tree-sitter $TS_VERSION already installed in $RESOURCES_DIR"
     return 0
   fi
 
@@ -45,17 +59,21 @@ download_tree_sitter() {
   mkdir -p "$tmp_dir/extracted"
   tar -xzf "$archive_path" -C "$tmp_dir/extracted"
 
-  # Copy WASM and queries to resources
+  # Replace cached artifacts atomically (relative to the stamp). Wipe the
+  # query directory first so a removed query file from an older version
+  # doesn't linger.
   mkdir -p "$RESOURCES_DIR/queries"
+  rm -f "$RESOURCES_DIR/queries/"*.scm
   cp "$tmp_dir/extracted/tree-sitter-lex.wasm" "$RESOURCES_DIR/tree-sitter-lex.wasm"
   cp "$tmp_dir/extracted/queries/"*.scm "$RESOURCES_DIR/queries/"
+  printf '%s' "$TS_VERSION" > "$VERSION_STAMP"
 
   rm -rf "$tmp_dir"
   echo "tree-sitter $TS_VERSION installed to $RESOURCES_DIR"
 }
 
 ensure_tree_sitter() {
-  if [[ -f "$RESOURCES_DIR/tree-sitter-lex.wasm" ]] && [[ -d "$RESOURCES_DIR/queries" ]]; then
+  if artifacts_match_pinned_version; then
     return 0
   fi
   download_tree_sitter "$@"

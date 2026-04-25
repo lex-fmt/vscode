@@ -755,7 +755,7 @@
     "build": "tsc -p .",
     "watch": "tsc -watch -p .",
     "copy-wasm": "cp node_modules/web-tree-sitter/tree-sitter.wasm resources/tree-sitter.wasm",
-    "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --format=cjs --platform=node --target=node20",
+    "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --external:web-tree-sitter --format=cjs --platform=node --target=node20",
     "vscode:prepublish": "npm run bundle -- --minify",
     "pretest": "npm run build && npm run bundle",
     "test": "npm run test:unit && npm run test:integration",

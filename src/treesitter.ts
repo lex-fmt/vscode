@@ -51,6 +51,15 @@ function describeError(err: unknown): string {
   return String(err);
 }
 
+function findAncestor(node: Node, type: string): Node | null {
+  let n: Node | null = node;
+  while (n) {
+    if (n.type === type) return n;
+    n = n.parent;
+  }
+  return null;
+}
+
 export async function initTreeSitter(
   extensionPath: string,
   log?: InitLogger
@@ -150,61 +159,61 @@ export async function initTreeSitter(
 
         const captures = injectionsQuery.captures(tree.rootNode);
 
-        // Group captures by parent verbatim_block node — each block has
-        // one language (from annotation_header) and one or more content nodes
+        // Group captures by their enclosing verbatim_block. The .scm
+        // emits one or more `@injection.content` captures plus one
+        // `@injection.language` per verbatim_block; downstream consumers
+        // (Pylance, etc.) need one *contiguous* virtual document per
+        // block so the embedded code parses as a single unit. Multiple
+        // separate zones for the same block fragment the parse —
+        // Pylance ends up with disconnected snippets and produces few
+        // useful tokens.
+        //
+        // We walk up from each capture to the enclosing verbatim_block
+        // (captures inside `verbatim_group_item` have a different
+        // immediate parent), then take the union range of the content
+        // nodes and slice the original source for the zone text.
+        const byVerbatim = new Map<
+          number,
+          { verbatim: Node; lang: string | null; contentNodes: Node[] }
+        >();
+
+        for (const cap of captures) {
+          const verbatim = findAncestor(cap.node, 'verbatim_block');
+          if (!verbatim) continue;
+
+          let entry = byVerbatim.get(verbatim.id);
+          if (!entry) {
+            entry = { verbatim, lang: null, contentNodes: [] };
+            byVerbatim.set(verbatim.id, entry);
+          }
+
+          if (cap.name === 'injection.language') {
+            const raw = cap.node.text.trim();
+            entry.lang = raw.split(/\s+/)[0].toLowerCase();
+          } else if (cap.name === 'injection.content') {
+            entry.contentNodes.push(cap.node);
+          }
+        }
+
         const zones: InjectionZone[] = [];
+        for (const { verbatim, lang, contentNodes } of byVerbatim.values()) {
+          if (!lang || contentNodes.length === 0) continue;
 
-        const contentCaptures: Array<{
-          node: CaptureResult;
-          parentId: number;
-        }> = [];
-        const langCaptures: Array<{
-          lang: string;
-          parentId: number;
-        }> = [];
+          contentNodes.sort((a, b) => a.startIndex - b.startIndex);
+          const first = contentNodes[0];
+          const last = contentNodes[contentNodes.length - 1];
 
-        for (const capture of captures) {
-          // Use the parent verbatim_block node ID for grouping
-          const parentNode = capture.node.parent;
-          const parentId = parentNode?.id ?? 0;
-
-          if (capture.name === 'injection.content') {
-            contentCaptures.push({
-              node: {
-                name: capture.name,
-                startRow: capture.node.startPosition.row,
-                startCol: capture.node.startPosition.column,
-                endRow: capture.node.endPosition.row,
-                endCol: capture.node.endPosition.column,
-                text: capture.node.text,
-              },
-              parentId,
-            });
-          } else if (capture.name === 'injection.language') {
-            const raw = capture.node.text.trim();
-            const lang = raw.split(/\s+/)[0].toLowerCase();
-            langCaptures.push({ lang, parentId });
-          }
-        }
-
-        // Match content to language by parent verbatim block
-        const langByParent = new Map<number, string>();
-        for (const lc of langCaptures) {
-          langByParent.set(lc.parentId, lc.lang);
-        }
-
-        for (const cc of contentCaptures) {
-          const lang = langByParent.get(cc.parentId);
-          if (lang) {
-            zones.push({
-              language: lang,
-              startRow: cc.node.startRow,
-              startCol: cc.node.startCol,
-              endRow: cc.node.endRow,
-              endCol: cc.node.endCol,
-              text: cc.node.text,
-            });
-          }
+          zones.push({
+            language: lang,
+            startRow: first.startPosition.row,
+            startCol: first.startPosition.column,
+            endRow: last.endPosition.row,
+            endCol: last.endPosition.column,
+            text: verbatim.text.substring(
+              first.startIndex - verbatim.startIndex,
+              last.endIndex - verbatim.startIndex
+            ),
+          });
         }
 
         return zones;

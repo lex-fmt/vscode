@@ -11,6 +11,7 @@ node_modules
 /resources/tree-sitter-lex.wasm
 /resources/tree-sitter.wasm
 /resources/queries/
+/resources/.tree-sitter-version
 
 # Logs
 logs
