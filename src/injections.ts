@@ -49,24 +49,6 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
   let cachedLanguages: Set<string> | null = null;
   let lastStatus: InjectionStatus | null = null;
 
-  // Virtual document content provider
-  const contentMap = new Map<string, string>();
-  const changeEmitter = new vscode.EventEmitter<vscode.Uri>();
-
-  const contentProvider = vscode.workspace.registerTextDocumentContentProvider(
-    injections.VIRTUAL_DOC_SCHEME,
-    {
-      onDidChange: changeEmitter.event,
-      provideTextDocumentContent(uri: vscode.Uri): string {
-        return contentMap.get(uri.path) ?? '';
-      },
-    }
-  );
-  disposables.push(contentProvider, changeEmitter);
-
-  // Track which virtual docs have had their language set
-  const docLanguages = new Map<string, string>();
-
   // Create decoration types from the shared category/style constants
   for (const [category, colorId] of Object.entries(injections.CATEGORY_COLORS) as Array<
     [DecorationCategory, string]
@@ -93,38 +75,45 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
   }
 
   async function getSemanticTokensForZone(
-    zoneIndex: number,
+    _zoneIndex: number,
     content: string,
     langId: string
   ): Promise<injections.SemanticTokens | null> {
-    const docPath = `/zone-${zoneIndex}`;
+    // Create an in-memory `untitled:` document and let vscode pick it up
+    // through the normal language-registration path. Many semantic-token
+    // providers (Pylance, etc.) declare a `documentSelector` restricted to
+    // common schemes — `file`, `untitled`, sometimes `vscode-notebook-cell`.
+    // Custom schemes like `lex-embedded` get silently filtered, which is
+    // what made every verbatim block render as plain text. `untitled:` is
+    // close to universally accepted; if a provider needs `file:` we can
+    // fall back to a temp file later.
+    const doc = await vscode.workspace.openTextDocument({
+      language: langId,
+      content,
+    });
+    const uri = doc.uri;
 
-    // Update virtual document content
-    contentMap.set(docPath, content);
-    const uri = vscode.Uri.parse(`${injections.VIRTUAL_DOC_SCHEME}://${docPath}`);
-    changeEmitter.fire(uri);
-
-    // Open the document (no-op if already open)
-    const doc = await vscode.workspace.openTextDocument(uri);
-
-    // Set language if changed
-    if (docLanguages.get(docPath) !== langId) {
-      await vscode.languages.setTextDocumentLanguage(doc, langId);
-      docLanguages.set(docPath, langId);
-    }
-
-    // Request semantic tokens from whatever provider handles this language
+    // Throw with descriptive messages so the per-zone diagnostic shows
+    // exactly which stage failed in the dump output.
     const legend = await vscode.commands.executeCommand<vscode.SemanticTokensLegend>(
       'vscode.provideDocumentSemanticTokensLegend',
       uri
     );
-    if (!legend) return null;
+    if (!legend) {
+      throw new Error(
+        `no semantic-tokens legend for ${langId} (scheme=${uri.scheme}); is a tokens provider registered for this scheme?`
+      );
+    }
 
     const tokens = await vscode.commands.executeCommand<vscode.SemanticTokens>(
       'vscode.provideDocumentSemanticTokens',
       uri
     );
-    if (!tokens) return null;
+    if (!tokens) {
+      throw new Error(
+        `no semantic tokens returned for ${langId} (scheme=${uri.scheme}); legend was present but provider produced none`
+      );
+    }
 
     return { legend, data: tokens.data };
   }
@@ -296,8 +285,6 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
     },
     dispose() {
       if (debounceTimer) clearTimeout(debounceTimer);
-      contentMap.clear();
-      docLanguages.clear();
       for (const d of disposables) d.dispose();
       decorationTypes.clear();
     },
