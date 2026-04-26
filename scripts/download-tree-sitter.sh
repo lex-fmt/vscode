@@ -27,6 +27,7 @@ VERSION_STAMP="$RESOURCES_DIR/.tree-sitter-version"
 artifacts_match_pinned_version() {
   [[ -f "$RESOURCES_DIR/tree-sitter-lex.wasm" ]] \
     && [[ -d "$RESOURCES_DIR/queries" ]] \
+    && [[ -f "$RESOURCES_DIR/embedded-grammars.json" ]] \
     && [[ -f "$VERSION_STAMP" ]] \
     && [[ "$(cat "$VERSION_STAMP")" == "$TS_VERSION" ]]
 }
@@ -66,6 +67,18 @@ download_tree_sitter() {
   rm -f "$RESOURCES_DIR/queries/"*.scm
   cp "$tmp_dir/extracted/tree-sitter-lex.wasm" "$RESOURCES_DIR/tree-sitter-lex.wasm"
   cp "$tmp_dir/extracted/queries/"*.scm "$RESOURCES_DIR/queries/"
+
+  # Pull the cross-editor embedded-grammars manifest out of the tarball.
+  # download-embedded-grammars.sh reads this file to decide which third-
+  # party grammars to fetch — pinning tree-sitter-lex pins the manifest
+  # in lockstep, so vscode and lexed share one curated list.
+  if [[ -f "$tmp_dir/extracted/shared/embedded-grammars.json" ]]; then
+    cp "$tmp_dir/extracted/shared/embedded-grammars.json" "$RESOURCES_DIR/embedded-grammars.json"
+  else
+    echo "Warning: tree-sitter $TS_VERSION did not ship shared/embedded-grammars.json" >&2
+    rm -f "$RESOURCES_DIR/embedded-grammars.json"
+  fi
+
   printf '%s' "$TS_VERSION" > "$VERSION_STAMP"
 
   rm -rf "$tmp_dir"
