@@ -46,8 +46,15 @@ function formatZoneLine(z) {
         return `${head} requested=false`;
     }
     const tail = `requested=true received=${z.receivedTokens} tokens=${z.tokenCount}`;
+    let line = `${head} ${tail}`;
     if (z.error) {
-        return `${head} ${tail} error="${z.error}"`;
+        line += ` error="${z.error}"`;
     }
-    return `${head} ${tail}`;
+    if (z.tokenTypeHistogram && Object.keys(z.tokenTypeHistogram).length > 0) {
+        // Sort by count descending so the dominant token types stand out.
+        const entries = Object.entries(z.tokenTypeHistogram).sort((a, b) => b[1] - a[1]);
+        const tally = entries.map(([t, n]) => `${t}=${n}`).join(' ');
+        line += `\n      types: ${tally}`;
+    }
+    return line;
 }

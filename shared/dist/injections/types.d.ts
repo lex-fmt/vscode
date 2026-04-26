@@ -86,6 +86,14 @@ export interface ZoneDiagnostic {
     receivedTokens: boolean;
     /** Decoded token count (= data.length / 5). */
     tokenCount: number;
+    /**
+     * Histogram of how many tokens of each LSP semantic-token type the
+     * provider returned. Useful when `tokenCount > 0` but
+     * `decorationCount` is small — most likely the provider is emitting
+     * tokens in types we don't map (e.g. Pylance returns lots of
+     * `variable`/`parameter` tokens, which our SEMANTIC_TOKEN_MAP drops).
+     */
+    tokenTypeHistogram?: Record<string, number>;
     /** Error message if `getSemanticTokens` threw. */
     error?: string;
 }

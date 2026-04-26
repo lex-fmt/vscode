@@ -28,6 +28,23 @@ type InjectionZone = injections.InjectionZone;
 type InjectionStatus = injections.InjectionStatus;
 type ZoneDiagnostic = injections.ZoneDiagnostic;
 
+/**
+ * Walk the LSP semantic-tokens delta encoding and tally how many tokens
+ * of each declared `tokenType` came back. This is purely for the
+ * diagnostic dump — it answers "did the provider send tokens we don't
+ * map, or send no tokens at all?" without re-running the pipeline.
+ */
+function histogramTokenTypes(tokens: injections.SemanticTokens): Record<string, number> {
+  const histogram: Record<string, number> = {};
+  const { legend, data } = tokens;
+  for (let i = 0; i < data.length; i += 5) {
+    const typeIndex = data[i + 3];
+    const name = legend.tokenTypes[typeIndex] ?? `<unknown:${typeIndex}>`;
+    histogram[name] = (histogram[name] ?? 0) + 1;
+  }
+  return histogram;
+}
+
 export interface InjectionHighlighterApi {
   getInjectionZones(): InjectionZone[];
   getDecorationTypes(): ReadonlyMap<DecorationCategory, vscode.TextEditorDecorationType>;
@@ -194,6 +211,9 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
           const tokens = await hostAdapter.getSemanticTokens(zoneIndex, content, langId);
           diag.receivedTokens = !!tokens;
           diag.tokenCount = tokens ? Math.floor(tokens.data.length / 5) : 0;
+          if (tokens) {
+            diag.tokenTypeHistogram = histogramTokenTypes(tokens);
+          }
           return tokens;
         } catch (e: unknown) {
           diag.error = e instanceof Error ? e.message : String(e);
