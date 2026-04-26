@@ -4,46 +4,35 @@
  * The pure injection logic lives in `@lex/shared/injections`. This file is
  * the vscode host adapter:
  *
- *   - Owns tree-sitter parsing (`ts.parse` + `ts.queryInjections`) and the
- *     event hooks (`onDidChangeActiveTextEditor`, `onDidChangeTextDocument`,
+ *   - Owns tree-sitter parsing of the *outer* lex document
+ *     (`ts.parse` + `ts.queryInjections`) and the editor event hooks
+ *     (`onDidChangeActiveTextEditor`, `onDidChangeTextDocument`,
  *     `onDidChangeConfiguration`, debounce).
- *   - Owns the virtual-document content provider used to back
- *     `vscode.provideDocumentSemanticTokens` calls.
+ *   - Delegates *inner* tokenization of each zone to a tree-sitter
+ *     embedded-language tokenizer (`createEmbeddedTokenizer`) loaded
+ *     from `resources/embedded-grammars/`. We previously sent zones
+ *     through `vscode.provideDocumentSemanticTokens`, but VS Code's
+ *     semantic-tokens API only exposes the LSP layer (function vs
+ *     variable disambiguation) — keywords, strings, and comments live
+ *     in the TextMate layer that we don't have for `.lex` files.
+ *     Tree-sitter's `highlights.scm` for each language gives us the
+ *     full set in a single pass.
  *   - Creates `TextEditorDecorationType` objects from the shared
  *     `CATEGORY_COLORS` / `CATEGORY_STYLES` constants.
  *   - Passes parsed zones to `injections.computeInjectionDecorations(...)`
  *     and converts the returned `InjectionRange[]` into `vscode.Range[]`
  *     for `editor.setDecorations`.
- *
- * If a language has no semantic token provider installed, that zone is
- * silently skipped — no fallback tokenization, no hardcoded grammars.
  */
 
 import * as vscode from 'vscode';
 import { injections } from '@lex/shared';
 import type { LexTreeSitter } from './treesitter.js';
+import type { EmbeddedTokenizer } from './embedded.js';
 
 type DecorationCategory = injections.DecorationCategory;
 type InjectionZone = injections.InjectionZone;
 type InjectionStatus = injections.InjectionStatus;
 type ZoneDiagnostic = injections.ZoneDiagnostic;
-
-/**
- * Walk the LSP semantic-tokens delta encoding and tally how many tokens
- * of each declared `tokenType` came back. This is purely for the
- * diagnostic dump — it answers "did the provider send tokens we don't
- * map, or send no tokens at all?" without re-running the pipeline.
- */
-function histogramTokenTypes(tokens: injections.SemanticTokens): Record<string, number> {
-  const histogram: Record<string, number> = {};
-  const { legend, data } = tokens;
-  for (let i = 0; i < data.length; i += 5) {
-    const typeIndex = data[i + 3];
-    const name = legend.tokenTypes[typeIndex] ?? `<unknown:${typeIndex}>`;
-    histogram[name] = (histogram[name] ?? 0) + 1;
-  }
-  return histogram;
-}
 
 export interface InjectionHighlighterApi {
   getInjectionZones(): InjectionZone[];
@@ -58,12 +47,14 @@ export interface InjectionHighlighterApi {
   dispose(): void;
 }
 
-export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighlighterApi {
+export function createInjectionHighlighter(
+  ts: LexTreeSitter,
+  tokenizer: EmbeddedTokenizer
+): InjectionHighlighterApi {
   const decorationTypes = new Map<DecorationCategory, vscode.TextEditorDecorationType>();
   const disposables: vscode.Disposable[] = [];
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let currentZones: InjectionZone[] = [];
-  let cachedLanguages: Set<string> | null = null;
   let lastStatus: InjectionStatus | null = null;
 
   // Create decoration types from the shared category/style constants
@@ -78,67 +69,6 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
     decorationTypes.set(category, dt);
     disposables.push(dt);
   }
-
-  async function getRegisteredLanguages(): Promise<Set<string>> {
-    if (!cachedLanguages) {
-      const langs = await vscode.languages.getLanguages();
-      cachedLanguages = new Set(langs);
-      // Invalidate cache after 30s so newly installed extensions are picked up
-      setTimeout(() => {
-        cachedLanguages = null;
-      }, 30_000);
-    }
-    return cachedLanguages;
-  }
-
-  async function getSemanticTokensForZone(
-    _zoneIndex: number,
-    content: string,
-    langId: string
-  ): Promise<injections.SemanticTokens | null> {
-    // Create an in-memory `untitled:` document and let vscode pick it up
-    // through the normal language-registration path. Many semantic-token
-    // providers (Pylance, etc.) declare a `documentSelector` restricted to
-    // common schemes — `file`, `untitled`, sometimes `vscode-notebook-cell`.
-    // Custom schemes like `lex-embedded` get silently filtered, which is
-    // what made every verbatim block render as plain text. `untitled:` is
-    // close to universally accepted; if a provider needs `file:` we can
-    // fall back to a temp file later.
-    const doc = await vscode.workspace.openTextDocument({
-      language: langId,
-      content,
-    });
-    const uri = doc.uri;
-
-    // Throw with descriptive messages so the per-zone diagnostic shows
-    // exactly which stage failed in the dump output.
-    const legend = await vscode.commands.executeCommand<vscode.SemanticTokensLegend>(
-      'vscode.provideDocumentSemanticTokensLegend',
-      uri
-    );
-    if (!legend) {
-      throw new Error(
-        `no semantic-tokens legend for ${langId} (scheme=${uri.scheme}); is a tokens provider registered for this scheme?`
-      );
-    }
-
-    const tokens = await vscode.commands.executeCommand<vscode.SemanticTokens>(
-      'vscode.provideDocumentSemanticTokens',
-      uri
-    );
-    if (!tokens) {
-      throw new Error(
-        `no semantic tokens returned for ${langId} (scheme=${uri.scheme}); legend was present but provider produced none`
-      );
-    }
-
-    return { legend, data: tokens.data };
-  }
-
-  const hostAdapter: injections.InjectionHostAdapter = {
-    getRegisteredLanguages,
-    getSemanticTokens: getSemanticTokensForZone,
-  };
 
   function isEnabled(): boolean {
     return vscode.workspace.getConfiguration('lex').get<boolean>('injectionHighlighting', true);
@@ -164,6 +94,16 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
     };
   }
 
+  function histogramTokenNames(
+    tokens: readonly injections.EmbeddedToken[]
+  ): Record<string, number> {
+    const histogram: Record<string, number> = {};
+    for (const t of tokens) {
+      histogram[t.name] = (histogram[t.name] ?? 0) + 1;
+    }
+    return histogram;
+  }
+
   async function highlightEditor(editor: vscode.TextEditor): Promise<void> {
     const docUri = editor.document.uri.toString();
     if (!isEnabled() || editor.document.languageId !== 'lex') {
@@ -180,9 +120,7 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
 
     currentZones = zones;
 
-    // Resolve up front so diagnostics know each zone's resolved langId even
-    // for zones that compute() will skip.
-    const registered = await getRegisteredLanguages();
+    const registered = tokenizer.availableLanguages();
     const diagnostics: ZoneDiagnostic[] = zones.map((zone, i) => ({
       index: i,
       annotationLanguage: zone.language,
@@ -199,20 +137,21 @@ export function createInjectionHighlighter(ts: LexTreeSitter): InjectionHighligh
       tokenCount: 0,
     }));
 
-    // Wrap the real host adapter so each call updates the corresponding
-    // diagnostic record. We hand `compute()` a pre-resolved registered set
-    // so its behaviour matches the diagnostics built above.
+    // Tracking adapter: forward to the embedded tokenizer and mirror
+    // each call's outcome into the corresponding ZoneDiagnostic so
+    // `Lex: Dump Injection Status` can report what happened.
     const trackingAdapter: injections.InjectionHostAdapter = {
       getRegisteredLanguages: () => Promise.resolve(registered),
-      getSemanticTokens: async (zoneIndex, content, langId) => {
+      tokenNameToCategory: injections.TREE_SITTER_HIGHLIGHT_MAP,
+      getTokens: async (zoneIndex, content, langId) => {
         const diag = diagnostics[zoneIndex];
         diag.requestedTokens = true;
         try {
-          const tokens = await hostAdapter.getSemanticTokens(zoneIndex, content, langId);
+          const tokens = await tokenizer.tokenize(content, langId);
           diag.receivedTokens = !!tokens;
-          diag.tokenCount = tokens ? Math.floor(tokens.data.length / 5) : 0;
+          diag.tokenCount = tokens ? tokens.length : 0;
           if (tokens) {
-            diag.tokenTypeHistogram = histogramTokenTypes(tokens);
+            diag.tokenTypeHistogram = histogramTokenNames(tokens);
           }
           return tokens;
         } catch (e: unknown) {

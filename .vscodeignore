@@ -24,6 +24,7 @@ node_modules/**
 !resources/tree-sitter-lex.wasm
 !resources/tree-sitter.wasm
 !resources/queries/**
+!resources/embedded-grammars/**
 
 # web-tree-sitter is marked --external in the bundle so the runtime
 # `require('web-tree-sitter')` resolves a real file with a usable

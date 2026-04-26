@@ -5,7 +5,7 @@ import { injections } from '@lex/shared';
 const { computeInjectionDecorations } = injections;
 type InjectionZone = injections.InjectionZone;
 type InjectionHostAdapter = injections.InjectionHostAdapter;
-type SemanticTokens = injections.SemanticTokens;
+type EmbeddedToken = injections.EmbeddedToken;
 
 function makeZone(lang: string, text: string, row: number, col: number): InjectionZone {
   return {
@@ -18,10 +18,16 @@ function makeZone(lang: string, text: string, row: number, col: number): Injecti
   };
 }
 
-const KW_STR_LEGEND = { tokenTypes: ['keyword', 'string'] };
+const NAME_MAP = { keyword: 'keyword', string: 'string' } as const;
 
-function tokensPayload(data: Uint32Array): SemanticTokens {
-  return { legend: KW_STR_LEGEND, data };
+function kw(startCol: number, len: number): EmbeddedToken {
+  return {
+    name: 'keyword',
+    startLine: 0,
+    startCol,
+    endLine: 0,
+    endCol: startCol + len,
+  };
 }
 
 test('computeInjectionDecorations: aggregates ranges across multiple zones', async () => {
@@ -32,15 +38,16 @@ test('computeInjectionDecorations: aggregates ranges across multiple zones', asy
 
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () => Promise.resolve(new Set(['python', 'javascript'])),
-    // Each zone yields one keyword at (0, 0) length 3
-    getSemanticTokens: () => Promise.resolve(tokensPayload(new Uint32Array([0, 0, 3, 0, 0]))),
+    tokenNameToCategory: NAME_MAP,
+    // Each zone yields one keyword at (0, 0) length 3.
+    getTokens: () => Promise.resolve([kw(0, 3)]),
   };
 
   const ranges = await computeInjectionDecorations(zones, host);
-  const kw = ranges.get('keyword')!;
-  assert.equal(kw.length, 2);
-  assert.deepEqual(kw[0], { startLine: 10, startCol: 2, endLine: 10, endCol: 5 });
-  assert.deepEqual(kw[1], { startLine: 20, startCol: 0, endLine: 20, endCol: 3 });
+  const kws = ranges.get('keyword')!;
+  assert.equal(kws.length, 2);
+  assert.deepEqual(kws[0], { startLine: 10, startCol: 2, endLine: 10, endCol: 5 });
+  assert.deepEqual(kws[1], { startLine: 20, startCol: 0, endLine: 20, endCol: 3 });
 
   for (const category of ['string', 'comment', 'number', 'type', 'function', 'operator'] as const) {
     assert.deepEqual(ranges.get(category), []);
@@ -52,14 +59,15 @@ test('computeInjectionDecorations: unregistered language is skipped', async () =
   let calls = 0;
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () => Promise.resolve(new Set(['python'])),
-    getSemanticTokens: () => {
+    tokenNameToCategory: NAME_MAP,
+    getTokens: () => {
       calls++;
-      return Promise.resolve(tokensPayload(new Uint32Array([0, 0, 3, 0, 0])));
+      return Promise.resolve([kw(0, 3)]);
     },
   };
 
   const ranges = await computeInjectionDecorations(zones, host);
-  assert.equal(calls, 1, 'getSemanticTokens should only be called for registered languages');
+  assert.equal(calls, 1, 'getTokens should only be called for registered languages');
   assert.equal(ranges.get('keyword')!.length, 1);
 });
 
@@ -67,8 +75,8 @@ test('computeInjectionDecorations: null tokens skip the zone silently', async ()
   const zones = [makeZone('python', 'x', 0, 0), makeZone('rust', 'y', 5, 0)];
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () => Promise.resolve(new Set(['python', 'rust'])),
-    getSemanticTokens: (zoneIndex) =>
-      Promise.resolve(zoneIndex === 0 ? tokensPayload(new Uint32Array([0, 0, 1, 0, 0])) : null),
+    tokenNameToCategory: NAME_MAP,
+    getTokens: (zoneIndex) => Promise.resolve(zoneIndex === 0 ? [kw(0, 1)] : null),
   };
 
   const ranges = await computeInjectionDecorations(zones, host);
@@ -79,9 +87,10 @@ test('computeInjectionDecorations: thrown error skips the zone, does not bubble'
   const zones = [makeZone('python', 'x', 0, 0), makeZone('rust', 'y', 5, 0)];
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () => Promise.resolve(new Set(['python', 'rust'])),
-    getSemanticTokens: (zoneIndex) => {
+    tokenNameToCategory: NAME_MAP,
+    getTokens: (zoneIndex) => {
       if (zoneIndex === 1) return Promise.reject(new Error('provider boom'));
-      return Promise.resolve(tokensPayload(new Uint32Array([0, 0, 1, 0, 0])));
+      return Promise.resolve([kw(0, 1)]);
     },
   };
 
@@ -89,13 +98,14 @@ test('computeInjectionDecorations: thrown error skips the zone, does not bubble'
   assert.equal(ranges.get('keyword')!.length, 1, 'only the non-throwing zone contributes');
 });
 
-test('computeInjectionDecorations: synchronous throw from getSemanticTokens is also skipped', async () => {
+test('computeInjectionDecorations: synchronous throw from getTokens is also skipped', async () => {
   const zones = [makeZone('python', 'x', 0, 0), makeZone('rust', 'y', 5, 0)];
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () => Promise.resolve(new Set(['python', 'rust'])),
-    getSemanticTokens: (zoneIndex) => {
+    tokenNameToCategory: NAME_MAP,
+    getTokens: (zoneIndex) => {
       if (zoneIndex === 1) throw new Error('sync boom');
-      return Promise.resolve(tokensPayload(new Uint32Array([0, 0, 1, 0, 0])));
+      return Promise.resolve([kw(0, 1)]);
     },
   };
 
@@ -107,7 +117,8 @@ test('computeInjectionDecorations: empty zones returns all-empty category map', 
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () =>
       Promise.reject(new Error('should not be called when zones is empty')),
-    getSemanticTokens: () => Promise.reject(new Error('should not be called when zones is empty')),
+    tokenNameToCategory: NAME_MAP,
+    getTokens: () => Promise.reject(new Error('should not be called when zones is empty')),
   };
   const ranges = await computeInjectionDecorations([], host);
   assert.equal(ranges.size, 7);
@@ -128,7 +139,8 @@ test('computeInjectionDecorations: getRegisteredLanguages called exactly once pe
       registeredCalls++;
       return Promise.resolve(new Set(['python', 'javascript']));
     },
-    getSemanticTokens: () => Promise.resolve(tokensPayload(new Uint32Array([]))),
+    tokenNameToCategory: NAME_MAP,
+    getTokens: () => Promise.resolve([]),
   };
 
   await computeInjectionDecorations(zones, host);
@@ -144,9 +156,10 @@ test('computeInjectionDecorations: zone index passed to host matches zones array
   const seen: Array<{ idx: number; content: string; lang: string }> = [];
   const host: InjectionHostAdapter = {
     getRegisteredLanguages: () => Promise.resolve(new Set(['python'])),
-    getSemanticTokens: (zoneIndex, content, langId) => {
+    tokenNameToCategory: NAME_MAP,
+    getTokens: (zoneIndex, content, langId) => {
       seen.push({ idx: zoneIndex, content, lang: langId });
-      return Promise.resolve(tokensPayload(new Uint32Array([])));
+      return Promise.resolve([]);
     },
   };
 

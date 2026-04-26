@@ -42,12 +42,13 @@ test('resolveLanguageId: empty string returns null', () => {
   assert.equal(resolveLanguageId('   ', registered), null);
 });
 
-test('resolveLanguageId: bash/zsh/sh all alias to shellscript', () => {
-  const registered = new Set(['shellscript']);
-  assert.equal(resolveLanguageId('bash', registered), 'shellscript');
-  assert.equal(resolveLanguageId('zsh', registered), 'shellscript');
-  assert.equal(resolveLanguageId('sh', registered), 'shellscript');
-  assert.equal(resolveLanguageId('shell', registered), 'shellscript');
+test('resolveLanguageId: zsh/sh/shell/shellscript all alias to bash (tree-sitter parser name)', () => {
+  const registered = new Set(['bash']);
+  assert.equal(resolveLanguageId('bash', registered), 'bash');
+  assert.equal(resolveLanguageId('zsh', registered), 'bash');
+  assert.equal(resolveLanguageId('sh', registered), 'bash');
+  assert.equal(resolveLanguageId('shell', registered), 'bash');
+  assert.equal(resolveLanguageId('shellscript', registered), 'bash');
 });
 
 test('resolveLanguageId: c++ aliases to cpp (special char handling)', () => {
@@ -55,12 +56,6 @@ test('resolveLanguageId: c++ aliases to cpp (special char handling)', () => {
   assert.equal(resolveLanguageId('c++', registered), 'cpp');
   assert.equal(resolveLanguageId('cxx', registered), 'cpp');
   assert.equal(resolveLanguageId('cc', registered), 'cpp');
-});
-
-test('resolveLanguageId: jsx/tsx aliases', () => {
-  const registered = new Set(['javascriptreact', 'typescriptreact']);
-  assert.equal(resolveLanguageId('jsx', registered), 'javascriptreact');
-  assert.equal(resolveLanguageId('tsx', registered), 'typescriptreact');
 });
 
 test('resolveLanguageId: alias does not leak when target is not registered', () => {

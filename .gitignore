@@ -12,6 +12,7 @@ node_modules
 /resources/tree-sitter.wasm
 /resources/queries/
 /resources/.tree-sitter-version
+/resources/embedded-grammars/
 
 # Logs
 logs

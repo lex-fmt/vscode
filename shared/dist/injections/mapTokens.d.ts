@@ -1,19 +1,24 @@
-import type { DecorationCategory, InjectionRange, InjectionZone, SemanticTokens } from './types.js';
+import type { DecorationCategory, EmbeddedToken, InjectionRange, InjectionZone } from './types.js';
 /**
- * Walks a semantic-tokens payload produced against a zone's virtual
- * document and appends the host-neutral `InjectionRange`s per category into
- * `rangesByCategory`.
+ * Map a tokenizer capture name onto a `DecorationCategory` via prefix
+ * matching: `function.method` falls back to `function` if the more
+ * specific name isn't in the map. Returns `null` if no prefix matches —
+ * the caller skips that token.
  *
- * The LSP semantic-tokens wire format encodes each token as five u32 deltas:
- *   [deltaLine, deltaStart, length, typeIndex, modifierBitset]
- *
- * We decode the running (line, startChar) position and translate it from the
- * virtual document (which contains only the zone text) back into coordinates
- * of the real document. The first line of the zone is offset by
- * `zone.startCol`; subsequent lines use raw `startChar`.
- *
- * Tokens whose type is unknown (`legend.tokenTypes[typeIndex]` missing) or
- * not in `SEMANTIC_TOKEN_MAP` are silently skipped, matching the original
- * vscode implementation.
+ * Tree-sitter highlight names are conventionally hierarchical
+ * (`variable.parameter`, `keyword.function`), and host maps usually only
+ * spell out the broad categories. Walking the prefix tree lets a host
+ * supply `{ keyword: 'keyword', function: 'function', ... }` and have it
+ * cover every `keyword.X` / `function.Y` variant.
  */
-export declare function mapTokensToDecorations(tokens: SemanticTokens, zone: InjectionZone, rangesByCategory: Map<DecorationCategory, InjectionRange[]>): void;
+export declare function resolveCategory(name: string, map: Readonly<Record<string, DecorationCategory>>): DecorationCategory | null;
+/**
+ * Translate per-zone tokenizer output into real-document
+ * `InjectionRange`s, appending into `rangesByCategory`. Token coordinates
+ * are zone-relative (the tokenizer parsed `zone.text`); on virtual line 0
+ * we shift columns by `zone.startCol`, on later lines we use the raw
+ * column. Endpoints land on the same row as the start because every
+ * token type in our map is a single-line construct (keyword, string,
+ * comment, etc.).
+ */
+export declare function mapTokensToDecorations(tokens: readonly EmbeddedToken[], zone: InjectionZone, map: Readonly<Record<string, DecorationCategory>>, rangesByCategory: Map<DecorationCategory, InjectionRange[]>): void;

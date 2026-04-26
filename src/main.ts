@@ -21,6 +21,7 @@ import {
 } from './pathCompletion.js';
 import { initTreeSitter, type LexTreeSitter } from './treesitter.js';
 import { createInjectionHighlighter, type InjectionHighlighterApi } from './injections.js';
+import { createEmbeddedTokenizer, type EmbeddedTokenizer } from './embedded.js';
 import { injections } from '@lex/shared';
 
 export interface TreeSitterInitFailure {
@@ -42,6 +43,7 @@ export interface LexExtensionApi {
 let client: LanguageClient | undefined;
 let treeSitter: LexTreeSitter | null = null;
 let treeSitterInitFailure: TreeSitterInitFailure | null = null;
+let embeddedTokenizer: EmbeddedTokenizer | null = null;
 let injectionHl: InjectionHighlighterApi | null = null;
 let resolveClientReady: (() => void) | undefined;
 const clientReadyPromise = new Promise<void>((resolve) => {
@@ -131,8 +133,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
     treeSitter = tsResult.ts;
     context.subscriptions.push({ dispose: () => treeSitter?.dispose() });
 
-    // Initialize injection highlighting (tree-sitter powered)
-    injectionHl = createInjectionHighlighter(treeSitter);
+    // Embedded-language tokenizer for verbatim-block highlighting.
+    // Reuses the runtime that initTreeSitter loaded; lazy-loads each
+    // language grammar on first use.
+    embeddedTokenizer = createEmbeddedTokenizer(context.extensionUri.fsPath, (msg) =>
+      log.appendLine(msg)
+    );
+    context.subscriptions.push({ dispose: () => embeddedTokenizer?.dispose() });
+
+    injectionHl = createInjectionHighlighter(treeSitter, embeddedTokenizer);
     context.subscriptions.push({ dispose: () => injectionHl?.dispose() });
   } else {
     treeSitterInitFailure = {

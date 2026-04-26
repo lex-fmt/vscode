@@ -119,23 +119,14 @@ integrationTest('injection highlighter applies decorations', async () => {
 
 // ─── End-to-end pipeline tests ───────────────────────────────────────────
 //
-// These pin down the three stages where the injection pipeline can fail
-// silently. Each one inspects a deeper layer than the last:
-//
-//   1. resolves python language        → annotation language → registered ID
-//   2. receives semantic tokens         → executeCommand call returns tokens
-//   3. produces keyword decorations     → tokens map to InjectionRange[]
-//
-// They are `.skip` because verbatim-block injection is currently broken in
-// vscode (no Python keywords are highlighted in :: python :: blocks even
-// when the Python extension is installed). They run on demand once the
-// underlying bug is fixed.
-//
-// Prerequisite for unskipping: a Python language extension (e.g. the
-// Microsoft Python extension) must be installed in the test VSCode profile,
-// otherwise `resolvedLanguageId` will be null even after a fix.
+// Each test pins down a deeper layer of the pipeline: language
+// resolution → tokenization → decoration mapping. With tree-sitter
+// embedded grammars bundled in the extension, these run without
+// requiring any external language extension (Pylance/Microsoft Python)
+// — the integration test profile launches with `--disable-extensions`
+// and these still produce real keyword/string/comment decorations.
 
-integrationTest.skip(
+integrationTest(
   'injection highlighter resolves python annotation to a registered language',
   async () => {
     const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
@@ -156,15 +147,15 @@ integrationTest.skip(
     assert.equal(
       py.resolvedLanguageId,
       'python',
-      `python annotation should resolve to host language id "python".\n${injections.formatInjectionStatus(status)}`
+      `python annotation should resolve to tokenizer language id "python".\n${injections.formatInjectionStatus(status)}`
     );
 
     await closeAllEditors();
   }
 );
 
-integrationTest.skip(
-  'injection highlighter receives semantic tokens for python verbatim block',
+integrationTest(
+  'injection highlighter receives tree-sitter tokens for python verbatim block',
   async () => {
     const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
     assert.ok(extension);
@@ -174,6 +165,11 @@ integrationTest.skip(
 
     await openWorkspaceDocument(INJECTION_DOCUMENT_PATH);
     await delay(300);
+    // The embedded grammar loads asynchronously the first time we hit
+    // a python zone; the first refresh triggers that load, the second
+    // sees the cached parser. Without the second refresh we'd race the
+    // load.
+    await hl.refresh();
     await hl.refresh();
 
     const status = hl.getStatus();
@@ -183,23 +179,23 @@ integrationTest.skip(
 
     assert.ok(
       py.requestedTokens,
-      'getSemanticTokens should be called for the python zone (resolution succeeded)'
+      'getTokens should be called for the python zone (resolution succeeded)'
     );
     assert.ok(
       py.receivedTokens,
-      `vscode.provideDocumentSemanticTokens should return a payload for python.\n${injections.formatInjectionStatus(status)}`
+      `embedded tokenizer should return tokens for python.\n${injections.formatInjectionStatus(status)}`
     );
     assert.ok(
       py.tokenCount > 0,
-      `python payload should contain at least one token.\n${injections.formatInjectionStatus(status)}`
+      `python tokenization should contain at least one token.\n${injections.formatInjectionStatus(status)}`
     );
 
     await closeAllEditors();
   }
 );
 
-integrationTest.skip(
-  'injection highlighter produces keyword decorations for python verbatim block',
+integrationTest(
+  'injection highlighter produces keyword/string/comment decorations for python verbatim block',
   async () => {
     const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
     assert.ok(extension);
@@ -210,15 +206,25 @@ integrationTest.skip(
     await openWorkspaceDocument(INJECTION_DOCUMENT_PATH);
     await delay(300);
     await hl.refresh();
+    await hl.refresh();
 
     const status = hl.getStatus();
     assert.ok(status);
 
+    // The injection-test fixture's python block has `def`, `return`,
+    // `class`, `async`, `await` keywords, an f-string and a docstring,
+    // a `# A simple greeting function` comment line, and named
+    // function calls — so all four categories should be non-empty.
+    const dump = injections.formatInjectionStatus(status);
     const keywords = status.rangesByCategory.get('keyword') ?? [];
-    assert.ok(
-      keywords.length > 0,
-      `expected at least one 'keyword' decoration after refresh, got 0.\n${injections.formatInjectionStatus(status)}`
-    );
+    const strings = status.rangesByCategory.get('string') ?? [];
+    const comments = status.rangesByCategory.get('comment') ?? [];
+    const functions = status.rangesByCategory.get('function') ?? [];
+
+    assert.ok(keywords.length > 0, `expected keyword decorations, got 0.\n${dump}`);
+    assert.ok(strings.length > 0, `expected string decorations, got 0.\n${dump}`);
+    assert.ok(comments.length > 0, `expected comment decorations, got 0.\n${dump}`);
+    assert.ok(functions.length > 0, `expected function decorations, got 0.\n${dump}`);
 
     await closeAllEditors();
   }

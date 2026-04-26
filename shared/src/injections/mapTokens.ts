@@ -1,70 +1,78 @@
-import { SEMANTIC_TOKEN_MAP } from './constants.js';
 import type {
   DecorationCategory,
+  EmbeddedToken,
   InjectionRange,
   InjectionZone,
-  SemanticTokens,
 } from './types.js';
 
 /**
- * Walks a semantic-tokens payload produced against a zone's virtual
- * document and appends the host-neutral `InjectionRange`s per category into
- * `rangesByCategory`.
+ * Map a tokenizer capture name onto a `DecorationCategory` via prefix
+ * matching: `function.method` falls back to `function` if the more
+ * specific name isn't in the map. Returns `null` if no prefix matches —
+ * the caller skips that token.
  *
- * The LSP semantic-tokens wire format encodes each token as five u32 deltas:
- *   [deltaLine, deltaStart, length, typeIndex, modifierBitset]
- *
- * We decode the running (line, startChar) position and translate it from the
- * virtual document (which contains only the zone text) back into coordinates
- * of the real document. The first line of the zone is offset by
- * `zone.startCol`; subsequent lines use raw `startChar`.
- *
- * Tokens whose type is unknown (`legend.tokenTypes[typeIndex]` missing) or
- * not in `SEMANTIC_TOKEN_MAP` are silently skipped, matching the original
- * vscode implementation.
+ * Tree-sitter highlight names are conventionally hierarchical
+ * (`variable.parameter`, `keyword.function`), and host maps usually only
+ * spell out the broad categories. Walking the prefix tree lets a host
+ * supply `{ keyword: 'keyword', function: 'function', ... }` and have it
+ * cover every `keyword.X` / `function.Y` variant.
+ */
+export function resolveCategory(
+  name: string,
+  map: Readonly<Record<string, DecorationCategory>>,
+): DecorationCategory | null {
+  let cursor = name;
+  while (cursor.length > 0) {
+    const cat = map[cursor];
+    if (cat) return cat;
+    const dot = cursor.lastIndexOf('.');
+    if (dot < 0) return null;
+    cursor = cursor.slice(0, dot);
+  }
+  return null;
+}
+
+/**
+ * Translate per-zone tokenizer output into real-document
+ * `InjectionRange`s, appending into `rangesByCategory`. Token coordinates
+ * are zone-relative (the tokenizer parsed `zone.text`); on virtual line 0
+ * we shift columns by `zone.startCol`, on later lines we use the raw
+ * column. Endpoints land on the same row as the start because every
+ * token type in our map is a single-line construct (keyword, string,
+ * comment, etc.).
  */
 export function mapTokensToDecorations(
-  tokens: SemanticTokens,
+  tokens: readonly EmbeddedToken[],
   zone: InjectionZone,
+  map: Readonly<Record<string, DecorationCategory>>,
   rangesByCategory: Map<DecorationCategory, InjectionRange[]>,
 ): void {
-  const { legend, data } = tokens;
-  let line = 0;
-  let startChar = 0;
-
-  for (let i = 0; i < data.length; i += 5) {
-    const deltaLine = data[i];
-    const deltaStart = data[i + 1];
-    const length = data[i + 2];
-    const typeIndex = data[i + 3];
-
-    if (deltaLine > 0) {
-      line += deltaLine;
-      startChar = deltaStart;
-    } else {
-      startChar += deltaStart;
-    }
-
-    const tokenTypeName = legend.tokenTypes[typeIndex];
-    if (!tokenTypeName) continue;
-
-    const category = SEMANTIC_TOKEN_MAP[tokenTypeName];
+  for (const tok of tokens) {
+    const category = resolveCategory(tok.name, map);
     if (!category) continue;
 
     const ranges = rangesByCategory.get(category);
     if (!ranges) continue;
 
-    // Virtual-doc position → real-doc position.
-    // Line 0 of the virtual doc starts at column `zone.startCol` in the
-    // real doc; subsequent lines start at column 0.
-    const realLine = zone.startRow + line;
-    const realStartChar = line === 0 ? zone.startCol + startChar : startChar;
+    const startReal = toRealPosition(tok.startLine, tok.startCol, zone);
+    const endReal = toRealPosition(tok.endLine, tok.endCol, zone);
 
     ranges.push({
-      startLine: realLine,
-      startCol: realStartChar,
-      endLine: realLine,
-      endCol: realStartChar + length,
+      startLine: startReal.line,
+      startCol: startReal.col,
+      endLine: endReal.line,
+      endCol: endReal.col,
     });
   }
+}
+
+function toRealPosition(
+  line: number,
+  col: number,
+  zone: InjectionZone,
+): { line: number; col: number } {
+  return {
+    line: zone.startRow + line,
+    col: line === 0 ? zone.startCol + col : col,
+  };
 }

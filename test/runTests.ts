@@ -16,6 +16,7 @@ async function main() {
   );
   await ensureLexBinary(extensionDevelopmentPath);
   ensureTreeSitter(extensionDevelopmentPath);
+  ensureEmbeddedGrammars(extensionDevelopmentPath);
 
   try {
     await runTests({
@@ -85,6 +86,25 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
   }
 
   console.warn(`tree-sitter WASM not found at ${wasmPath} — tree-sitter tests will be skipped.`);
+}
+
+function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
+  const downloadScript = path.resolve(
+    extensionDevelopmentPath,
+    'scripts/download-embedded-grammars.sh'
+  );
+  if (!existsSync(downloadScript)) {
+    return;
+  }
+  // The script is idempotent — it stamps each language's version and
+  // skips downloads when the stamp matches the pinned version, so we
+  // call it unconditionally rather than guessing which grammars are
+  // present.
+  try {
+    execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
+  } catch {
+    console.error('Failed to download embedded-language tree-sitter grammars');
+  }
 }
 
 main();
