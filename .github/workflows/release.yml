@@ -123,13 +123,13 @@ jobs:
           npx @vscode/vsce package --target ${{ matrix.target }} -o lex-openvsx-${{ matrix.target }}.vsix
 
       - name: Upload VS Code artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vscode-${{ matrix.target }}
           path: lex-vscode-${{ matrix.target }}.vsix
 
       - name: Upload Open VSX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: openvsx-${{ matrix.target }}
           path: lex-openvsx-${{ matrix.target }}.vsix
