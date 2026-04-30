@@ -779,7 +779,7 @@
     "web-tree-sitter": "^0.25.10"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.19.25",
     "@types/vscode": "^1.106.1",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
