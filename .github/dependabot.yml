@@ -4,9 +4,28 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
+    groups:
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "eslint-plugin-*"
+      types:
+        patterns: ["@types/*"]
+    ignore:
+      # peer-dep: @typescript-eslint/* doesn't support eslint 10 yet (see #33).
+      - dependency-name: eslint
+        versions: [">= 10"]
+      - dependency-name: "@eslint/js"
+        versions: [">= 10"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      gh-actions:
+        patterns: ["*"]
