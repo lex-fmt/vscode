@@ -120,7 +120,7 @@ integrationTest('tree-sitter parses without ERROR nodes', async () => {
       walkForErrors(child);
     }
   }
-  walkForErrors(tree.rootNode as unknown as Parameters<typeof walkForErrors>[0]);
+  walkForErrors(tree.rootNode);
 
   assert.equal(errors.length, 0, `Tree-sitter produced ERROR nodes:\n  ${errors.join('\n  ')}`);
 
