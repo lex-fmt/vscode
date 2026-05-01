@@ -645,15 +645,32 @@
       },
       "editor.semanticTokenColorCustomizations": {
         "rules": {
+          "DocumentTitle:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "bold underline"
+          },
+          "DocumentSubtitle:lex": {
+            "foreground": "#e0e0e0",
+            "fontStyle": "italic"
+          },
           "SessionTitleText:lex": {
             "foreground": "#e0e0e0",
             "fontStyle": "bold"
+          },
+          "SessionMarker:lex": {
+            "foreground": "#888888",
+            "fontStyle": "italic"
           },
           "DefinitionSubject:lex": {
             "foreground": "#e0e0e0",
             "fontStyle": "italic"
           },
           "DefinitionContent:lex": "#e0e0e0",
+          "ListMarker:lex": {
+            "foreground": "#888888",
+            "fontStyle": "italic"
+          },
+          "ListItemText:lex": "#e0e0e0",
           "InlineStrong:lex": {
             "foreground": "#e0e0e0",
             "fontStyle": "bold"
@@ -665,24 +682,6 @@
           "InlineCode:lex": "#e0e0e0",
           "InlineMath:lex": {
             "foreground": "#e0e0e0",
-            "fontStyle": "italic"
-          },
-          "VerbatimContent:lex": "#e0e0e0",
-          "ListItemText:lex": "#e0e0e0",
-          "DocumentTitle:lex": {
-            "foreground": "#e0e0e0",
-            "fontStyle": "bold underline"
-          },
-          "DocumentSubtitle:lex": {
-            "foreground": "#e0e0e0",
-            "fontStyle": "italic"
-          },
-          "SessionMarker:lex": {
-            "foreground": "#888888",
-            "fontStyle": "italic"
-          },
-          "ListMarker:lex": {
-            "foreground": "#888888",
             "fontStyle": "italic"
           },
           "Reference:lex": {
@@ -707,6 +706,7 @@
           "VerbatimSubject:lex": "#666666",
           "VerbatimLanguage:lex": "#666666",
           "VerbatimAttribute:lex": "#666666",
+          "VerbatimContent:lex": "#e0e0e0",
           "InlineMarker_strong_start:lex": {
             "foreground": "#555555",
             "fontStyle": "italic"
@@ -753,6 +753,9 @@
   },
   "scripts": {
     "build": "tsc -p .",
+    "prebuild": "python scripts/gen-theme.py --check",
+    "theme:gen": "python scripts/gen-theme.py",
+    "theme:check": "python scripts/gen-theme.py --check",
     "watch": "tsc -watch -p .",
     "copy-wasm": "cp node_modules/web-tree-sitter/web-tree-sitter.wasm resources/tree-sitter.wasm",
     "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --external:web-tree-sitter --format=cjs --platform=node --target=node20",
