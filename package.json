@@ -754,7 +754,7 @@
   "scripts": {
     "build": "tsc -p .",
     "watch": "tsc -watch -p .",
-    "copy-wasm": "cp node_modules/web-tree-sitter/tree-sitter.wasm resources/tree-sitter.wasm",
+    "copy-wasm": "cp node_modules/web-tree-sitter/web-tree-sitter.wasm resources/tree-sitter.wasm",
     "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --external:web-tree-sitter --format=cjs --platform=node --target=node20",
     "vscode:prepublish": "npm run bundle -- --minify",
     "pretest": "npm run build && npm run bundle",
@@ -788,7 +788,7 @@
     "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
-    "globals": "^15.15.0",
+    "globals": "^17.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.3",
