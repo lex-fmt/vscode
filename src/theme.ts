@@ -11,111 +11,14 @@
  * over the defaults). When switching back to dark, it removes those overrides
  * so the package.json defaults kick in again.
  *
- * Intensity Levels
- * ----------------
- *   - normal:   Full contrast for primary content
- *   - muted:    Medium gray for structural elements
- *   - faint:    Light gray for meta-information
- *   - faintest: Barely visible for syntax markers
- *
- *   Light mode: normal=#000000, muted=#808080, faint=#b3b3b3, faintest=#cacaca
- *   Dark mode:  normal=#e0e0e0, muted=#888888, faint=#666666, faintest=#555555
- *
- * @see editors/nvim/lua/lex/theme.lua - Neovim implementation with same colors
+ * The light-mode rules and key list are generated from
+ * `comms/shared/theming/lex-theme.json` by `scripts/gen-theme.py`.
+ * See `src/theme-data.ts` (do not hand-edit).
  */
 
 import * as vscode from 'vscode';
 
-const LIGHT_COLORS = {
-  normal: '#000000',
-  muted: '#808080',
-  faint: '#b3b3b3',
-  faintest: '#cacaca',
-};
-
-// All lex-scoped rule keys managed by this extension
-const LEX_RULE_KEYS = [
-  'SessionTitleText:lex',
-  'DefinitionSubject:lex',
-  'DefinitionContent:lex',
-  'InlineStrong:lex',
-  'InlineEmphasis:lex',
-  'InlineCode:lex',
-  'InlineMath:lex',
-  'VerbatimContent:lex',
-  'ListItemText:lex',
-  'DocumentTitle:lex',
-  'DocumentSubtitle:lex',
-  'SessionMarker:lex',
-  'ListMarker:lex',
-  'Reference:lex',
-  'ReferenceCitation:lex',
-  'ReferenceFootnote:lex',
-  'ReferenceAnnotation:lex',
-  'AnnotationLabel:lex',
-  'AnnotationParameter:lex',
-  'AnnotationContent:lex',
-  'VerbatimSubject:lex',
-  'VerbatimLanguage:lex',
-  'VerbatimAttribute:lex',
-  'InlineMarker_strong_start:lex',
-  'InlineMarker_strong_end:lex',
-  'InlineMarker_emphasis_start:lex',
-  'InlineMarker_emphasis_end:lex',
-  'InlineMarker_code_start:lex',
-  'InlineMarker_code_end:lex',
-  'InlineMarker_math_start:lex',
-  'InlineMarker_math_end:lex',
-  'InlineMarker_ref_start:lex',
-  'InlineMarker_ref_end:lex',
-];
-
-interface SemanticTokenRule {
-  foreground?: string;
-  fontStyle?: string;
-}
-
-function buildLightRules(): Record<string, string | SemanticTokenRule> {
-  const c = LIGHT_COLORS;
-  return {
-    'SessionTitleText:lex': { foreground: c.normal, fontStyle: 'bold' },
-    'DefinitionSubject:lex': { foreground: c.normal, fontStyle: 'italic' },
-    'DefinitionContent:lex': c.normal,
-    'InlineStrong:lex': { foreground: c.normal, fontStyle: 'bold' },
-    'InlineEmphasis:lex': { foreground: c.normal, fontStyle: 'italic' },
-    'InlineCode:lex': c.normal,
-    'InlineMath:lex': { foreground: c.normal, fontStyle: 'italic' },
-    'VerbatimContent:lex': c.normal,
-    'ListItemText:lex': c.normal,
-
-    'DocumentTitle:lex': { foreground: c.normal, fontStyle: 'bold underline' },
-    'DocumentSubtitle:lex': { foreground: c.normal, fontStyle: 'italic' },
-    'SessionMarker:lex': { foreground: c.muted, fontStyle: 'italic' },
-    'ListMarker:lex': { foreground: c.muted, fontStyle: 'italic' },
-    'Reference:lex': { foreground: c.muted, fontStyle: 'underline' },
-    'ReferenceCitation:lex': { foreground: c.muted, fontStyle: 'underline' },
-    'ReferenceFootnote:lex': { foreground: c.muted, fontStyle: 'underline' },
-    'ReferenceAnnotation:lex': { foreground: c.muted, fontStyle: 'underline' },
-
-    'AnnotationLabel:lex': c.faint,
-    'AnnotationParameter:lex': c.faint,
-    'AnnotationContent:lex': c.faint,
-    'VerbatimSubject:lex': c.faint,
-    'VerbatimLanguage:lex': c.faint,
-    'VerbatimAttribute:lex': c.faint,
-
-    'InlineMarker_strong_start:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_strong_end:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_emphasis_start:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_emphasis_end:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_code_start:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_code_end:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_math_start:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_math_end:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_ref_start:lex': { foreground: c.faintest, fontStyle: 'italic' },
-    'InlineMarker_ref_end:lex': { foreground: c.faintest, fontStyle: 'italic' },
-  };
-}
+import { LEX_RULE_KEYS, LIGHT_RULES } from './theme-data.js';
 
 function isDarkTheme(): boolean {
   return (
@@ -151,12 +54,11 @@ export async function applyLexTheme(): Promise<void> {
     }
   } else {
     // Light mode: write light-mode overrides (take precedence over defaults)
-    const lightRules = buildLightRules();
     const updated = {
       ...existing,
       rules: {
         ...existingRules,
-        ...lightRules,
+        ...LIGHT_RULES,
       },
     };
     await config.update(SEMANTIC_TOKEN_CONFIG_KEY, updated, vscode.ConfigurationTarget.Global);
