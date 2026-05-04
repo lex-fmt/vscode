@@ -19,9 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: darwin-x64
-            os: macos-latest
-            lex_lsp_target: x86_64-apple-darwin
           - target: darwin-arm64
             os: macos-latest
             lex_lsp_target: aarch64-apple-darwin
@@ -182,7 +179,6 @@ jobs:
             ### VS Code Marketplace
             Download the `lex-vscode-<platform>.vsix` file for your platform:
             - `lex-vscode-darwin-arm64.vsix` - macOS Apple Silicon
-            - `lex-vscode-darwin-x64.vsix` - macOS Intel
             - `lex-vscode-linux-x64.vsix` - Linux x64
             - `lex-vscode-linux-arm64.vsix` - Linux ARM64
             - `lex-vscode-win32-x64.vsix` - Windows x64
@@ -190,7 +186,6 @@ jobs:
             ### Open VSX / VSCodium
             Download the `lex-openvsx-<platform>.vsix` file for your platform:
             - `lex-openvsx-darwin-arm64.vsix` - macOS Apple Silicon
-            - `lex-openvsx-darwin-x64.vsix` - macOS Intel
             - `lex-openvsx-linux-x64.vsix` - Linux x64
             - `lex-openvsx-linux-arm64.vsix` - Linux ARM64
             - `lex-openvsx-win32-x64.vsix` - Windows x64
