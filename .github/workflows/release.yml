@@ -78,13 +78,21 @@ jobs:
 
           curl -fsSL -o "/tmp/${ARCHIVE_NAME}" "$DOWNLOAD_URL"
 
+          mkdir -p /tmp/lexd-lsp-extract
           if [[ "${{ matrix.target }}" == win32-* ]]; then
-            cd /tmp && unzip -q "${ARCHIVE_NAME}" && cd -
+            cd /tmp/lexd-lsp-extract && unzip -q "/tmp/${ARCHIVE_NAME}" && cd -
           else
-            tar -xzf "/tmp/${ARCHIVE_NAME}" -C /tmp
+            tar -xzf "/tmp/${ARCHIVE_NAME}" -C /tmp/lexd-lsp-extract
           fi
 
-          cp "/tmp/${BINARY_NAME}" "resources/${BINARY_NAME}"
+          # arthur-debert/release@v1 (lex v0.10.0+) nests under <name>-<target>/;
+          # earlier releases had the binary at the top. Find by name.
+          BINARY_SRC=$(find /tmp/lexd-lsp-extract -name "${BINARY_NAME}" -type f | head -1)
+          if [[ -z "$BINARY_SRC" ]]; then
+            echo "Binary ${BINARY_NAME} not found in archive" >&2
+            exit 1
+          fi
+          cp "$BINARY_SRC" "resources/${BINARY_NAME}"
           chmod +x "resources/${BINARY_NAME}" || true
 
       - name: Download tree-sitter artifact
