@@ -98,9 +98,13 @@ download_lexd_lsp() {
   fi
   popd >/dev/null
 
-  local binary_src="$tmp_dir/$binary_name"
-  if [[ ! -f "$binary_src" ]]; then
-    echo "Binary not found in archive" >&2
+  # arthur-debert/release@v1 (lex v0.10.0+) nests the binary under
+  # <name>-<target>/; earlier releases had it at the top level. Locate
+  # by name to handle both layouts.
+  local binary_src
+  binary_src="$(find "$tmp_dir" -name "$binary_name" -type f | head -1)"
+  if [[ -z "$binary_src" ]]; then
+    echo "Binary $binary_name not found in archive" >&2
     rm -rf "$tmp_dir"
     exit 1
   fi
