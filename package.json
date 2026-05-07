@@ -686,19 +686,19 @@
           },
           "Reference:lex": {
             "foreground": "#888888",
-            "fontStyle": "underline"
+            "fontStyle": "bold"
           },
           "ReferenceCitation:lex": {
             "foreground": "#888888",
-            "fontStyle": "underline"
+            "fontStyle": "bold"
           },
           "ReferenceFootnote:lex": {
             "foreground": "#888888",
-            "fontStyle": "underline"
+            "fontStyle": "bold"
           },
           "ReferenceAnnotation:lex": {
             "foreground": "#888888",
-            "fontStyle": "underline"
+            "fontStyle": "bold"
           },
           "AnnotationLabel:lex": "#666666",
           "AnnotationParameter:lex": "#666666",
