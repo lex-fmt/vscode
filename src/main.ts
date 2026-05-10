@@ -8,6 +8,7 @@ import {
   LSP_BINARY_SETTING,
 } from './config.js';
 import { createLexClient } from './client.js';
+import { registerTrustPrompt } from './trustPrompt.js';
 import { applyLexTheme, setupThemeListeners } from './theme.js';
 // Import/export commands - see README.lex "Import & Export Commands" for docs
 import { registerCommands } from './commands.js';
@@ -207,6 +208,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
   try {
     await client.start();
     log.appendLine('[lex] LSP client started successfully');
+    // Register `lex/trustRequest` handler now that the client is
+    // running. The LSP fires this during extension boot when a
+    // subprocess handler hasn't been pinned in the workspace trust
+    // store; without a handler, the request would error out and the
+    // namespace would register schema-only with a "request failed"
+    // diagnostic.
+    context.subscriptions.push(registerTrustPrompt(client));
   } catch (err) {
     log.appendLine(`[lex] LSP client failed to start: ${String(err)}`);
   }
