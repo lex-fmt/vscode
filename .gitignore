@@ -38,6 +38,11 @@ lerna-debug.log*
 .vscode-test-user-data/
 .padz/
 
+# Test-fixture state written by lexd-lsp during integration runs.
+# `<workspace>/.lex/trust.json` is the trust gate's pin file; the
+# trust-prompt e2e test wipes and recreates it on each run.
+test/fixtures/sample-workspace/.lex/
+
 # VSIX packages
 *.vsix
 .DS_Store

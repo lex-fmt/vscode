@@ -1,0 +1,14 @@
+# Test fixture for the `lex/trustRequest` LSP custom request.
+#
+# `acme = "path:acme-schemas"` declares a third-party namespace whose
+# schemas live in `./acme-schemas/`. The schema there declares a
+# `transport: subprocess` handler pointing at a non-existent binary —
+# the lex-lsp boot tries to spawn it, the trust gate detects it
+# hasn't been pinned, and fires `lex/trustRequest` to this client.
+#
+# The integration test in
+# test/integration/aa_lsp_trust_prompt.test.ts monkey-patches
+# `vscode.window.showWarningMessage` to record the prompt invocation
+# and reply "Deny", verifying the request shape arrives intact.
+[labels]
+acme = "path:acme-schemas"

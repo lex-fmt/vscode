@@ -14,7 +14,15 @@ export async function run(): Promise<void> {
 
   const currentDir = fileURLToPath(new URL('.', import.meta.url));
   const entries = await readdir(currentDir);
-  const testFiles = entries.filter((entry) => entry.endsWith('.test.js'));
+  // Sort so test order is deterministic across platforms.
+  // `aa_lsp_trust_prompt.test.ts` relies on running before any
+  // other integration test that triggers lexd-lsp's lazy
+  // extension-state boot — without a sort, fs.readdir's order
+  // is platform-dependent (typically alphabetical on most
+  // filesystems but not guaranteed).
+  const testFiles = entries
+    .filter((entry) => entry.endsWith('.test.js'))
+    .sort((a, b) => a.localeCompare(b));
 
   if (testFiles.length === 0) {
     console.warn('No VS Code integration tests were discovered.');

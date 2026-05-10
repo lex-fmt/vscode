@@ -1,0 +1,15 @@
+schema_version: 1
+label: acme.task
+description: Test fixture — declares a subprocess handler at a non-existent binary so lexd-lsp's trust gate fires lex/trustRequest on every fresh workspace boot. Used by test/integration/aa_lsp_trust_prompt.test.ts.
+attaches_to:
+  - paragraph
+  - session
+hooks:
+  validate: true
+handler:
+  transport: subprocess
+  command:
+    - /tmp/lex-test-trust-prompt-acme-handler-does-not-exist
+capabilities:
+  fs: false
+  net: false
