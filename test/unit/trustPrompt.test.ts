@@ -55,10 +55,33 @@ test('formatPromptDetail handles unknown source kind gracefully', () => {
   // Forward-compat: editor must render unknown source kinds without
   // crashing. The wire spec says new source variants are non-breaking.
   const params = lexTomlParams();
-
   params.source = { kind: 'future_kind' };
   const detail = formatPromptDetail(params);
   assert.match(detail, /future_kind/);
+});
+
+test('formatPromptDetail handles a source with right kind but missing field', () => {
+  // Defensive: if the wire payload has `kind: "lex_toml"` but no
+  // `name` field (handler bug), we should render the kind label
+  // rather than "undefined" or crash.
+  const params = lexTomlParams();
+  params.source = { kind: 'lex_toml' };
+  const detail = formatPromptDetail(params);
+  assert.match(detail, /lex_toml/);
+  assert.doesNotMatch(detail, /undefined/);
+});
+
+test('formatPromptMessage names the transport', () => {
+  // `transport` is currently always "subprocess" but the field is
+  // string-shaped on the wire — rendering whatever the server sent
+  // keeps the prompt accurate when WASM (or future) transports ship.
+  const subprocessMsg = formatPromptMessage(lexTomlParams());
+  assert.match(subprocessMsg, /subprocess handler/);
+
+  const wasmParams = lexTomlParams();
+  wasmParams.transport = 'wasm';
+  const wasmMsg = formatPromptMessage(wasmParams);
+  assert.match(wasmMsg, /WASM handler/);
 });
 
 test('formatPromptDetail handles unknown capability gracefully', () => {

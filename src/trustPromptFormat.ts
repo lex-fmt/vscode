@@ -6,14 +6,24 @@
  * lives in `./trustPrompt.ts`.
  */
 
+/**
+ * Schema source shape. Single object type with the `kind` discriminant
+ * plus optional fields per variant — TypeScript's discriminated-union
+ * narrowing breaks down with the open `kind: string` catch-all we'd
+ * otherwise need for forward-compat, so we model the variants as
+ * optional fields and use runtime presence checks in `describeSource`.
+ */
+export interface TrustRequestSource {
+  kind: string;
+  name?: string;
+  path?: string;
+  uri?: string;
+}
+
 export interface TrustRequestParams {
   namespace: string;
   command_string: string;
-  source:
-    | { kind: 'lex_toml'; name: string }
-    | { kind: 'local_file'; path: string }
-    | { kind: 'cache_only'; uri: string }
-    | { kind: string; [key: string]: unknown };
+  source: TrustRequestSource;
   capability: string;
   transport: string;
 }
@@ -29,7 +39,25 @@ export interface TrustResponse {
 }
 
 export function formatPromptMessage(params: TrustRequestParams): string {
-  return `Lex extension namespace "${params.namespace}" wants to run a subprocess handler.`;
+  // `transport` is currently always "subprocess" per the wire spec
+  // §γ but the field is string-shaped so future transports (WASM in
+  // PR 12+) won't be a breaking change. Render the actual value so
+  // the prompt stays accurate when the server sends something new.
+  const transportLabel = describeTransport(params.transport);
+  return `Lex extension namespace "${params.namespace}" wants to run a ${transportLabel} handler.`;
+}
+
+function describeTransport(transport: string): string {
+  switch (transport) {
+    case 'subprocess':
+      return 'subprocess';
+    case 'native':
+      return 'native (in-process)';
+    case 'wasm':
+      return 'WASM';
+    default:
+      return transport || 'unknown-transport';
+  }
 }
 
 export function formatPromptDetail(params: TrustRequestParams): string {
@@ -46,17 +74,21 @@ export function formatPromptDetail(params: TrustRequestParams): string {
   ].join('\n');
 }
 
-function describeSource(source: TrustRequestParams['source']): string {
-  switch (source.kind) {
-    case 'lex_toml':
-      return `lex.toml [labels] entry "${(source as { name: string }).name}"`;
-    case 'local_file':
-      return `local schema directory ${(source as { path: string }).path}`;
-    case 'cache_only':
-      return `cached fetch from ${(source as { uri: string }).uri}`;
-    default:
-      return source.kind || 'unknown source';
+function describeSource(source: TrustRequestSource): string {
+  // Runtime presence checks (instead of type assertions) so a source
+  // with the right `kind` but missing fields renders something useful
+  // instead of "undefined". Forward-compat: unknown kinds fall through
+  // to the raw kind string.
+  if (source.kind === 'lex_toml' && typeof source.name === 'string') {
+    return `lex.toml [labels] entry "${source.name}"`;
   }
+  if (source.kind === 'local_file' && typeof source.path === 'string') {
+    return `local schema directory ${source.path}`;
+  }
+  if (source.kind === 'cache_only' && typeof source.uri === 'string') {
+    return `cached fetch from ${source.uri}`;
+  }
+  return source.kind || 'unknown source';
 }
 
 function describeCapability(capability: string): string {
