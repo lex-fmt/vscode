@@ -6,9 +6,9 @@
 # the lex-lsp boot tries to spawn it, the trust gate detects it
 # hasn't been pinned, and fires `lex/trustRequest` to this client.
 #
-# The integration test in test/integration/lsp_trust_prompt.test.ts
-# monkey-patches `vscode.window.showWarningMessage` to record the
-# prompt invocation and reply "Deny", verifying the request shape
-# arrives intact.
+# The integration test in
+# test/integration/aa_lsp_trust_prompt.test.ts monkey-patches
+# `vscode.window.showWarningMessage` to record the prompt invocation
+# and reply "Deny", verifying the request shape arrives intact.
 [labels]
 acme = "path:acme-schemas"
