@@ -8,6 +8,7 @@ import {
   LSP_BINARY_SETTING,
 } from './config.js';
 import { createLexClient } from './client.js';
+import { installLogMirror } from './instrumentation.js';
 import { registerTrustPrompt } from './trustPrompt.js';
 import { applyLexTheme, setupThemeListeners } from './theme.js';
 // Import/export commands - see README.lex "Import & Export Commands" for docs
@@ -72,6 +73,11 @@ function createApi(): LexExtensionApi {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<LexExtensionApi> {
+  // Install the file+stderr mirror first so any subsequent log /
+  // notification call (including activation failures wrapped in
+  // try/catch) is captured. Gated on LEX_LOG_TO_STDERR=1.
+  installLogMirror();
+
   const log = vscode.window.createOutputChannel('Lex');
   context.subscriptions.push(log);
   log.appendLine(`[lex] Activating from: ${context.extensionUri.fsPath}`);
