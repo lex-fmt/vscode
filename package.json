@@ -97,6 +97,11 @@
         "command": "lex.injection.dumpStatus",
         "title": "Dump Injection Status",
         "category": "Lex"
+      },
+      {
+        "command": "lex.extractSelectionToInclude",
+        "title": "Extract Selection to Include File",
+        "category": "Lex"
       }
     ],
     "menus": {
@@ -136,6 +141,10 @@
         {
           "command": "lex.injection.dumpStatus",
           "when": "editorLangId == lex"
+        },
+        {
+          "command": "lex.extractSelectionToInclude",
+          "when": "editorLangId == lex && editorHasSelection"
         }
       ],
       "editor/context": [
@@ -202,6 +211,11 @@
         {
           "command": "lex.reorderFootnotes",
           "when": "editorLangId == lex",
+          "group": "1_modification"
+        },
+        {
+          "command": "lex.extractSelectionToInclude",
+          "when": "editorLangId == lex && editorHasSelection",
           "group": "1_modification"
         }
       ],

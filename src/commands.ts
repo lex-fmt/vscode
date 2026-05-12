@@ -4,8 +4,19 @@
  * See README.lex "Import & Export Commands" section for full documentation.
  */
 import * as vscode from 'vscode';
+import { appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ExecuteCommandRequest, LanguageClient } from 'vscode-languageclient/node.js';
+
+function debugLog(line: string): void {
+  if (process.env.LEX_LOG_TO_STDERR !== '1') return;
+  const file = process.env.LEX_LOG_FILE ?? '/tmp/lex-vscode-test.log';
+  try {
+    appendFileSync(file, `[lex/extract] ${line}\n`);
+  } catch {
+    // ignore
+  }
+}
 import type {
   Location as LspLocation,
   WorkspaceEdit as LspWorkspaceEdit,
@@ -305,6 +316,15 @@ export function registerCommands(
     ),
     vscode.commands.registerCommand('lex.table.previousCell', () =>
       navigateTableCell('previous', getClient, waitForClientReady)
+    ),
+    // Editor-facing UI command. Distinct from the LSP server's
+    // `lex.extractToInclude` workspace command: vscode-languageclient
+    // auto-registers a proxy `vscode.commands` entry for each
+    // server-advertised command, so reusing that name here would throw
+    // "command already exists" at activation and break server boot.
+    // Same naming convention as `lex.goToNextAnnotation` ↔ `lex.next_annotation`.
+    vscode.commands.registerCommand('lex.extractSelectionToInclude', () =>
+      extractToInclude(getClient, waitForClientReady)
     )
   );
 }
@@ -455,6 +475,110 @@ async function navigateAnnotation(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(`Failed to navigate annotations: ${message}`);
+  }
+}
+
+async function extractToInclude(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showErrorMessage('Open a Lex document before running this command.');
+    return;
+  }
+  if (editor.document.languageId !== 'lex') {
+    vscode.window.showErrorMessage('Extract-to-include is only available for .lex files.');
+    return;
+  }
+
+  const selection = editor.selection;
+  if (selection.isEmpty) {
+    vscode.window.showErrorMessage('Select some text to extract into a new include file.');
+    return;
+  }
+
+  const src = await vscode.window.showInputBox({
+    title: 'Extract selection to include',
+    prompt: 'Path for the new include file (relative to the includes root)',
+    placeHolder: 'e.g. chapters/intro.lex',
+    ignoreFocusOut: true,
+  });
+  if (!src) {
+    return; // user cancelled
+  }
+
+  try {
+    const client = await getReadyClient(getClient, waitForClientReady);
+    const protocolRange = client.code2ProtocolConverter.asRange(selection);
+    const response = (await client.sendRequest(ExecuteCommandRequest.type, {
+      command: 'lex.extractToInclude',
+      arguments: [editor.document.uri.toString(), protocolRange, src],
+    })) as unknown;
+
+    debugLog('LSP response: ' + JSON.stringify(response));
+
+    if (!response) {
+      vscode.window.showErrorMessage('Extract returned an empty response.');
+      return;
+    }
+
+    // vscode.workspace.applyEdit reports success on multi-op edits even
+    // when the TextDocumentEdit targeted at a freshly-created file
+    // silently no-ops (the URI isn't loaded as a TextDocument so the
+    // edit has nowhere to land). Split the workspace edit by hand: for
+    // each `CreateFile` op, write its paired content edit via
+    // `vscode.workspace.fs.writeFile` so the new file actually carries
+    // the extracted text; apply remaining edits (the host-side
+    // selection replacement) via the standard `applyEdit` path.
+    await applyExtractWorkspaceEdit(response, editor, client);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(`Extract to include failed: ${message}`);
+  }
+}
+
+async function applyExtractWorkspaceEdit(
+  edit: LspWorkspaceEdit,
+  editor: vscode.TextEditor,
+  client: LanguageClient
+): Promise<void> {
+  const ops = edit.documentChanges ?? [];
+  // First pass: handle every CreateFile op + its paired TextDocumentEdit
+  // (content for the new file) via direct fs writes.
+  const createdUris = new Set<string>();
+  for (const op of ops) {
+    if ('kind' in op && op.kind === 'create') {
+      createdUris.add(op.uri);
+    }
+  }
+  for (const op of ops) {
+    if ('textDocument' in op && createdUris.has(op.textDocument.uri)) {
+      const newText = op.edits.map((e) => ('newText' in e ? e.newText : '')).join('');
+      const targetUri = vscode.Uri.parse(op.textDocument.uri);
+      await vscode.workspace.fs.writeFile(targetUri, new TextEncoder().encode(newText));
+      debugLog('wrote new file via fs: ' + op.textDocument.uri);
+    }
+  }
+  // Second pass: build a WorkspaceEdit containing only the edits that
+  // target *existing* documents (the host file). Skip CreateFile ops
+  // and skip the content edits we already handled.
+  const remaining: LspWorkspaceEdit = {
+    ...edit,
+    documentChanges: ops.filter((op) => {
+      if ('kind' in op) return false; // skip resource ops (already handled)
+      return !createdUris.has(op.textDocument.uri);
+    }),
+  };
+  void editor;
+  const workspaceEdit = await client.protocol2CodeConverter.asWorkspaceEdit(remaining);
+  if (!workspaceEdit) {
+    throw new Error('Language server returned an invalid workspace edit.');
+  }
+  const applied = await vscode.workspace.applyEdit(workspaceEdit);
+  debugLog('applyEdit returned: ' + applied);
+  if (!applied) {
+    throw new Error('Failed to apply workspace edit.');
   }
 }
 
