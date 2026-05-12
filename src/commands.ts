@@ -305,6 +305,9 @@ export function registerCommands(
     ),
     vscode.commands.registerCommand('lex.table.previousCell', () =>
       navigateTableCell('previous', getClient, waitForClientReady)
+    ),
+    vscode.commands.registerCommand('lex.extractToInclude', () =>
+      extractToInclude(getClient, waitForClientReady)
     )
   );
 }
@@ -455,6 +458,66 @@ async function navigateAnnotation(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     vscode.window.showErrorMessage(`Failed to navigate annotations: ${message}`);
+  }
+}
+
+async function extractToInclude(
+  getClient: () => LanguageClient | undefined,
+  waitForClientReady: () => Promise<void>
+): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showErrorMessage('Open a Lex document before running this command.');
+    return;
+  }
+  if (editor.document.languageId !== 'lex') {
+    vscode.window.showErrorMessage('Extract-to-include is only available for .lex files.');
+    return;
+  }
+
+  const selection = editor.selection;
+  if (selection.isEmpty) {
+    vscode.window.showErrorMessage('Select some text to extract into a new include file.');
+    return;
+  }
+
+  const src = await vscode.window.showInputBox({
+    title: 'Extract selection to include',
+    prompt: 'Path for the new include file (relative to the includes root)',
+    placeHolder: 'e.g. chapters/intro.lex',
+    ignoreFocusOut: true,
+  });
+  if (!src) {
+    return; // user cancelled
+  }
+
+  try {
+    const client = await getReadyClient(getClient, waitForClientReady);
+    const protocolRange = client.code2ProtocolConverter.asRange(selection);
+    const response = (await client.sendRequest(ExecuteCommandRequest.type, {
+      command: 'lex.extractToInclude',
+      arguments: [editor.document.uri.toString(), protocolRange, src],
+    })) as unknown;
+
+    if (!response) {
+      vscode.window.showErrorMessage('Extract returned an empty response.');
+      return;
+    }
+
+    const workspaceEdit = await client.protocol2CodeConverter.asWorkspaceEdit(
+      response as LspWorkspaceEdit
+    );
+    if (!workspaceEdit) {
+      throw new Error('Language server returned an invalid workspace edit.');
+    }
+
+    const applied = await vscode.workspace.applyEdit(workspaceEdit);
+    if (!applied) {
+      throw new Error('Failed to apply workspace edit.');
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(`Extract to include failed: ${message}`);
   }
 }
 
