@@ -47,16 +47,6 @@ function write(prefix: string, line: string): void {
 
 export function installLogMirror(): void {
   if (installed) return;
-  // PROBE: also drop a probe file unconditionally so we know whether
-  // installLogMirror is being called at all. Remove once verified.
-  try {
-    writeFileSync(
-      '/tmp/lex-vscode-probe.log',
-      `installLogMirror called at ${new Date().toISOString()}\nLEX_LOG_TO_STDERR=${process.env.LEX_LOG_TO_STDERR ?? '(unset)'}\n`
-    );
-  } catch {
-    // ignore
-  }
   if (process.env.LEX_LOG_TO_STDERR !== '1') return;
   installed = true;
 
