@@ -24,7 +24,7 @@
       source spelling.
     - **Permissive parse for diagnostics.** A `:: doc.foo ::` in a
       file no longer blanks out every LSP feature (semantic tokens,
-      hover, completion, goto-def) — the rest of the file keeps
+      hover, completion, Go to Definition) — the rest of the file keeps
       working and the offending label gets a diagnostic in place.
-- Bumps `comms` submodule to `2238b40` (on_format §6.5 framing +
+- Bumps `comms` submodule to `2238b40` (`on_format` §6.5 framing +
   benchmark fixture flip off `doc.note`).
