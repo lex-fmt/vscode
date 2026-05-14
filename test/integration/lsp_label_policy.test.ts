@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
 import type { LexExtensionApi } from '../../src/main.js';
 import { integrationTest } from './harness.js';
-import { closeAllEditors, findPosition, openWorkspaceDocument } from './helpers.js';
+import { closeAllEditors, delay, findPosition, openWorkspaceDocument } from './helpers.js';
 
 const LABEL_POLICY_DOCUMENT_PATH = 'documents/label-policy.lex';
 
@@ -85,64 +85,68 @@ integrationTest('label-policy: quickfix rewrites doc.table to table', async () =
   await activateExtension();
   const document = await openWorkspaceDocument(LABEL_POLICY_DOCUMENT_PATH);
 
-  const diagnostics = await waitForDiagnostics(document.uri, (ds) =>
-    ds.some((d) => diagnosticCode(d) === 'forbidden-label-prefix')
-  );
-
-  const docTablePos = findPosition(document, ':: doc.table ::');
-  assert.ok(docTablePos, 'doc.table label should appear in fixture');
-  const docTableDiag = diagnostics.find(
-    (d) => diagnosticCode(d) === 'forbidden-label-prefix' && d.range.start.line === docTablePos.line
-  );
-  assert.ok(docTableDiag, 'doc.table should have a forbidden-label-prefix diagnostic');
-
-  const actions = await vscode.commands.executeCommand<vscode.CodeAction[]>(
-    'vscode.executeCodeActionProvider',
-    document.uri,
-    docTableDiag.range,
-    vscode.CodeActionKind.QuickFix.value
-  );
-  assert.ok(actions, 'code actions should be returned');
-  const rewrite = actions.find(
-    (a) => a.title.includes('table') && a.title.toLowerCase().includes('rewrite')
-  );
-  assert.ok(
-    rewrite,
-    `expected a "Rewrite doc.table to table" quickfix; got titles: [${actions.map((a) => a.title).join(', ')}]`
-  );
-  assert.equal(rewrite.kind?.value, vscode.CodeActionKind.QuickFix.value);
-
-  // Apply the edit and verify the source line flipped to the blessed
-  // shortcut. Apply through the workspace API so a server-issued
-  // edit (vs a client-command edit) both round-trip.
-  if (rewrite.edit) {
-    const applied = await vscode.workspace.applyEdit(rewrite.edit);
-    assert.ok(applied, 'workspace edit should apply');
-    const newLine = document.lineAt(docTablePos.line).text;
-    assert.ok(
-      newLine.includes(':: table ::') && !newLine.includes('doc.table'),
-      `expected line to become ":: table ::", got "${newLine}"`
+  try {
+    const diagnostics = await waitForDiagnostics(document.uri, (ds) =>
+      ds.some((d) => diagnosticCode(d) === 'forbidden-label-prefix')
     );
-  } else if (rewrite.command) {
-    // The LSP may model the quickfix as a command that the client
-    // executes; in that case the underlying edit comes back through
-    // `workspace/applyEdit`. Executing it here mirrors what happens
-    // when a user clicks the lightbulb action.
-    const args: unknown[] = rewrite.command.arguments ?? [];
-    await vscode.commands.executeCommand(rewrite.command.command, ...args);
-    const newLine = document.lineAt(docTablePos.line).text;
-    assert.ok(
-      newLine.includes(':: table ::') && !newLine.includes('doc.table'),
-      `expected line to become ":: table ::" after command exec, got "${newLine}"`
+
+    const docTablePos = findPosition(document, ':: doc.table ::');
+    assert.ok(docTablePos, 'doc.table label should appear in fixture');
+    const docTableDiag = diagnostics.find(
+      (d) =>
+        diagnosticCode(d) === 'forbidden-label-prefix' && d.range.start.line === docTablePos.line
     );
-  } else {
-    assert.fail('quickfix had neither edit nor command');
+    assert.ok(docTableDiag, 'doc.table should have a forbidden-label-prefix diagnostic');
+
+    const actions = await vscode.commands.executeCommand<vscode.CodeAction[]>(
+      'vscode.executeCodeActionProvider',
+      document.uri,
+      docTableDiag.range,
+      vscode.CodeActionKind.QuickFix.value
+    );
+    assert.ok(actions, 'code actions should be returned');
+    const rewrite = actions.find(
+      (a) => a.title.includes('table') && a.title.toLowerCase().includes('rewrite')
+    );
+    assert.ok(
+      rewrite,
+      `expected a "Rewrite doc.table to table" quickfix; got titles: [${actions.map((a) => a.title).join(', ')}]`
+    );
+    assert.equal(rewrite.kind?.value, vscode.CodeActionKind.QuickFix.value);
+
+    // Apply the edit and verify the source line flipped to the blessed
+    // shortcut. Apply through the workspace API so a server-issued
+    // edit (vs a client-command edit) both round-trip.
+    if (rewrite.edit) {
+      const applied = await vscode.workspace.applyEdit(rewrite.edit);
+      assert.ok(applied, 'workspace edit should apply');
+      const newLine = document.lineAt(docTablePos.line).text;
+      assert.ok(
+        newLine.includes(':: table ::') && !newLine.includes('doc.table'),
+        `expected line to become ":: table ::", got "${newLine}"`
+      );
+    } else if (rewrite.command) {
+      // The LSP may model the quickfix as a command that the client
+      // executes; in that case the underlying edit comes back through
+      // `workspace/applyEdit`. Executing it here mirrors what happens
+      // when a user clicks the lightbulb action.
+      const args: unknown[] = rewrite.command.arguments ?? [];
+      await vscode.commands.executeCommand(rewrite.command.command, ...args);
+      const newLine = document.lineAt(docTablePos.line).text;
+      assert.ok(
+        newLine.includes(':: table ::') && !newLine.includes('doc.table'),
+        `expected line to become ":: table ::" after command exec, got "${newLine}"`
+      );
+    } else {
+      assert.fail('quickfix had neither edit nor command');
+    }
+  } finally {
+    // Revert on every exit path so an assertion failure here doesn't
+    // leave a dirty buffer that breaks subsequent tests sharing the
+    // workspace fixture.
+    await vscode.commands.executeCommand('workbench.action.files.revert');
+    await closeAllEditors();
   }
-
-  // Revert so the fixture stays usable for subsequent tests in the
-  // same workspace (the test runner doesn't recreate fixtures).
-  await vscode.commands.executeCommand('workbench.action.files.revert');
-  await closeAllEditors();
 });
 
 integrationTest('label-policy: hover annotates shortcut / stripped / community forms', async () => {
@@ -191,46 +195,54 @@ integrationTest('label-policy: completion offers blessed shortcuts after "::"', 
   const editor = vscode.window.activeTextEditor;
   assert.ok(editor, 'editor should be active');
 
-  // Append a fresh line + `:: ` to drive the trigger, so the test
-  // doesn't depend on cursor position vs other label sites in the
-  // fixture.
-  const lastLine = document.lineCount - 1;
-  const lastChar = document.lineAt(lastLine).text.length;
-  const insertAt = new vscode.Position(lastLine, lastChar);
+  try {
+    // Append a fresh line + `:: ` to drive the trigger, so the test
+    // doesn't depend on cursor position vs other label sites in the
+    // fixture.
+    const lastLine = document.lineCount - 1;
+    const lastChar = document.lineAt(lastLine).text.length;
+    const insertAt = new vscode.Position(lastLine, lastChar);
 
-  await editor.edit((eb) => {
-    eb.insert(insertAt, '\n\n:: ');
-  });
+    await editor.edit((eb) => {
+      eb.insert(insertAt, '\n\n:: ');
+    });
 
-  const triggerLine = lastLine + 2;
-  const triggerChar = 3;
-  const triggerPos = new vscode.Position(triggerLine, triggerChar);
-  editor.selection = new vscode.Selection(triggerPos, triggerPos);
+    // `editor.edit` updates the local document synchronously but
+    // `textDocument/didChange` reaches the LSP asynchronously. Without
+    // a short wait the completion request can race ahead of the
+    // server's view of the buffer and return stale items.
+    await delay(500);
 
-  const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
-    'vscode.executeCompletionItemProvider',
-    document.uri,
-    triggerPos,
-    ' '
-  );
+    const triggerLine = lastLine + 2;
+    const triggerChar = 3;
+    const triggerPos = new vscode.Position(triggerLine, triggerChar);
+    editor.selection = new vscode.Selection(triggerPos, triggerPos);
 
-  assert.ok(completions, 'completion list should be returned');
-  const labels = completions.items.map((item) =>
-    typeof item.label === 'string' ? item.label : item.label.label
-  );
-  const expected = ['table', 'image', 'video', 'audio'];
-  for (const label of expected) {
-    assert.ok(
-      labels.includes(label),
-      `expected blessed shortcut "${label}" in completions; got: [${labels.join(', ')}]`
+    const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
+      'vscode.executeCompletionItemProvider',
+      document.uri,
+      triggerPos,
+      ' '
     );
-  }
-  // Reserved `doc.*` should never be suggested.
-  assert.ok(
-    !labels.some((l) => l.startsWith('doc.')),
-    `completion should not suggest reserved doc.* labels; got: [${labels.join(', ')}]`
-  );
 
-  await vscode.commands.executeCommand('workbench.action.files.revert');
-  await closeAllEditors();
+    assert.ok(completions, 'completion list should be returned');
+    const labels = completions.items.map((item) =>
+      typeof item.label === 'string' ? item.label : item.label.label
+    );
+    const expected = ['table', 'image', 'video', 'audio'];
+    for (const label of expected) {
+      assert.ok(
+        labels.includes(label),
+        `expected blessed shortcut "${label}" in completions; got: [${labels.join(', ')}]`
+      );
+    }
+    // Reserved `doc.*` should never be suggested.
+    assert.ok(
+      !labels.some((l) => l.startsWith('doc.')),
+      `completion should not suggest reserved doc.* labels; got: [${labels.join(', ')}]`
+    );
+  } finally {
+    await vscode.commands.executeCommand('workbench.action.files.revert');
+    await closeAllEditors();
+  }
 });
