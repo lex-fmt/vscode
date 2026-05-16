@@ -21,6 +21,15 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "${REPO_ROOT}"
 
+# 0. Git submodules. The `comms` submodule carries the canonical theme
+# (comms/shared/theming/lex-theme.json), which the prebuild step
+# (scripts/gen-theme.py --check) requires. Cloud clones don't init
+# submodules by default, so the build fails until this runs.
+if [ -f .gitmodules ]; then
+  git submodule update --init --recursive --quiet || \
+    echo "warning: git submodule update failed — build may fail at prebuild" >&2
+fi
+
 # 1. Project dep cache — pick the right tool based on lockfile / manifest.
 
 # Rust: cargo fetch with --locked so we don't silently mutate Cargo.lock
