@@ -9,6 +9,21 @@ import { resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-e
 import { defaultCachePath } from '@vscode/test-electron/out/download.js';
 
 async function main() {
+  // Cloud sandboxes (e.g. Claude Code on the web) block
+  // update.code.visualstudio.com, so @vscode/test-electron can't fetch
+  // a VS Code build. Skip the VSIX smoke test gracefully there unless
+  // the caller has opted in via LEX_FORCE_INTEGRATION_TESTS=1.
+  if (
+    process.env.CLAUDE_CODE_REMOTE === 'true' &&
+    process.env.LEX_FORCE_INTEGRATION_TESTS !== '1'
+  ) {
+    console.log(
+      'Skipping VSIX smoke test in cloud sandbox ' +
+        '(CLAUDE_CODE_REMOTE=true). Set LEX_FORCE_INTEGRATION_TESTS=1 to override.'
+    );
+    return;
+  }
+
   const currentFile = fileURLToPath(import.meta.url);
   const currentDir = path.dirname(currentFile);
   const extensionRoot = path.resolve(currentDir, '..', '..');
