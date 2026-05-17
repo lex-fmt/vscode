@@ -112,11 +112,12 @@ fi
 # --- 4. shared/lex-deps.json -------------------------------------------------
 deps_file="shared/lex-deps.json"
 if [[ -f "$deps_file" ]]; then
-  lex_latest="$(gh release view --repo lex-fmt/lex --json tagName --jq .tagName)"
-  ts_latest="$(gh release view --repo lex-fmt/tree-sitter-lex --json tagName --jq .tagName)"
-
-  if [[ -z "$lex_latest" || -z "$ts_latest" ]]; then
-    echo "error: could not fetch latest releases from GitHub" >&2
+  if ! lex_latest="$(gh release view --repo lex-fmt/lex --json tagName --jq .tagName)"; then
+    echo "error: could not fetch latest release from lex-fmt/lex" >&2
+    exit 1
+  fi
+  if ! ts_latest="$(gh release view --repo lex-fmt/tree-sitter-lex --json tagName --jq .tagName)"; then
+    echo "error: could not fetch latest release from lex-fmt/tree-sitter-lex" >&2
     exit 1
   fi
 
@@ -131,7 +132,9 @@ fi
 echo "update-release: staged changes for v$new_version" >&2
 echo "  package.json -> $new_version" >&2
 echo "  CHANGELOG.md -> new v$new_version ($today) section" >&2
-[[ -d comms/.git || -f comms/.git ]] && echo "  comms        -> origin/main" >&2
+if [[ -d comms/.git || -f comms/.git ]]; then
+  echo "  comms        -> origin/main" >&2
+fi
 if [[ -f "$deps_file" ]]; then
   echo "  $deps_file -> lexd-lsp=$lex_latest, tree-sitter=$ts_latest" >&2
 fi

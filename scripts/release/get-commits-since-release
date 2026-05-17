@@ -16,10 +16,10 @@ if [[ -z "$tag" ]]; then
   # No release tags yet — list every commit on HEAD.
   git log --pretty=format:'%h %s' HEAD
   # Ensure trailing newline if there was any output.
-  if [[ -n "$(git log --oneline HEAD | head -n 1)" ]]; then echo; fi
+  if [[ -n "$(git log -n 1 --oneline HEAD)" ]]; then echo; fi
   exit 0
 fi
 
 git log --pretty=format:'%h %s' "${tag}..HEAD"
 # git log --pretty=format omits the trailing newline; add one if non-empty.
-if [[ -n "$(git log --oneline "${tag}..HEAD" | head -n 1)" ]]; then echo; fi
+if [[ -n "$(git log -n 1 --oneline "${tag}..HEAD")" ]]; then echo; fi
