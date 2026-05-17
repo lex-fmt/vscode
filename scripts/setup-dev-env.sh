@@ -93,4 +93,28 @@ fi
 # (See e.g. lex-fmt/lexed for an Xvfb start, lex-fmt/nvim for pinned-bin
 # fetches.)
 
+# --- 4a. VS Code integration-test gating in cloud sandboxes --------------
+# `@vscode/test-electron` downloads VS Code from update.code.visualstudio.com
+# (and follow-on CDN hosts az764295.vo.msecnd.net / vscode.cdn.azure.cn /
+# vscode.download.prss.microsoft.com). None of those are in the Claude Code
+# on the web outbound allowlist, so a fresh cloud session cannot fetch a
+# VS Code build for `npm run test:integration` or `npm run test:vsix`.
+#
+# The pre-commit hook (.husky/pre-commit) runs `npm run test`, which in
+# turn calls `test:integration` — that would block every commit made in a
+# cloud session. test/runTests.ts and test/runVsixSmoke.ts both check
+# CLAUDE_CODE_REMOTE=true and exit 0 with an informative message; this
+# block surfaces the same context at env-setup time so anyone reading the
+# session log sees why integration tests aren't running.
+#
+# To force integration tests even in cloud (e.g. after teleporting and
+# pre-caching VS Code), export LEX_FORCE_INTEGRATION_TESTS=1.
+
+if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
+  && [ "${LEX_FORCE_INTEGRATION_TESTS:-0}" != "1" ]; then
+  echo "note: VS Code integration tests will be skipped in this cloud session" >&2
+  echo "      (update.code.visualstudio.com is not in the sandbox allowlist;" >&2
+  echo "       set LEX_FORCE_INTEGRATION_TESTS=1 to override)." >&2
+fi
+
 exit 0

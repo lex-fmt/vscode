@@ -6,6 +6,21 @@ import { fileURLToPath } from 'node:url';
 import { runTests } from '@vscode/test-electron';
 
 async function main() {
+  // Cloud sandboxes (e.g. Claude Code on the web) block
+  // update.code.visualstudio.com, so @vscode/test-electron can't fetch
+  // a VS Code build. Skip integration tests gracefully there unless the
+  // caller has opted in via LEX_FORCE_INTEGRATION_TESTS=1.
+  if (
+    process.env.CLAUDE_CODE_REMOTE === 'true' &&
+    process.env.LEX_FORCE_INTEGRATION_TESTS !== '1'
+  ) {
+    console.log(
+      'Skipping VS Code integration tests in cloud sandbox ' +
+        '(CLAUDE_CODE_REMOTE=true). Set LEX_FORCE_INTEGRATION_TESTS=1 to override.'
+    );
+    return;
+  }
+
   const currentDir = fileURLToPath(new URL('.', import.meta.url));
   // When running from out/test/, go up to project root
   const extensionDevelopmentPath = path.resolve(currentDir, '..', '..');
