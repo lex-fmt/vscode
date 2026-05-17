@@ -48,9 +48,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Announce trigger
+        env:
+          UPSTREAM_SOURCE: ${{ github.event.client_payload.source }}
+          UPSTREAM_VERSION: ${{ github.event.client_payload.version }}
+          UPSTREAM_RUN_URL: ${{ github.event.client_payload.run_url }}
         run: |
-          echo "Triggered by upstream release: ${{ github.event.client_payload.source }}@${{ github.event.client_payload.version }}"
-          echo "Source run: ${{ github.event.client_payload.run_url }}"
+          echo "Triggered by upstream release: ${UPSTREAM_SOURCE}@${UPSTREAM_VERSION}"
+          echo "Source run: ${UPSTREAM_RUN_URL}"
 
       - name: Checkout main
         uses: actions/checkout@v6
@@ -69,6 +73,8 @@ jobs:
 
       - name: Decide whether to release
         id: decide
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           set +e
           ./scripts/release/should-release
@@ -103,6 +109,7 @@ jobs:
       - name: Branch + bump + commit
         if: steps.decide.outputs.release == 'yes'
         env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           NEW: ${{ steps.ver.outputs.new }}
         run: |
           set -e
