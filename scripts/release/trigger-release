@@ -33,12 +33,10 @@ set -euo pipefail
 
 # Dependency check — matches the per-repo convention used by
 # scripts/release/should-release.
-for tool in gh; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "error: $tool is required but not installed" >&2
-    exit 1
-  fi
-done
+if ! command -v gh >/dev/null 2>&1; then
+  echo "error: gh is required but not installed" >&2
+  exit 1
+fi
 
 usage() {
   echo "Usage: $(basename "$0") <new-version>" >&2
