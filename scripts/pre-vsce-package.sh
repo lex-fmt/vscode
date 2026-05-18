@@ -27,6 +27,20 @@
 
 set -euo pipefail
 
+# ---- 0. Dependency check -------------------------------------------------
+# Matches the per-repo convention used by scripts/release/should-release.
+
+required_tools=(jq curl npm tar)
+if [ "${PLATFORM:-}" = "windows" ]; then
+  required_tools+=(unzip)
+fi
+for tool in "${required_tools[@]}"; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "::error::$tool is required but not installed"
+    exit 1
+  fi
+done
+
 # ---- 1. Build shared/ submodule ------------------------------------------
 
 if [ ! -f shared/package.json ]; then
@@ -48,10 +62,25 @@ if [ ! -f shared/lex-deps.json ]; then
   exit 1
 fi
 
-LEX_LSP_VERSION=$(jq -r '."lexd-lsp"' shared/lex-deps.json)
-LEX_LSP_REPO=$(jq -r '."lexd-lsp-repo"' shared/lex-deps.json)
-TS_VERSION=$(jq -r '."tree-sitter"' shared/lex-deps.json)
-TS_REPO=$(jq -r '."tree-sitter-repo"' shared/lex-deps.json)
+# `jq -e` (exit non-zero if the key is missing or null) + the `if !
+# var=$(...)` capture pattern so a typo in shared/lex-deps.json
+# surfaces here, not at curl time as a bogus URL.
+if ! LEX_LSP_VERSION=$(jq -er '."lexd-lsp"' shared/lex-deps.json); then
+  echo "::error::shared/lex-deps.json missing key 'lexd-lsp'"
+  exit 1
+fi
+if ! LEX_LSP_REPO=$(jq -er '."lexd-lsp-repo"' shared/lex-deps.json); then
+  echo "::error::shared/lex-deps.json missing key 'lexd-lsp-repo'"
+  exit 1
+fi
+if ! TS_VERSION=$(jq -er '."tree-sitter"' shared/lex-deps.json); then
+  echo "::error::shared/lex-deps.json missing key 'tree-sitter'"
+  exit 1
+fi
+if ! TS_REPO=$(jq -er '."tree-sitter-repo"' shared/lex-deps.json); then
+  echo "::error::shared/lex-deps.json missing key 'tree-sitter-repo'"
+  exit 1
+fi
 
 echo "→ lexd-lsp:    ${LEX_LSP_VERSION} from ${LEX_LSP_REPO} (target=${VSCE_TARGET}, rust=${RUST_TARGET})"
 echo "→ tree-sitter: ${TS_VERSION} from ${TS_REPO}"
