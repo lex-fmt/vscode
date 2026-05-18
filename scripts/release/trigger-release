@@ -10,45 +10,40 @@
 #   bumps committed and merged into main via a version-bump PR).
 #
 # Strategy:
-#   vscode uses the *tag-push* release strategy. The release CI workflow is
-#   configured with `on: push: tags: [v*]`, so creating and pushing an
-#   annotated `vX.Y.Z` tag is what kicks off the build, packaging, and
-#   publish steps. There is no `workflow_dispatch` button to click and no
-#   separate "release" branch — the tag *is* the trigger. release.yml also
-#   reads the tag annotation to populate the GitHub release body, so the
-#   tag must be annotated (not lightweight).
+#   vscode uses the *workflow_dispatch* release strategy via the canonical
+#   arthur-debert/release/.github/workflows/vscode-ext.yml@v1 thin caller in
+#   .github/workflows/release.yml. The reusable workflow handles the
+#   version bump, changelog roll, tag + push, and GH release creation — so
+#   this primitive does not tag locally. It just fires the workflow_dispatch
+#   event with the requested version, and the workflow does the rest.
+#
+#   Migration note (2026-05-18): the previous strategy was tag-push (release
+#   triggered by `on: push: tags: 'v*'`). Migration to release@v1.3.0 moved
+#   the trigger contract to workflow_dispatch — matching the cross-repo
+#   cascade-handler contract. The orchestrator at arthur-debert/release/
+#   bin/release-lex now drives all consumers through workflow_dispatch.
 #
 # Typical call site:
-#   The orchestrator invokes this script after a version-bump PR has merged
-#   into main and the local checkout is on the merge commit. Running it from
-#   any other commit would tag the wrong revision, so callers are responsible
-#   for positioning HEAD first.
+#   The orchestrator invokes this script with the target version. There is
+#   no longer a "you must be on the right commit" precondition — the
+#   reusable workflow always bumps from main HEAD.
 #
 # See tracking issue: lex-fmt/lex#640.
 set -euo pipefail
 
 usage() {
   echo "Usage: $(basename "$0") <new-version>" >&2
-  echo "  new-version   Bare semver string, e.g. 0.10.1 (no leading v)" >&2
+  echo "  new-version   Bare semver string, e.g. 0.11.0 (no leading v)" >&2
 }
 
 [[ $# -ne 1 ]] && { usage; exit 2; }
 NEW_VERSION="$1"
-[[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && { echo "error: version must be X.Y.Z" >&2; exit 2; }
-
-TAG="v$NEW_VERSION"
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo "error: tag $TAG already exists locally — delete it or pick a new version" >&2
-  exit 1
+if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+  echo "error: version must be X.Y.Z[-PRERELEASE]" >&2
+  exit 2
 fi
 
-echo "Tagging $TAG on $(git rev-parse --short HEAD)..."
-# Annotated tag — release.yml uses `git tag -l --format='%(contents)' $TAG`
-# to populate the GitHub release body, so a lightweight tag here would ship
-# an empty release page. The orchestrator is responsible for getting real
-# release notes onto the tag if it wants them on the GitHub release; this
-# primitive just guarantees the tag is annotated with a default message.
-git tag -a "$TAG" -m "Release $TAG"
-echo "Pushing $TAG to origin..."
-git push origin "$TAG"
+echo "Triggering release workflow for v${NEW_VERSION}..."
+gh workflow run release.yml -f "version=${NEW_VERSION}"
 echo "Done. CI should pick it up shortly."
+echo "Watch: gh run list --workflow=release.yml --limit 1"
