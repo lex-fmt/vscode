@@ -788,7 +788,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lex-lang/lex.git"
+    "url": "https://github.com/lex-fmt/vscode.git"
+  },
+  "homepage": "https://github.com/lex-fmt/vscode#readme",
+  "bugs": {
+    "url": "https://github.com/lex-fmt/vscode/issues"
   },
   "dependencies": {
     "@lex/shared": "file:./shared",
