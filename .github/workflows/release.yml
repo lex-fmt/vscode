@@ -1,225 +1,41 @@
-# Release workflow for lex-vscode
-# Builds VSIX packages for VS Code Marketplace and Open VSX (VSCodium)
-# Both use identical platform-specific packages with bundled lexd-lsp binaries
-
 name: Release
+
+# Thin caller of arthur-debert/release/.github/workflows/vscode-ext.yml@v1.
+# All the matrix + build + sign + publish logic lives there; this file is
+# just the binding (inputs, secrets) and the workflow_dispatch trigger.
+#
+# Replaces the prior tag-push triggered hand-rolled release.yml. Switch
+# rationale: the canonical workflow uses prepare-release-npm (composite
+# version bump + tag), so the trigger contract is workflow_dispatch with a
+# `version` input — matching the cross-repo cascade-handler contract.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.11.0 or 1.0.0-rc.1). No leading v.'
+        required: true
+        type: string
+
 permissions:
   contents: write
 
-on:
-  push:
-    tags:
-      - 'v*'
-
 jobs:
-  build:
-    name: Build ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: darwin-arm64
-            os: macos-latest
-            lex_lsp_target: aarch64-apple-darwin
-          - target: linux-x64
-            os: ubuntu-latest
-            lex_lsp_target: x86_64-unknown-linux-gnu
-          - target: linux-arm64
-            os: ubuntu-latest
-            lex_lsp_target: aarch64-unknown-linux-gnu
-          - target: win32-x64
-            os: windows-latest
-            lex_lsp_target: x86_64-pc-windows-msvc
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Build shared module
-        run: |
-          cd shared
-          npm ci
-          npm run build
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download lexd-lsp binary
-        shell: bash
-        run: |
-          # Read pinned version from shared/lex-deps.json
-          LEX_LSP_VERSION=$(jq -r '.["lexd-lsp"]' shared/lex-deps.json)
-          LEX_LSP_REPO=$(jq -r '.["lexd-lsp-repo"]' shared/lex-deps.json)
-          echo "Using lexd-lsp version: $LEX_LSP_VERSION from $LEX_LSP_REPO"
-
-          mkdir -p resources
-
-          if [[ "${{ matrix.target }}" == win32-* ]]; then
-            ARCHIVE_NAME="lexd-lsp-${{ matrix.lex_lsp_target }}.zip"
-            BINARY_NAME="lexd-lsp.exe"
-          else
-            ARCHIVE_NAME="lexd-lsp-${{ matrix.lex_lsp_target }}.tar.gz"
-            BINARY_NAME="lexd-lsp"
-          fi
-
-          DOWNLOAD_URL="https://github.com/${LEX_LSP_REPO}/releases/download/${LEX_LSP_VERSION}/${ARCHIVE_NAME}"
-          echo "Downloading from: $DOWNLOAD_URL"
-
-          curl -fsSL -o "/tmp/${ARCHIVE_NAME}" "$DOWNLOAD_URL"
-
-          mkdir -p /tmp/lexd-lsp-extract
-          if [[ "${{ matrix.target }}" == win32-* ]]; then
-            cd /tmp/lexd-lsp-extract && unzip -q "/tmp/${ARCHIVE_NAME}" && cd -
-          else
-            tar -xzf "/tmp/${ARCHIVE_NAME}" -C /tmp/lexd-lsp-extract
-          fi
-
-          # arthur-debert/release@v1 (lex v0.10.0+) nests under <name>-<target>/;
-          # earlier releases had the binary at the top. Find by name.
-          BINARY_SRC=$(find /tmp/lexd-lsp-extract -name "${BINARY_NAME}" -type f | head -1)
-          if [[ -z "$BINARY_SRC" ]]; then
-            echo "Binary ${BINARY_NAME} not found in archive" >&2
-            exit 1
-          fi
-          cp "$BINARY_SRC" "resources/${BINARY_NAME}"
-          chmod +x "resources/${BINARY_NAME}" || true
-
-      - name: Download tree-sitter artifact
-        shell: bash
-        run: |
-          TS_VERSION=$(jq -r '.["tree-sitter"]' shared/lex-deps.json)
-          TS_REPO=$(jq -r '.["tree-sitter-repo"]' shared/lex-deps.json)
-          echo "Using tree-sitter version: $TS_VERSION from $TS_REPO"
-
-          DOWNLOAD_URL="https://github.com/${TS_REPO}/releases/download/${TS_VERSION}/tree-sitter.tar.gz"
-          echo "Downloading from: $DOWNLOAD_URL"
-
-          TMP_DIR="$(mktemp -d)"
-          curl -fsSL -o "$TMP_DIR/tree-sitter.tar.gz" "$DOWNLOAD_URL"
-          mkdir -p "$TMP_DIR/extracted"
-          tar -xzf "$TMP_DIR/tree-sitter.tar.gz" -C "$TMP_DIR/extracted"
-
-          mkdir -p resources/queries
-          cp "$TMP_DIR/extracted/tree-sitter-lex.wasm" resources/tree-sitter-lex.wasm
-          cp "$TMP_DIR/extracted/queries/"*.scm resources/queries/
-          rm -rf "$TMP_DIR"
-
-      - name: Set version from tag (skip if already matches)
-        shell: bash
-        # The cross-repo release orchestrator (arthur-debert/release/bin/release-lex,
-        # see lex-fmt/lex#640) pre-bumps package.json via the update-release
-        # primitive before pushing the tag — by the time this step runs, the
-        # manifest is already at the target version. `npm version X` errors
-        # with "Version not changed" when the value matches, so use
-        # `--allow-same-version` to make this a no-op in the orchestrator path
-        # and still a real bump in any manual tag-push (where the manifest
-        # may be behind the tag).
-        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
-
-      - name: Build extension
-        run: npm run bundle
-
-      - name: Package VSIX for VS Code Marketplace
-        run: |
-          npx @vscode/vsce package --target ${{ matrix.target }} -o lex-vscode-${{ matrix.target }}.vsix
-
-      - name: Package VSIX for Open VSX (VSCodium)
-        run: |
-          npx @vscode/vsce package --target ${{ matrix.target }} -o lex-openvsx-${{ matrix.target }}.vsix
-
-      - name: Upload VS Code artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: vscode-${{ matrix.target }}
-          path: lex-vscode-${{ matrix.target }}.vsix
-
-      - name: Upload Open VSX artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: openvsx-${{ matrix.target }}
-          path: lex-openvsx-${{ matrix.target }}.vsix
-
   release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Get release notes from tag annotation
-        id: notes
-        run: |
-          BODY=$(git tag -l --format='%(contents)' "$GITHUB_REF_NAME")
-          {
-            echo "body<<RELEASE_NOTES_EOF"
-            echo "$BODY"
-            echo "RELEASE_NOTES_EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: List artifacts
-        run: ls -la artifacts/
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v3
-        with:
-          files: artifacts/*.vsix
-          body: |
-            ${{ steps.notes.outputs.body }}
-
-            ## Installation
-
-            ### VS Code Marketplace
-            Download the `lex-vscode-<platform>.vsix` file for your platform:
-            - `lex-vscode-darwin-arm64.vsix` - macOS Apple Silicon
-            - `lex-vscode-linux-x64.vsix` - Linux x64
-            - `lex-vscode-linux-arm64.vsix` - Linux ARM64
-            - `lex-vscode-win32-x64.vsix` - Windows x64
-
-            ### Open VSX / VSCodium
-            Download the `lex-openvsx-<platform>.vsix` file for your platform:
-            - `lex-openvsx-darwin-arm64.vsix` - macOS Apple Silicon
-            - `lex-openvsx-linux-x64.vsix` - Linux x64
-            - `lex-openvsx-linux-arm64.vsix` - Linux ARM64
-            - `lex-openvsx-win32-x64.vsix` - Windows x64
-
-            Install via: `code --install-extension <file>.vsix` or `codium --install-extension <file>.vsix`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish:
-    name: Publish to VS Code Marketplace
-    needs: [build, release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download VS Code artifacts
-        uses: actions/download-artifact@v8
-        with:
-          pattern: vscode-*
-          path: artifacts
-          merge-multiple: true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Publish to VS Code Marketplace
-        run: npx @vscode/vsce publish --packagePath artifacts/*.vsix
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+    uses: arthur-debert/release/.github/workflows/vscode-ext.yml@v1
+    with:
+      version: ${{ inputs.version }}
+      vsce-targets: 'darwin-arm64,linux-x64,linux-arm64,win32-x64'
+      extension-name: 'lex-vscode'
+      # Marketplace publish: on (default). Open VSX: off until
+      # OVSX_PAT is provisioned — flip to true in this block once
+      # the secret lands.
+      publish-marketplace: true
+      # publish-openvsx: false   # default
+      # submodules: true to keep the shared/ git submodule populated
+      # (the existing release.yml passes `submodules: true`).
+      submodules: true
+    secrets:
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      # OVSX_PAT will plug in here when Open VSX publish is enabled.
