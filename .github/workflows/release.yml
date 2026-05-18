@@ -27,15 +27,15 @@ jobs:
       version: ${{ inputs.version }}
       vsce-targets: 'darwin-arm64,linux-x64,linux-arm64,win32-x64'
       extension-name: 'lex-vscode'
-      # Marketplace publish: on (default). Open VSX: off until
-      # OVSX_PAT is provisioned — flip to true in this block once
-      # the secret lands.
+      # Marketplace + Open VSX publish: both on. Open VSX uses
+      # `ovsx publish` against the same per-target VSIXes vsce
+      # already built — same artifacts, two registries.
       publish-marketplace: true
-      # publish-openvsx: false   # default
+      publish-openvsx: true
       # submodules: true to keep the shared/ git submodule populated
       # (the existing release.yml passes `submodules: true`).
       submodules: true
     secrets:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      # OVSX_PAT will plug in here when Open VSX publish is enabled.
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
