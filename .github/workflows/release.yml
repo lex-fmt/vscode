@@ -27,14 +27,11 @@ jobs:
       version: ${{ inputs.version }}
       vsce-targets: 'darwin-arm64,linux-x64,linux-arm64,win32-x64'
       extension-name: 'lex-vscode'
-      # Marketplace: on. Open VSX: temporarily OFF — the `lex`
-      # namespace claim is in flight at
-      # https://github.com/EclipseFdn/open-vsx.org/issues/10424
-      # and ovsx publish would 403 until approval lands. Flip
-      # publish-openvsx back to true once the namespace issue
-      # closes.
+      # Both registries on. The `lex` namespace was granted by the
+      # Eclipse Foundation on 2026-05-19 (EclipseFdn/open-vsx.org#10424
+      # — claimed namespace, ovsx publish authorized).
       publish-marketplace: true
-      publish-openvsx: false
+      publish-openvsx: true
       # submodules: true to keep the shared/ git submodule populated
       # (the existing release.yml passes `submodules: true`).
       submodules: true
