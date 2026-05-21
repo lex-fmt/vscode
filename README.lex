@@ -49,6 +49,16 @@ third-party spell checkers can skip them. We recommend installing
 and respects the scope hints. CSpell is recommended, not required — install
 any spell-check extension you prefer, or none at all.
 
+Known limitation: verbatim block *bodies* (the content between a `subject:`
+opener and its `:: lang ::` closer) are not currently scoped as non-prose
+on the VS Code side. Distinguishing verbatim from a definition's indented
+body requires parser-level lookahead at the closer, which TextMate
+grammars can't safely do. Nvim and lexed handle this correctly via
+tree-sitter `#has-ancestor?` and a state machine respectively. The gap
+shows up as CSpell occasionally flagging code identifiers inside verbatim
+blocks. Track [lex-fmt/vscode#TBD](https://github.com/lex-fmt/vscode) for
+the eventual fix (likely via an LSP-side spellable-ranges request).
+
 Import & Export Commands
 ------------------------
 The extension provides commands to convert between Lex and other formats.

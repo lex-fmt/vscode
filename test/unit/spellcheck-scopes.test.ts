@@ -25,9 +25,9 @@ const fixturePath = path.join(repoRoot, 'test', 'fixtures', 'spellcheck-fixture.
 const NON_PROSE_SCOPE_PREFIXES = [
   'meta.tag.',
   'markup.raw.',
-  'markup.inline.math',
+  'markup.inline.math.',
   'meta.reference.',
-  'markup.underline.link',
+  'markup.underline.link.',
 ];
 
 function isNonProse(scopes: readonly string[]): boolean {
@@ -36,7 +36,10 @@ function isNonProse(scopes: readonly string[]): boolean {
 
 async function makeGrammar(): Promise<VscTm.IGrammar> {
   const wasmPath = require_.resolve('vscode-oniguruma/release/onig.wasm');
-  const wasmBin = readFileSync(wasmPath).buffer;
+  // Pass the Buffer directly — readFileSync(...).buffer can return an
+  // oversized ArrayBuffer that ignores the Buffer's byteOffset/byteLength,
+  // which loadWASM would then read past the end of.
+  const wasmBin = readFileSync(wasmPath);
   await oniguruma.loadWASM(wasmBin);
 
   const registry = new vsctm.Registry({
@@ -131,6 +134,36 @@ test('lex TextMate grammar tags non-prose regions for CSpell skip', async () => 
     { needle: 'data src=somepath', expectNonProse: true, note: 'annotation header/params' },
     { needle: 'teh code span', expectNonProse: true, note: 'inline code span' },
     { needle: 'teh math', expectNonProse: true, note: 'inline math span' },
+    { needle: 'teh refernce', expectNonProse: true, note: 'inline reference' },
+  ];
+
+  // Synthetic URL / path coverage — neither appears in the canonical
+  // fixture, but the grammar exists to scope them as non-prose. Token
+  // them in isolation so this test catches regressions in #url / #path.
+  const inlineCases: Array<{
+    line: string;
+    needle: string;
+    expectNonProse: boolean;
+    note: string;
+  }> = [
+    {
+      line: 'Visit https://example.com/foo-bar for docs',
+      needle: 'https://example.com/foo-bar',
+      expectNonProse: true,
+      note: 'URL',
+    },
+    {
+      line: 'Edit ./src/main.rs and /etc/hosts please',
+      needle: './src/main.rs',
+      expectNonProse: true,
+      note: 'relative file path',
+    },
+    {
+      line: 'Edit ./src/main.rs and /etc/hosts please',
+      needle: '/etc/hosts',
+      expectNonProse: true,
+      note: 'absolute file path',
+    },
   ];
 
   const failures: string[] = [];
@@ -143,6 +176,23 @@ test('lex TextMate grammar tags non-prose regions for CSpell skip', async () => 
     const tok = tokenAt(lines, pos.row, pos.col);
     if (!tok) {
       failures.push(`${c.note}: no token at (${pos.row},${pos.col})`);
+      continue;
+    }
+    const actual = isNonProse(tok.scopes);
+    if (actual !== c.expectNonProse) {
+      failures.push(
+        `${c.note}: needle=${JSON.stringify(c.needle)} expected nonProse=${c.expectNonProse} actual=${actual} scopes=${tok.scopes.join(' ')}`
+      );
+    }
+  }
+
+  // Synthetic inline cases — tokenized in isolation
+  for (const c of inlineCases) {
+    const result = grammar.tokenizeLine(c.line, null);
+    const col = c.line.indexOf(c.needle) + Math.floor(c.needle.length / 2);
+    const tok = result.tokens.find((t) => t.startIndex <= col && col < t.endIndex);
+    if (!tok) {
+      failures.push(`${c.note}: no token at col ${col} of "${c.line}"`);
       continue;
     }
     const actual = isNonProse(tok.scopes);

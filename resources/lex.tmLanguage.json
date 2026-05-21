@@ -23,7 +23,7 @@
       }
     },
     "annotation-marker": {
-      "comment": "Annotation header `:: label [params] ::` on its own line. Marker tokens + label/params; not prose.",
+      "comment": "Annotation header `:: label [params] ::`. Matches anywhere on a line (covers inline / mid-line occurrences too) so the label region is scoped as non-prose for spell-check skip.",
       "match": "::[ \\t][^:\\n]+(?::[^:\\n]+)*[ \\t]::",
       "name": "meta.tag.annotation.lex"
     },
