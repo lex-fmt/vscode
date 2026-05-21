@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lex",
+  "scopeName": "text.lex",
+  "fileTypes": ["lex"],
+  "patterns": [
+    { "include": "#annotation-with-trailing" },
+    { "include": "#annotation-marker" },
+    { "include": "#annotation-close" },
+    { "include": "#inline-code" },
+    { "include": "#inline-math" },
+    { "include": "#inline-reference" },
+    { "include": "#url" },
+    { "include": "#path" }
+  ],
+  "repository": {
+    "annotation-with-trailing": {
+      "comment": "Single-line annotation `:: label [params] :: <trailing>`. The label/params region is scoped as a tag (not prose), the trailing portion stays as prose so CSpell checks it.",
+      "match": "(::[ \\t][^:\\n]+(?::[^:\\n]+)*[ \\t]::)([ \\t]*[^\\n]+)$",
+      "captures": {
+        "1": { "name": "meta.tag.annotation.lex" },
+        "2": { "name": "text.descriptor.annotation.lex" }
+      }
+    },
+    "annotation-marker": {
+      "comment": "Annotation header `:: label [params] ::` on its own line. Marker tokens + label/params; not prose.",
+      "match": "::[ \\t][^:\\n]+(?::[^:\\n]+)*[ \\t]::",
+      "name": "meta.tag.annotation.lex"
+    },
+    "annotation-close": {
+      "comment": "Annotation block closer `::` on its own indented line.",
+      "match": "^[ \\t]*::[ \\t]*$",
+      "name": "meta.tag.annotation.close.lex"
+    },
+    "inline-code": {
+      "match": "`[^`\\n]+`",
+      "name": "markup.raw.inline.lex"
+    },
+    "inline-math": {
+      "comment": "Lex math span: `#…#` per the grammar (`math_span: /#[^#\\n]+#/`).",
+      "match": "#[^#\\n]+#",
+      "name": "markup.inline.math.lex"
+    },
+    "inline-reference": {
+      "match": "\\[[^\\]\\n]+\\]",
+      "name": "meta.reference.lex"
+    },
+    "url": {
+      "match": "\\b(?:https?|ftp)://\\S+",
+      "name": "markup.underline.link.lex"
+    },
+    "path": {
+      "match": "(?:\\.\\.?/|/)[\\w./_-]+",
+      "name": "markup.underline.link.path.lex"
+    }
+  }
+}

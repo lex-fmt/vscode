@@ -318,6 +318,13 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "grammars": [
+      {
+        "language": "lex",
+        "scopeName": "text.lex",
+        "path": "./resources/lex.tmLanguage.json"
+      }
+    ],
     "semanticTokenTypes": [
       {
         "id": "DocumentTitle",
@@ -657,6 +664,17 @@
         "editor.defaultFormatter": "lex.lex-vscode",
         "editor.semanticHighlighting.enabled": true
       },
+      "cSpell.languageSettings": [
+        {
+          "languageId": "lex",
+          "ignoreRegExpList": [
+            "/::[ \\t][^\\n:]+(?::[^\\n:]+)*[ \\t]::/g",
+            "/`[^`\\n]+`/g",
+            "/#[^#\\n]+#/g",
+            "/\\[[^\\]\\n]+\\]/g"
+          ]
+        }
+      ],
       "editor.semanticTokenColorCustomizations": {
         "rules": {
           "DocumentTitle:lex": {
@@ -813,7 +831,9 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "lint-staged": {
     "*.ts": [

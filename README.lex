@@ -38,6 +38,17 @@ dark mode.
 
 See `src/theme.ts` for implementation details and the rationale behind this approach.
 
+Spell checking
+--------------
+The extension ships a minimal TextMate grammar that scopes annotation labels,
+inline code, math spans, references, URLs, and file paths as non-prose so
+third-party spell checkers can skip them. We recommend installing
+[Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker)
+(`streetsidesoftware.code-spell-checker`); when installed, it picks up the
+`cSpell.languageSettings` defaults we contribute for the `lex` language id
+and respects the scope hints. CSpell is recommended, not required — install
+any spell-check extension you prefer, or none at all.
+
 Import & Export Commands
 ------------------------
 The extension provides commands to convert between Lex and other formats.
