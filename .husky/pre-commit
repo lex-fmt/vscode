@@ -6,6 +6,16 @@
 
 set -e
 
+# Skip in CI. The release workflow (arthur-debert/release/.github/workflows/
+# vscode-ext.yml@v1) does `npm ci --omit=dev` before bumping the version and
+# committing — dev-only tools (prettier, eslint, tsc) aren't installed, so
+# lint-staged would fail with ENOENT. Hooks are for human commits; CI runs
+# its own validation separately.
+if [ "${CI:-}" = "true" ]; then
+    echo "CI=true detected — skipping local pre-commit hook (release pipeline runs its own checks)"
+    exit 0
+fi
+
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 REPO_NAME=$(basename "$(pwd)")
