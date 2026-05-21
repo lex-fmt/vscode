@@ -318,6 +318,13 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "grammars": [
+      {
+        "language": "lex",
+        "scopeName": "text.lex",
+        "path": "./resources/lex.tmLanguage.json"
+      }
+    ],
     "semanticTokenTypes": [
       {
         "id": "DocumentTitle",
@@ -657,6 +664,19 @@
         "editor.defaultFormatter": "lex.lex-vscode",
         "editor.semanticHighlighting.enabled": true
       },
+      "cSpell.languageSettings": [
+        {
+          "languageId": "lex",
+          "ignoreRegExpList": [
+            "/::[ \\t][^\\n:]+(?::[^\\n:]+)*[ \\t]::/g",
+            "/`[^`\\n]+`/g",
+            "/#[^#\\n]+#/g",
+            "/\\[[^\\]\\n]+\\]/g",
+            "/\\b(?:https?|ftp):\\/\\/\\S+/g",
+            "/(?:(?<=^)|(?<=\\s))(?:\\.\\.?\\/|\\/)[\\w./_-]+/gm"
+          ]
+        }
+      ],
       "editor.semanticTokenColorCustomizations": {
         "rules": {
           "DocumentTitle:lex": {
@@ -775,9 +795,10 @@
     "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --external:web-tree-sitter --format=cjs --platform=node --target=node20",
     "vscode:prepublish": "npm run bundle -- --minify",
     "pretest": "npm run build && npm run bundle",
-    "test": "npm run test:unit && npm run test:integration",
+    "test": "npm run test:unit && npm run test:integration && npm run test:cspell",
     "test:unit": "node ./out/test/unit/index.js",
     "test:integration": "node ./out/test/runTests.js",
+    "test:cspell": "node ./out/test/runCspellTests.js",
     "test:vsix": "npm run build && npm run bundle && node ./out/test/runVsixSmoke.js",
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
@@ -813,7 +834,9 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   },
   "lint-staged": {
     "*.ts": [
