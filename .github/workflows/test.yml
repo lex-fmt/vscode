@@ -1,4 +1,6 @@
-name: VS Code Extension CI
+name: CI
+
+# Thin caller of arthur-debert/release/.github/workflows/vscode-ext-ci.yml.
 
 on:
   push:
@@ -6,38 +8,18 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: true
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build shared module
-        run: |
-          cd shared
-          npm ci
-          npm run build
-
-      - name: Type check
-        run: npm run build
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm run test:unit
-
-      # Note: Integration tests require display and lexd-lsp binary
-      # These are run locally via pre-commit hook
+  ci:
+    uses: arthur-debert/release/.github/workflows/vscode-ext-ci.yml@v1
+    with:
+      # Build the shared/ module before the umbrella check — the main
+      # extension's TypeScript depends on its compiled dist/.
+      pre-check: scripts/ci-build-shared.sh
+      # This repo's umbrella verbs (typecheck via `npm run build`,
+      # lint, unit tests) are wired as npm scripts. Chain them in
+      # the canonical's single check-command input.
+      check-command: 'npm run build && npm run lint && npm run test:unit'
+      submodules: true
