@@ -18,6 +18,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+detect_pm() {
+    local root
+    root="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+    if [ -f pnpm-lock.yaml ]; then echo pnpm; return; fi
+    if [ -f yarn.lock ]; then echo yarn; return; fi
+    if [ -f package-lock.json ]; then echo npm; return; fi
+    if [ -f "${root}/pnpm-lock.yaml" ]; then echo pnpm; return; fi
+    if [ -f "${root}/yarn.lock" ]; then echo yarn; return; fi
+    echo npm
+}
+
+PM=$(detect_pm)
+
+
 "$SCRIPT_DIR/check-fmt"
 "$SCRIPT_DIR/check-lint"
 
@@ -26,15 +40,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # TypeScript and ship a `build` script that runs `tsc -p .` — but
 # `build` emits output, which is wrong for a check. The portfolio
 # convention is to add a `typecheck` alias that runs `tsc --noEmit`.
-# If absent, we fall back to `npx --no-install tsc --noEmit` when
+# If absent, we fall back to `if [ "${PM}" = "npm" ]; then npx --no-install tsc --noEmit; else "${PM}" exec tsc --noEmit; fi` when
 # TypeScript is a declared dep.
 if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts && require('./package.json').scripts.typecheck ? 0 : 1)" 2>/dev/null; then
     echo "Running typecheck..."
-    npm run --silent typecheck
+    "${PM}" run --silent typecheck
     echo "Typecheck OK"
 elif [ -f package.json ] && [ -f tsconfig.json ] && node -e "process.exit(require('./package.json').devDependencies && require('./package.json').devDependencies.typescript ? 0 : (require('./package.json').dependencies && require('./package.json').dependencies.typescript ? 0 : 1))" 2>/dev/null; then
     echo "Running typecheck (tsc --noEmit)..."
-    npx --no-install tsc --noEmit
+    if [ "${PM}" = "npm" ]; then npx --no-install tsc --noEmit; else "${PM}" exec tsc --noEmit; fi
     echo "Typecheck OK"
 else
     echo "No 'typecheck' script and no typescript dependency — skipping typecheck."

@@ -49,11 +49,13 @@ detect_pm() {
 
 PM=$(detect_pm)
 
-if ! command -v "${PM}" >/dev/null 2>&1; then
-    echo "bin/build: ${PM} not found on \$PATH" >&2
-    echo "  install: see https://nodejs.org / https://pnpm.io / https://yarnpkg.com" >&2
-    exit 1
-fi
+for tool in node git "${PM}"; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "bin/build: $tool not found on \$PATH" >&2
+        echo "  install: see https://nodejs.org / https://pnpm.io / https://yarnpkg.com" >&2
+        exit 2
+    fi
+done
 
 # Prefer `<pm> run package` if the consumer has wired the wrapper
 # script. Detect via node — same probe pattern bin/check-fmt uses.
