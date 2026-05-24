@@ -1,0 +1,45 @@
+
+### Added
+
+- Minimal `text.lex` TextMate grammar (`resources/lex.tmLanguage.json`)
+  that scopes annotation labels (`:: label ::`), inline code,
+  math spans (`#…#`), references (`[…]`), URLs, and file paths as
+  non-prose so third-party spell checkers can skip them. The grammar
+  does NOT drive visual coloring — LSP semantic tokens remain the
+  source of truth for that. Contributes `cSpell.languageSettings`
+  defaults for the `lex` language id via `configurationDefaults`
+  including matching `ignoreRegExpList` entries for annotations,
+  inline code, math, references, URLs, and file paths.
+- Recommends [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker)
+  in README.lex (not a hard dependency).
+- `test/unit/spellcheck-scopes.test.ts` — runs the grammar through
+  `vscode-textmate` + `vscode-oniguruma` against the canonical fixture
+  mirrored from `tree-sitter-lex` and asserts every prose typo sits on
+  a prose-scoped token and every non-prose typo sits on
+  `meta.tag.*`, `markup.raw.*`, `meta.reference.*`, or
+  `markup.underline.link.*`.
+- `test/runCspellTests.ts` + `test/integration-cspell/spellcheck.test.ts`
+  — live VS Code + CSpell integration test (`npm run test:cspell`):
+  downloads VS Code, installs Code Spell Checker via the CLI, opens
+  the fixture, and asserts CSpell's published diagnostics match the
+  policy (prose typos surfaced, non-prose typos suppressed).
+
+### Changed
+
+- `tree-sitter` pin bumped to `v0.11.0`.
+- `.husky/pre-commit` now exits early when `CI=true` so the GitHub
+  Actions release runner — which does `npm ci --omit=dev` and lacks
+  prettier — can commit version bumps without the pre-commit hook
+  firing `prettier --write` and crashing with ENOENT.
+
+### Known limitation
+
+- Verbatim block *bodies* are not currently scoped as non-prose on the
+  VS Code side. Distinguishing verbatim from a definition's indented
+  body requires parser-level lookahead at the closer, which TextMate
+  grammars can't safely do. Nvim and lexed handle this correctly via
+  tree-sitter `#has-ancestor?` and a state machine respectively. The
+  gap shows up as CSpell occasionally flagging code identifiers inside
+  verbatim blocks. Tracked for an eventual LSP-side spellable-ranges
+  request.
+
