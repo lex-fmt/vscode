@@ -8,9 +8,6 @@
   (arthur-debert/release#201). Future entries go in
   CHANGELOG/unreleased-<slug>.md fragments via `bin/changelog add`.
 
-
-## [Unreleased]
-
 ### Added
 
 - Minimal `text.lex` TextMate grammar (`resources/lex.tmLanguage.json`)
@@ -54,6 +51,8 @@
   gap shows up as CSpell occasionally flagging code identifiers inside
   verbatim blocks. Tracked for an eventual LSP-side spellable-ranges
   request.
+
+
 
 ## v0.10.5 (2026-05-21)
 
@@ -275,7 +274,7 @@
   - `missing-footnote` no longer false-positives on numbered references in a table cell when the resolving list is the table's own positional footnote list (lex-fmt/lex#460).
   - `table-inconsistent-columns` correctly accounts for `^^` rowspan carry-over when computing effective row width (lex-fmt/lex#458).
 
-## Unreleased
+## Pre-v0.6.5 unreleased (historical)
 
 ### Changed
 
