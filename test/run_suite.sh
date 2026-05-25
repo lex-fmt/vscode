@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 FORMATTER="junit"
-
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --format=simple) FORMATTER="pretty" ;;
@@ -14,20 +12,16 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEST_FILE="$SCRIPT_DIR/lex_vscode_extension.bats"
+source "$SCRIPT_DIR/../lib/bats-harness.bash"
+
+harness_require_bats
+
 EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 LEX_BINARY="$EXT_DIR/resources/lexd-lsp"
 
-# Download binary if needed
 if [[ ! -x "$LEX_BINARY" ]]; then
-  echo "lexd-lsp binary not found, downloading..."
+  _harness_status "lexd-lsp binary not found, downloading..."
   bash "$EXT_DIR/scripts/download-lexd-lsp.sh"
 fi
 
-if ! command -v bats &> /dev/null; then
-  echo "Error: bats is not installed."
-  echo "Install bats-core (e.g. brew install bats-core)."
-  exit 1
-fi
-
-exec bats "$TEST_FILE" --formatter "$FORMATTER"
+exec bats "$SCRIPT_DIR/lex_vscode_extension.bats" --formatter "$FORMATTER"
