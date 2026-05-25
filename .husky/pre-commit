@@ -47,19 +47,12 @@ echo "Building..."
 npm run build
 echo "Build OK"
 
-# 4. Run tests
+# 4. Run unit tests (integration tests require a semver version in
+#    package.json; the full suite runs via `npm test` or in CI)
 echo ""
-echo "Running tests..."
-if has_script "test:unit"; then
-    echo "Running unit tests..."
-    npm run test:unit
-    echo "Unit tests OK"
-fi
-
-if has_script "test"; then
-    npm run test
-    echo "Tests OK"
-fi
+echo "Running unit tests..."
+npm run test:unit
+echo "Unit tests OK"
 
 echo ""
 echo "All pre-commit checks passed!"
