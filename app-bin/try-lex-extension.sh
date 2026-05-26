@@ -134,7 +134,7 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
     fi
   elif [[ ! -x "$LEX_LSP_BIN" ]]; then
     echo "lexd-lsp binary not found, downloading..."
-    bash "$SCRIPT_DIR/download-lexd-lsp.sh"
+    fetch-deps --if-missing lexd-lsp
   fi
 
   # ── Resolve tree-sitter grammar ───────────────────────────────────────

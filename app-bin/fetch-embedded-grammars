@@ -1,38 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Downloads tree-sitter parser WASMs and highlight queries for the
-# languages listed in the embedded-grammars manifest. The manifest is
-# shipped inside the tree-sitter-lex release tarball and extracted by
-# download-tree-sitter.sh, so vscode and lexed consume the same curated
-# list — bumping tree-sitter-lex bumps the bundle here.
+# Fetch tree-sitter parser WASMs and highlight queries for the languages
+# listed in the embedded-grammars manifest (resources/embedded-grammars.json).
+#
+# The manifest is shipped inside the tree-sitter-lex release tarball and
+# extracted by fetch-deps, so vscode and lexed consume the same curated list.
 #
 # Layout per language:
 #   resources/embedded-grammars/<lang>/parser.wasm
 #   resources/embedded-grammars/<lang>/highlights.scm
-#   resources/embedded-grammars/<lang>/.version  (sidecar; "vX.Y.Z")
 #
-# A `.version` mismatch triggers a re-download on the next run, mirroring
-# the pattern in download-tree-sitter.sh.
+# Stamp files in .deps/grammar-<lang>.stamp track "version target" to
+# enable --if-missing skips.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 GRAMMARS_DIR="$EXT_DIR/resources/embedded-grammars"
 MANIFEST="$EXT_DIR/resources/embedded-grammars.json"
+STAMP_DIR="$EXT_DIR/.deps"
+
+if_missing=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --if-missing) if_missing=true; shift ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
 
 if [[ ! -f "$MANIFEST" ]]; then
-  echo "error: $MANIFEST not found — run app-bin/download-tree-sitter.sh first" >&2
+  echo "error: $MANIFEST not found — run 'fetch-deps tree-sitter' first" >&2
   exit 1
 fi
 
-if ! command -v jq >/dev/null 2>&1; then
-  echo "error: jq is required (apt-get install jq / brew install jq)" >&2
-  exit 1
-fi
+command -v jq  >/dev/null 2>&1 || { echo "error: jq is required" >&2; exit 1; }
+command -v curl >/dev/null 2>&1 || { echo "error: curl is required" >&2; exit 1; }
 
 curl_opts=(-fsSL)
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  curl_opts+=(-H "Authorization: Bearer $GITHUB_TOKEN")
+if [[ -n "${GITHUB_TOKEN:-${GH_TOKEN:-}}" ]]; then
+  curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN:-${GH_TOKEN:-}}")
 fi
 
 count=$(jq '.grammars | length' "$MANIFEST")
@@ -44,21 +50,22 @@ for i in $(seq 0 $((count - 1))); do
   wasm_asset=$(jq -r ".grammars[$i].wasm_asset" "$MANIFEST")
   queries_path=$(jq -r ".grammars[$i].queries_path" "$MANIFEST")
 
+  stamp_file="$STAMP_DIR/grammar-${lang}.stamp"
   lang_dir="$GRAMMARS_DIR/$lang"
-  version_stamp="$lang_dir/.version"
   wasm_path="$lang_dir/parser.wasm"
   highlights_path="$lang_dir/highlights.scm"
 
-  if [[ -f "$wasm_path" ]] \
+  if [[ "$if_missing" == true ]] \
+     && [[ -f "$wasm_path" ]] \
      && [[ -f "$highlights_path" ]] \
-     && [[ -f "$version_stamp" ]] \
-     && [[ "$(cat "$version_stamp")" == "$version" ]]; then
-    echo "embedded grammar $lang $version already installed"
+     && [[ -f "$stamp_file" ]] \
+     && [[ "$(cat "$stamp_file")" == "$version" ]]; then
+    echo "  skip $lang $version — up to date"
     continue
   fi
 
-  echo "Downloading embedded grammar $lang $version..."
-  mkdir -p "$lang_dir"
+  echo "  fetch $lang $version..."
+  mkdir -p "$lang_dir" "$STAMP_DIR"
 
   wasm_url="https://github.com/$repo/releases/download/$version/$wasm_asset"
   if ! curl "${curl_opts[@]}" -o "$wasm_path" "$wasm_url"; then
@@ -72,6 +79,6 @@ for i in $(seq 0 $((count - 1))); do
     exit 1
   fi
 
-  printf '%s' "$version" > "$version_stamp"
-  echo "embedded grammar $lang $version installed at $lang_dir"
+  printf '%s' "$version" > "$stamp_file"
+  echo "  done $lang $version -> $lang_dir"
 done

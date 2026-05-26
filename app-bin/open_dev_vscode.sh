@@ -10,7 +10,7 @@ USER_DATA_DIR="$EXTENSION_DIR/.vscode-test-user-data"
 # Download binary if needed
 if [[ ! -x "$LEX_LSP_BIN" ]]; then
   echo "lexd-lsp binary not found, downloading..."
-  bash "$SCRIPT_DIR/download-lexd-lsp.sh"
+  fetch-deps --if-missing lexd-lsp
 fi
 
 if ! command -v code >/dev/null 2>&1; then
