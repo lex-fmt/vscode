@@ -72,6 +72,7 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
     execSync('fetch-deps --if-missing lexd-lsp', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
     });
     return;
   } catch {
@@ -94,6 +95,7 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
     execSync('fetch-deps --if-missing tree-sitter', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
     });
     return;
   } catch {

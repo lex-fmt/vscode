@@ -133,6 +133,11 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
       exit 1
     fi
   elif [[ ! -x "$LEX_LSP_BIN" ]]; then
+    if ! command -v fetch-deps >/dev/null 2>&1; then
+      echo "error: fetch-deps is required but not on PATH" >&2
+      echo "Install from: https://github.com/arthur-debert/release" >&2
+      exit 1
+    fi
     echo "lexd-lsp binary not found, downloading..."
     fetch-deps --if-missing lexd-lsp
   fi

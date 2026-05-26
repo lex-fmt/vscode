@@ -53,7 +53,7 @@ echo "-> building shared/ submodule"
 
 FETCH_DEPS=fetch-deps
 if ! command -v fetch-deps &>/dev/null; then
-  FETCH_DEPS="$(mktemp)"
+  FETCH_DEPS="$(mktemp "${TMPDIR:-/tmp}/fetch-deps.XXXXXX")"
   trap 'rm -f "$FETCH_DEPS"' EXIT
   curl -fsSL -o "$FETCH_DEPS" \
     "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"
@@ -68,7 +68,7 @@ echo "-> fetching deps (target=${RUST_TARGET})"
 # ---- 4. Fetch embedded grammars from manifest -------------------------------
 
 echo "-> fetching embedded grammars"
-bash app-bin/fetch-embedded-grammars
+bash app-bin/fetch-embedded-grammars --if-missing
 
 echo "-> pre-package resources ready:"
 ls -la resources/ resources/queries/
