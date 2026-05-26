@@ -18,6 +18,7 @@ comms/.padz
 # Build tooling
 .github/**
 scripts/**
+app-bin/**
 node_modules/**
 
 # Keep tree-sitter resources (WASM + queries) in VSIX
