@@ -787,9 +787,9 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "prebuild": "python scripts/gen-theme.py --check",
-    "theme:gen": "python scripts/gen-theme.py",
-    "theme:check": "python scripts/gen-theme.py --check",
+    "prebuild": "python app-bin/gen-theme.py --check",
+    "theme:gen": "python app-bin/gen-theme.py",
+    "theme:check": "python app-bin/gen-theme.py --check",
     "watch": "tsc -watch -p .",
     "copy-wasm": "cp node_modules/web-tree-sitter/web-tree-sitter.wasm resources/tree-sitter.wasm",
     "bundle": "npm run copy-wasm && esbuild src/main.ts --bundle --outfile=out/src/main.cjs --external:vscode --external:web-tree-sitter --format=cjs --platform=node --target=node20",
@@ -803,8 +803,8 @@
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
     "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
-    "build:vsix": "bash ./scripts/build-vsix.sh",
-    "build:vsix:openvsx": "bash ./scripts/build-vsix.sh --openvsx",
+    "build:vsix": "bash ./app-bin/build-vsix.sh",
+    "build:vsix:openvsx": "bash ./app-bin/build-vsix.sh --openvsx",
     "prepare": "husky"
   },
   "repository": {

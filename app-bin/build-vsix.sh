@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build VSIX packages for VS Code and Open VSX (VSCodium)
-# Usage: ./scripts/build-vsix.sh [--target <platform>] [--openvsx]
+# Usage: ./app-bin/build-vsix.sh [--target <platform>] [--openvsx]
 #
 # Platforms: darwin-x64, darwin-arm64, linux-x64, linux-arm64, win32-x64
 # The --openvsx flag builds a universal (non-platform-specific) package for Open VSX

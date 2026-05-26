@@ -21,7 +21,7 @@ GRAMMARS_DIR="$EXT_DIR/resources/embedded-grammars"
 MANIFEST="$EXT_DIR/resources/embedded-grammars.json"
 
 if [[ ! -f "$MANIFEST" ]]; then
-  echo "error: $MANIFEST not found — run scripts/download-tree-sitter.sh first" >&2
+  echo "error: $MANIFEST not found — run app-bin/download-tree-sitter.sh first" >&2
   exit 1
 fi
 

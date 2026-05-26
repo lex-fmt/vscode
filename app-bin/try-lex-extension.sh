@@ -8,16 +8,16 @@
 # will never interfere with your main VS Code installation.
 #
 # Usage:
-#   ./scripts/try-lex-extension.sh                    # Build, install, open
-#   ./scripts/try-lex-extension.sh --open-only        # Skip rebuild, just open
-#   ./scripts/try-lex-extension.sh --dir ~/my/project # Open a different directory
-#   ./scripts/try-lex-extension.sh --reset            # Wipe the test profile and start fresh
-#   ./scripts/try-lex-extension.sh --lsp-path ../core # Build lexd-lsp from Cargo workspace
-#   ./scripts/try-lex-extension.sh --lsp-path /path/to/target/release  # Use pre-built binary
-#   ./scripts/try-lex-extension.sh --ts-path ../tree-sitter-lex       # Build WASM from local grammar
-#   ./scripts/try-lex-extension.sh --ts-path /path/to/tree-sitter-lex # Same, absolute path
+#   ./app-bin/try-lex-extension.sh                    # Build, install, open
+#   ./app-bin/try-lex-extension.sh --open-only        # Skip rebuild, just open
+#   ./app-bin/try-lex-extension.sh --dir ~/my/project # Open a different directory
+#   ./app-bin/try-lex-extension.sh --reset            # Wipe the test profile and start fresh
+#   ./app-bin/try-lex-extension.sh --lsp-path ../core # Build lexd-lsp from Cargo workspace
+#   ./app-bin/try-lex-extension.sh --lsp-path /path/to/target/release  # Use pre-built binary
+#   ./app-bin/try-lex-extension.sh --ts-path ../tree-sitter-lex       # Build WASM from local grammar
+#   ./app-bin/try-lex-extension.sh --ts-path /path/to/tree-sitter-lex # Same, absolute path
 #
-# Extra extensions are read from scripts/try-lex-extension-extensions.txt (one ID per line).
+# Extra extensions are read from app-bin/try-lex-extension-extensions.txt (one ID per line).
 
 set -euo pipefail
 
