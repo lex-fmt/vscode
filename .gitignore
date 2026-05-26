@@ -15,6 +15,9 @@ node_modules
 /resources/embedded-grammars.json
 /resources/embedded-grammars/
 
+# fetch-deps stamp files
+/.deps/
+
 # Logs
 logs
 *.log

@@ -79,11 +79,16 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
     if (existsSync(lexBinaryPathExe)) return;
   }
 
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-lexd-lsp.sh');
-  if (existsSync(downloadScript)) {
-    console.log('Downloading lexd-lsp binary...');
-    execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
+  console.log('Downloading lexd-lsp binary via fetch-deps...');
+  try {
+    execSync('fetch-deps --if-missing lexd-lsp', {
+      stdio: 'inherit',
+      cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
+    });
     return;
+  } catch {
+    console.error('Failed to download lexd-lsp binary');
   }
   console.error(`lexd-lsp binary not found at ${lexBinaryPath}`);
   process.exit(1);
@@ -92,20 +97,26 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
 function ensureTreeSitter(extensionDevelopmentPath: string): void {
   const wasmPath = path.resolve(extensionDevelopmentPath, 'resources/tree-sitter-lex.wasm');
   if (existsSync(wasmPath)) return;
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-tree-sitter.sh');
-  if (existsSync(downloadScript)) {
-    execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
+  console.log('Downloading tree-sitter artifacts via fetch-deps...');
+  try {
+    execSync('fetch-deps --if-missing tree-sitter', {
+      stdio: 'inherit',
+      cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
+    });
+  } catch {
+    console.error('Failed to download tree-sitter artifacts');
   }
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  const downloadScript = path.resolve(
-    extensionDevelopmentPath,
-    'app-bin/download-embedded-grammars.sh'
-  );
-  if (!existsSync(downloadScript)) return;
+  const fetchScript = path.resolve(extensionDevelopmentPath, 'app-bin/fetch-embedded-grammars');
+  if (!existsSync(fetchScript)) return;
   try {
-    execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
+    execSync(`bash "${fetchScript}" --if-missing`, {
+      stdio: 'inherit',
+      cwd: extensionDevelopmentPath,
+    });
   } catch {
     console.error('Failed to download embedded-language tree-sitter grammars');
   }

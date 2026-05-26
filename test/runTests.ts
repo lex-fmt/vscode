@@ -66,20 +66,21 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
     }
   }
 
-  // Try to download using the script
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-lexd-lsp.sh');
-  if (existsSync(downloadScript)) {
-    console.log('Downloading lexd-lsp binary...');
-    try {
-      execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
-      return;
-    } catch {
-      console.error('Failed to download lexd-lsp binary');
-    }
+  // Try to download using fetch-deps
+  console.log('Downloading lexd-lsp binary via fetch-deps...');
+  try {
+    execSync('fetch-deps --if-missing lexd-lsp', {
+      stdio: 'inherit',
+      cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
+    });
+    return;
+  } catch {
+    console.error('Failed to download lexd-lsp binary');
   }
 
   console.error(`lexd-lsp binary not found at ${lexBinaryPath}`);
-  console.error("Run 'bash app-bin/download-lexd-lsp.sh' to download the binary.");
+  console.error("Run 'fetch-deps lexd-lsp' to download the binary.");
   process.exit(1);
 }
 
@@ -89,26 +90,24 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
     return;
   }
 
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-tree-sitter.sh');
-  if (existsSync(downloadScript)) {
-    console.log('Downloading tree-sitter artifacts...');
-    try {
-      execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
-      return;
-    } catch {
-      console.error('Failed to download tree-sitter artifacts');
-    }
+  console.log('Downloading tree-sitter artifacts via fetch-deps...');
+  try {
+    execSync('fetch-deps --if-missing tree-sitter', {
+      stdio: 'inherit',
+      cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
+    });
+    return;
+  } catch {
+    console.error('Failed to download tree-sitter artifacts');
   }
 
   console.warn(`tree-sitter WASM not found at ${wasmPath} — tree-sitter tests will be skipped.`);
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  const downloadScript = path.resolve(
-    extensionDevelopmentPath,
-    'app-bin/download-embedded-grammars.sh'
-  );
-  if (!existsSync(downloadScript)) {
+  const fetchScript = path.resolve(extensionDevelopmentPath, 'app-bin/fetch-embedded-grammars');
+  if (!existsSync(fetchScript)) {
     return;
   }
   // The script is idempotent — it stamps each language's version and
@@ -116,7 +115,10 @@ function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
   // call it unconditionally rather than guessing which grammars are
   // present.
   try {
-    execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
+    execSync(`bash "${fetchScript}" --if-missing`, {
+      stdio: 'inherit',
+      cwd: extensionDevelopmentPath,
+    });
   } catch {
     console.error('Failed to download embedded-language tree-sitter grammars');
   }
