@@ -12,7 +12,7 @@
  * so the package.json defaults kick in again.
  *
  * The light-mode rules and key list are generated from
- * `comms/shared/theming/lex-theme.json` by `scripts/gen-theme.py`.
+ * `comms/shared/theming/lex-theme.json` by `app-bin/gen-theme.py`.
  * See `src/theme-data.ts` (do not hand-edit).
  */
 

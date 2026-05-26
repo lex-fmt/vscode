@@ -67,7 +67,7 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
   }
 
   // Try to download using the script
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-lexd-lsp.sh');
+  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-lexd-lsp.sh');
   if (existsSync(downloadScript)) {
     console.log('Downloading lexd-lsp binary...');
     try {
@@ -79,7 +79,7 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
   }
 
   console.error(`lexd-lsp binary not found at ${lexBinaryPath}`);
-  console.error("Run 'bash scripts/download-lexd-lsp.sh' to download the binary.");
+  console.error("Run 'bash app-bin/download-lexd-lsp.sh' to download the binary.");
   process.exit(1);
 }
 
@@ -89,7 +89,7 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
     return;
   }
 
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-tree-sitter.sh');
+  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-tree-sitter.sh');
   if (existsSync(downloadScript)) {
     console.log('Downloading tree-sitter artifacts...');
     try {
@@ -106,7 +106,7 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
   const downloadScript = path.resolve(
     extensionDevelopmentPath,
-    'scripts/download-embedded-grammars.sh'
+    'app-bin/download-embedded-grammars.sh'
   );
   if (!existsSync(downloadScript)) {
     return;

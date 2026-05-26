@@ -79,7 +79,7 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
     if (existsSync(lexBinaryPathExe)) return;
   }
 
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-lexd-lsp.sh');
+  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-lexd-lsp.sh');
   if (existsSync(downloadScript)) {
     console.log('Downloading lexd-lsp binary...');
     execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
@@ -92,7 +92,7 @@ async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> 
 function ensureTreeSitter(extensionDevelopmentPath: string): void {
   const wasmPath = path.resolve(extensionDevelopmentPath, 'resources/tree-sitter-lex.wasm');
   if (existsSync(wasmPath)) return;
-  const downloadScript = path.resolve(extensionDevelopmentPath, 'scripts/download-tree-sitter.sh');
+  const downloadScript = path.resolve(extensionDevelopmentPath, 'app-bin/download-tree-sitter.sh');
   if (existsSync(downloadScript)) {
     execSync(`bash "${downloadScript}"`, { stdio: 'inherit', cwd: extensionDevelopmentPath });
   }
@@ -101,7 +101,7 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
   const downloadScript = path.resolve(
     extensionDevelopmentPath,
-    'scripts/download-embedded-grammars.sh'
+    'app-bin/download-embedded-grammars.sh'
   );
   if (!existsSync(downloadScript)) return;
   try {
