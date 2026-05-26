@@ -22,7 +22,7 @@ CI mirrors the same sequence via `.github/workflows/test-vscode-plugin.yml`.
 
 Packaging
 ---------
-- `./vscode/scripts/build_extension.sh` builds `lexd-lsp` in release mode, copies it into `vscode/resources/lexd-lsp`, installs npm dependencies, and runs `npm run bundle`.
+- `bin/build` is the canonical build entry point — builds `lexd-lsp` in release mode, copies it into `vscode/resources/lexd-lsp`, installs npm dependencies, and runs `npm run bundle`.
 - Run `npx vsce package` afterwards to create the VSIX.
 
 Features Covered
