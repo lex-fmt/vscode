@@ -803,8 +803,7 @@
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
     "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
-    "build:vsix": "bash ./app-bin/build-vsix.sh",
-    "build:vsix:openvsx": "bash ./app-bin/build-vsix.sh --openvsx",
+    "build:vsix": "bin/build",
     "prepare": "husky"
   },
   "repository": {
