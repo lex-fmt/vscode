@@ -17,7 +17,7 @@ jobs:
     with:
       # Build the shared/ module before the umbrella check — the main
       # extension's TypeScript depends on its compiled dist/.
-      pre-check: scripts/ci-build-shared.sh
+      pre-check: app-bin/ci-build-shared-hook.sh
       # This repo's umbrella verbs (typecheck via `npm run build`,
       # lint, unit tests) are wired as npm scripts. Chain them in
       # the canonical's single check-command input.
