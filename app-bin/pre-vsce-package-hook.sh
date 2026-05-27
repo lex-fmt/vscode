@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pre-vsce-package.sh — convention hook for arthur-debert/release/vscode-ext.yml.
+# pre-vsce-package-hook.sh — convention hook for arthur-debert/release/vscode-ext.yml.
 #
 # Runs in the workflow's build job AFTER `npm ci` (root) and BEFORE
 # `vsce package`. Single source of truth for everything that needs to
