@@ -110,12 +110,11 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  const fetchScript = path.resolve(extensionDevelopmentPath, 'app-bin/fetch-embedded-grammars');
-  if (!existsSync(fetchScript)) return;
   try {
-    execSync(`bash "${fetchScript}" --if-missing`, {
+    execSync('fetch-deps --if-missing embedded-grammars', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
     });
   } catch {
     console.error('Failed to download embedded-language tree-sitter grammars');
