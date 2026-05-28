@@ -106,18 +106,15 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  const fetchScript = path.resolve(extensionDevelopmentPath, 'app-bin/fetch-embedded-grammars');
-  if (!existsSync(fetchScript)) {
-    return;
-  }
-  // The script is idempotent — it stamps each language's version and
-  // skips downloads when the stamp matches the pinned version, so we
-  // call it unconditionally rather than guessing which grammars are
-  // present.
+  // Per-grammar fetch lives in deps.json (from-manifest + for-each
+  // iteration). fetch-deps stamps each item under
+  // .deps/embedded-grammars/<lang>.stamp so --if-missing is a no-op
+  // once the pinned version is on disk.
   try {
-    execSync(`bash "${fetchScript}" --if-missing`, {
+    execSync('fetch-deps --if-missing embedded-grammars', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
+      shell: process.platform === 'win32' ? 'bash' : undefined,
     });
   } catch {
     console.error('Failed to download embedded-language tree-sitter grammars');
