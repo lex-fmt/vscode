@@ -1,4 +1,4 @@
-## Releasing
+# Releasing
 
 This repo participates in the lex release cascade. Cutting a release here is triggered automatically when lex or tree-sitter-lex releases (via the `on-upstream-released` handler workflow). vscode receives events from both upstreams; the handler re-checks all pins (`shared/lex-deps.json` — flat schema, `lexd-lsp` + `tree-sitter`) via `should-release`.
 
