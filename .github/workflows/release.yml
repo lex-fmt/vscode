@@ -1,6 +1,6 @@
 name: Release
 
-# Thin caller of arthur-debert/release/.github/workflows/vscode-ext.yml@v1.
+# Thin caller of arthur-debert/release/.github/workflows/vscode-ext.yml@v2.
 # All the matrix + build + sign + publish logic lives there; this file is
 # just the binding (inputs, secrets) and the workflow_dispatch trigger.
 #
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   release:
-    uses: arthur-debert/release/.github/workflows/vscode-ext.yml@v1
+    uses: arthur-debert/release/.github/workflows/vscode-ext.yml@v2
     with:
       version: ${{ inputs.version }}
       vsce-targets: 'darwin-arm64,linux-x64,linux-arm64,win32-x64'
