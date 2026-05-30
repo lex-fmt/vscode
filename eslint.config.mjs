@@ -27,6 +27,19 @@ export default [
   },
   js.configs.recommended,
   {
+    // Flat-config and other root-level ESM/CJS config files: give them
+    // Node globals so the recommended ruleset doesn't flag `URL`,
+    // `process`, etc. as undefined.
+    files: ['**/*.{mjs,cjs}'],
+    languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 2022,
+      globals: {
+        ...globals.node
+      }
+    }
+  },
+  {
     files: ['src/**/*.ts'],
     languageOptions: nodeLanguageOptions,
     plugins: {
@@ -37,6 +50,55 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-floating-promises': 'error',
       'no-undef': 'off'
+    }
+  },
+  {
+    // `@lex/shared` source — has its own tsconfig (src -> dist), so it
+    // needs a dedicated type-checked block keyed to that project.
+    files: ['shared/src/**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: './shared/tsconfig.json',
+        tsconfigRootDir,
+        sourceType: 'module',
+        ecmaVersion: 2022
+      },
+      globals: {
+        ...globals.node
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin
+    },
+    rules: {
+      ...typeCheckedRules,
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-floating-promises': 'error',
+      'no-undef': 'off'
+    }
+  },
+  {
+    // `@lex/shared` compiled output is committed (consumed via the
+    // `file:./shared` dependency at runtime). It is generated, so lint
+    // it with the syntax-aware TS recommended set rather than the
+    // source-oriented core rules (which mis-fire on emitted .d.ts).
+    files: ['shared/dist/**/*.{js,cjs,mjs}', 'shared/dist/**/*.d.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        sourceType: 'module',
+        ecmaVersion: 2022
+      },
+      globals: {
+        ...globals.node
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin
+    },
+    rules: {
+      ...tsPlugin.configs.recommended?.rules
     }
   },
   {

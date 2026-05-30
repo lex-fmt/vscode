@@ -5,7 +5,7 @@ export interface EditorAdapter {
     insertText(text: string): Promise<void>;
 }
 
-export interface Command<TArgs = any> {
+export interface Command<TArgs = unknown> {
     id: string;
     execute(editor: EditorAdapter, args: TArgs): Promise<void>;
 }
