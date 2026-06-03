@@ -100,12 +100,15 @@ export class LexSmartPasteProvider implements vscode.DocumentPasteEditProvider {
       return undefined;
     }
 
-    // A single paste only ever targets one range in practice; multi-cursor
-    // paste is left to native handling rather than re-anchoring per cursor.
-    const range = ranges[0];
-    if (!range) {
+    // Re-anchor only the single-caret case. A multi-cursor paste reports one
+    // range per cursor; the server would re-anchor for the first cursor's
+    // structural context only, and VS Code would then apply that one edit to
+    // every cursor — wrong indentation everywhere but the first. Leave
+    // multi-cursor (and the degenerate zero-range case) to native handling.
+    if (ranges.length !== 1) {
       return undefined;
     }
+    const range = ranges[0];
 
     let result: PreparePasteResult;
     try {
