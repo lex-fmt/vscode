@@ -14,6 +14,19 @@ interface PreparePasteResult {
   mode: string;
 }
 
+/**
+ * Run `fn` with a fresh cancellation token, disposing the source afterwards so
+ * the integration suite doesn't leak token sources across tests.
+ */
+async function withToken<T>(fn: (token: vscode.CancellationToken) => Promise<T>): Promise<T> {
+  const source = new vscode.CancellationTokenSource();
+  try {
+    return await fn(source.token);
+  } finally {
+    source.dispose();
+  }
+}
+
 async function activeClient(): Promise<
   NonNullable<Awaited<ReturnType<LexExtensionApi['clientReady']>>>
 > {
@@ -60,15 +73,17 @@ integrationTest('smart paste re-anchors a multi-line block via lex/preparePaste'
     const dataTransfer = new vscode.DataTransfer();
     dataTransfer.set('text/plain', new vscode.DataTransferItem(pastedText));
 
-    const edits = await provider.provideDocumentPasteEdits(
-      document,
-      [caret],
-      dataTransfer,
-      {
-        only: undefined,
-        triggerKind: vscode.DocumentPasteTriggerKind.Automatic,
-      },
-      new vscode.CancellationTokenSource().token
+    const edits = await withToken((token) =>
+      provider.provideDocumentPasteEdits(
+        document,
+        [caret],
+        dataTransfer,
+        {
+          only: undefined,
+          triggerKind: vscode.DocumentPasteTriggerKind.Automatic,
+        },
+        token
+      )
     );
 
     // When the server re-anchors (delta != 0) we get one edit; when the anchor
@@ -106,15 +121,17 @@ integrationTest('smart paste falls back to native when the client is absent', as
     const dataTransfer = new vscode.DataTransfer();
     dataTransfer.set('text/plain', new vscode.DataTransferItem('something'));
 
-    const edits = await provider.provideDocumentPasteEdits(
-      document,
-      [new vscode.Range(0, 0, 0, 0)],
-      dataTransfer,
-      {
-        only: undefined,
-        triggerKind: vscode.DocumentPasteTriggerKind.Automatic,
-      },
-      new vscode.CancellationTokenSource().token
+    const edits = await withToken((token) =>
+      provider.provideDocumentPasteEdits(
+        document,
+        [new vscode.Range(0, 0, 0, 0)],
+        dataTransfer,
+        {
+          only: undefined,
+          triggerKind: vscode.DocumentPasteTriggerKind.Automatic,
+        },
+        token
+      )
     );
 
     assert.strictEqual(edits, undefined, 'No client → native paste (undefined)');

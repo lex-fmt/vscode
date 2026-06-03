@@ -94,7 +94,14 @@ export class LexSmartPasteProvider implements vscode.DocumentPasteEditProvider {
     if (!item) {
       return undefined;
     }
-    const pastedText = await item.asString();
+    // Reading the clipboard flavour can reject; a failed read must not throw
+    // out of the provider and disrupt the paste — fall back to native instead.
+    let pastedText: string;
+    try {
+      pastedText = await item.asString();
+    } catch {
+      return undefined;
+    }
     // Empty clipboard: no edit, native (no-op) paste proceeds (§6).
     if (pastedText.length === 0 || token.isCancellationRequested) {
       return undefined;
