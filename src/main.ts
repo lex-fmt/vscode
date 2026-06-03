@@ -21,6 +21,7 @@ import {
   getPathCompletionDiagnostics,
   type PathCompletionDiagnostics,
 } from './pathCompletion.js';
+import { registerSmartPaste } from './smartPaste.js';
 import { initTreeSitter, type LexTreeSitter } from './treesitter.js';
 import { createInjectionHighlighter, type InjectionHighlighterApi } from './injections.js';
 import { createEmbeddedTokenizer, type EmbeddedTokenizer } from './embedded.js';
@@ -131,6 +132,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<LexExt
     () => clientReadyPromise
   );
   registerPathCompletion();
+
+  // Smart paste — forwards pastes to `lex/preparePaste` so clipboard text is
+  // re-anchored to the caret's structural level. Guarded per-paste on the
+  // server's `experimental.lexPreparePaste` capability; falls back to native
+  // paste when unavailable. See src/smartPaste.ts and lex-fmt/lex#708.
+  context.subscriptions.push(registerSmartPaste(() => client));
 
   // Initialize tree-sitter (optional — extension works without it).
   // The init logger writes one breadcrumb per stage to the Lex channel so
