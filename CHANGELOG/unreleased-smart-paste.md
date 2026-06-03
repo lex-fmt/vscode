@@ -1,0 +1,8 @@
+### Added
+
+- Smart paste: pasted text is now re-anchored to the caret's structural
+  level via the lexd-lsp `lex/preparePaste` request, so copy-paste into and
+  between Lex documents lands at the right indentation instead of carrying
+  the source's. Implemented as a `DocumentPasteEditProvider` that forwards
+  to the server and falls back to native paste when the server does not
+  advertise the capability (requires lexd-lsp >= v0.17.0). (#121)
