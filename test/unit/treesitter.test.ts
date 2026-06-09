@@ -20,14 +20,20 @@ const LANG_WASM = 'tree-sitter-lex.wasm';
 /** Build a throwaway extension dir, writing only the named resources. */
 function makeExtensionDir(present: string[]): string {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'lex-ts-'));
-  const resources = path.join(dir, 'resources');
-  mkdirSync(resources, { recursive: true });
-  for (const rel of present) {
-    const full = path.join(resources, rel);
-    mkdirSync(path.dirname(full), { recursive: true });
-    writeFileSync(full, '');
+  try {
+    const resources = path.join(dir, 'resources');
+    mkdirSync(resources, { recursive: true });
+    for (const rel of present) {
+      const full = path.join(resources, rel);
+      mkdirSync(path.dirname(full), { recursive: true });
+      writeFileSync(full, '');
+    }
+    return dir;
+  } catch (err) {
+    // Don't leak the temp dir if setup throws before the caller can clean up.
+    rmSync(dir, { recursive: true, force: true });
+    throw err;
   }
-  return dir;
 }
 
 function assertFailure(
