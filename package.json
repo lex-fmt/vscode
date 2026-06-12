@@ -803,8 +803,7 @@
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
     "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",
-    "build:vsix": "bin/build",
-    "prepare": "husky"
+    "build:vsix": "bin/build"
   },
   "repository": {
     "type": "git",
@@ -830,20 +829,9 @@
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
     "globals": "^17.5.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
     "prettier": "^3.8.3",
     "typescript": "^5.9.3",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.3.2"
-  },
-  "lint-staged": {
-    "*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
   }
 }
