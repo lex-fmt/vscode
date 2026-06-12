@@ -1,0 +1,1 @@
+- Migrate managed tree onto WS7 baseline (untrack .release/ + mirrors, drop husky, add pr-loop-guard)
