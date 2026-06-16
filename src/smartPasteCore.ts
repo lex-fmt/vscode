@@ -72,7 +72,15 @@ export function serverSupportsPreparePaste(client: ServerCapabilityProbe | undef
 export function isUsableServerResult(
   result: { text?: unknown } | null | undefined,
   pastedText: string
-): result is PreparePasteResult {
+): result is { text: string } {
+  // Narrowing is intentionally minimal: assert only what we verify. The
+  // predicate doesn't check `mode` (or any future field on
+  // `PreparePasteResult`), so narrowing to the full wire type would be
+  // dishonest — a `{ text: "x" }` payload (no `mode`) would pass and the
+  // caller would read `mode` as a `string` that is actually `undefined`
+  // at runtime. The only caller in `smartPaste.ts` reads `result.text`,
+  // which this narrower shape satisfies; further fields stay accessed
+  // through the original (broader) type if ever needed.
   if (!result) return false;
   if (typeof result.text !== 'string') return false;
   if (result.text === pastedText) return false;
