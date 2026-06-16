@@ -788,6 +788,7 @@
   "scripts": {
     "build": "tsc -p .",
     "prebuild": "python app-bin/gen-theme.py --check",
+    "typecheck": "tsc --noEmit -p .",
     "theme:gen": "python app-bin/gen-theme.py",
     "theme:check": "python app-bin/gen-theme.py --check",
     "watch": "tsc -watch -p .",
