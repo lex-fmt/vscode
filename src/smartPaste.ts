@@ -21,15 +21,21 @@
 import * as vscode from 'vscode';
 import type { LanguageClient } from 'vscode-languageclient/node.js';
 import type { Range as LspRange } from 'vscode-languageserver-types';
+import {
+  PREPARE_PASTE_METHOD,
+  PREPARE_PASTE_CAPABILITY,
+  serverSupportsPreparePaste,
+  isUsableServerResult,
+  type PreparePasteResult,
+} from './smartPasteCore.js';
 
-/** Custom request method implemented by lexd-lsp (>= v0.17.0). */
-export const PREPARE_PASTE_METHOD = 'lex/preparePaste';
-
-/**
- * Capability flag advertised under `ServerCapabilities.experimental` when the
- * server implements `lex/preparePaste`. Mirrors the key set by lex-lsp.
- */
-export const PREPARE_PASTE_CAPABILITY = 'lexPreparePaste';
+export {
+  PREPARE_PASTE_METHOD,
+  PREPARE_PASTE_CAPABILITY,
+  serverSupportsPreparePaste,
+  isUsableServerResult,
+  type PreparePasteResult,
+};
 
 /**
  * MIME type smart paste handles. `text/plain` is the clipboard flavour VS Code
@@ -48,24 +54,7 @@ const SMART_PASTE_KIND = vscode.DocumentDropOrPasteEditKind.Empty.append(
   'smartPaste'
 );
 
-interface PreparePasteResult {
-  text: string;
-  mode: string;
-}
-
 type GetClient = () => LanguageClient | undefined;
-
-/**
- * Whether the running server advertised `experimental.lexPreparePaste`.
- * Read from the initialize response the client holds; returns false when the
- * client is absent, not yet started, or the flag is missing/falsey.
- */
-export function serverSupportsPreparePaste(client: LanguageClient | undefined): boolean {
-  const experimental = client?.initializeResult?.capabilities?.experimental as
-    | Record<string, unknown>
-    | undefined;
-  return experimental?.[PREPARE_PASTE_CAPABILITY] === true;
-}
 
 /**
  * The `DocumentPasteEditProvider` for Lex documents. Stateless apart from the
@@ -135,13 +124,14 @@ export class LexSmartPasteProvider implements vscode.DocumentPasteEditProvider {
       return undefined;
     }
 
-    if (token.isCancellationRequested || typeof result?.text !== 'string') {
+    if (token.isCancellationRequested) {
       return undefined;
     }
-
-    // Re-anchoring that produced an identical string is a no-op; let native
-    // paste handle it so we don't add a redundant edit to the picker.
-    if (result.text === pastedText) {
+    // `isUsableServerResult` filters malformed payloads (missing/non-string
+    // `text`) and the identity case where re-anchoring left the input
+    // unchanged — both fall back to native paste (no redundant entry in the
+    // edit picker).
+    if (!isUsableServerResult(result, pastedText)) {
       return undefined;
     }
 

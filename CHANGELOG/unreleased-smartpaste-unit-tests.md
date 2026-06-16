@@ -1,0 +1,1 @@
+- Extract pure smart-paste helpers into smartPasteCore.ts and cover them with node:test unit tests.
