@@ -8,5 +8,7 @@
     "vscode": "^1.106.0"
   },
   "main": "./extension.js",
-  "activationEvents": ["*"]
+  "activationEvents": [
+    "*"
+  ]
 }

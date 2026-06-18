@@ -14,6 +14,6 @@ export function registerPathCompletion(): void {
 
 export function getPathCompletionDiagnostics(): PathCompletionDiagnostics {
   return {
-    lspHandlesPathCompletion: true
+    lspHandlesPathCompletion: true,
   };
 }

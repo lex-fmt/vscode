@@ -6,7 +6,7 @@ import {
   openWorkspaceDocument,
   writeWorkspaceFile,
   removeWorkspacePath,
-  delay
+  delay,
 } from './helpers.js';
 
 const TEMP_RESOLVE_PATH = 'documents/tmp-annotations/resolve.lex';
@@ -23,7 +23,7 @@ integrationTest('resolves and toggles annotation state', async () => {
   await delay(200);
   await vscode.commands.executeCommand('lex.goToNextAnnotation');
   let headerPosition = editor.selection.active.with({
-    character: editor.selection.active.character + 4
+    character: editor.selection.active.character + 4,
   });
   editor.selection = new vscode.Selection(headerPosition, headerPosition);
   await vscode.commands.executeCommand('lex.resolveAnnotation');
@@ -44,7 +44,7 @@ integrationTest('resolves and toggles annotation state', async () => {
   await delay(200);
   await vscode.commands.executeCommand('lex.goToNextAnnotation');
   headerPosition = editor.selection.active.with({
-    character: editor.selection.active.character + 4
+    character: editor.selection.active.character + 4,
   });
   editor.selection = new vscode.Selection(headerPosition, headerPosition);
   await vscode.commands.executeCommand('lex.toggleAnnotationResolution');

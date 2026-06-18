@@ -6,7 +6,7 @@ import {
   closeAllEditors,
   findPosition,
   openWorkspaceDocument,
-  NAVIGATION_DOCUMENT_PATH
+  NAVIGATION_DOCUMENT_PATH,
 } from './helpers.js';
 
 integrationTest('supports go-to-definition for references', async () => {
@@ -22,9 +22,16 @@ integrationTest('supports go-to-definition for references', async () => {
 
   const definitionLocations = await vscode.commands.executeCommand<
     readonly vscode.Location[] | undefined
-  >('vscode.executeDefinitionProvider', document.uri, new vscode.Position(positionInfo.line, positionInfo.character));
+  >(
+    'vscode.executeDefinitionProvider',
+    document.uri,
+    new vscode.Position(positionInfo.line, positionInfo.character)
+  );
 
-  assert.ok(definitionLocations && definitionLocations.length > 0, 'Definition provider should return at least one result');
+  assert.ok(
+    definitionLocations && definitionLocations.length > 0,
+    'Definition provider should return at least one result'
+  );
   const [definition] = definitionLocations;
   const definitionText = document.getText(definition.range);
   assert.ok(definitionText.includes('Cache'), 'Definition result should contain Cache entry');
@@ -43,9 +50,11 @@ integrationTest('lists references for a definition', async () => {
   const definitionInfo = findPosition(document, 'Cache:\n');
   assert.ok(definitionInfo, 'Definition section should be present');
 
-  const references = await vscode.commands.executeCommand<
-    readonly vscode.Location[] | undefined
-  >('vscode.executeReferenceProvider', document.uri, new vscode.Position(definitionInfo.line, definitionInfo.character));
+  const references = await vscode.commands.executeCommand<readonly vscode.Location[] | undefined>(
+    'vscode.executeReferenceProvider',
+    document.uri,
+    new vscode.Position(definitionInfo.line, definitionInfo.character)
+  );
 
   assert.ok(references && references.length >= 1, 'Reference provider should return usages');
 

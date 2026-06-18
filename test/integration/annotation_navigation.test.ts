@@ -5,7 +5,7 @@ import {
   closeAllEditors,
   openWorkspaceDocument,
   writeWorkspaceFile,
-  removeWorkspacePath
+  removeWorkspacePath,
 } from './helpers.js';
 
 const TEMP_ANNOTATION_PATH = 'documents/tmp-annotations/nav.lex';

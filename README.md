@@ -40,8 +40,8 @@ npx vsce package
 
 ## Configuration
 
-| Setting | Description | Default |
-|---------|-------------|---------|
+| Setting             | Description                  | Default                     |
+| ------------------- | ---------------------------- | --------------------------- |
 | `lex.cliBinaryPath` | Path to the `lex` CLI binary | `./resources/lex` (bundled) |
 
 ## Development
