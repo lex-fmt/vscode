@@ -23,7 +23,7 @@ export function formatInjectionStatus(status: InjectionStatus): string {
   const file = status.documentUri ?? '(no document)';
   lines.push(
     `Lex injection status — file=${file} enabled=${status.enabled} ` +
-      `zones=${status.zoneCount} registered=${status.registeredLanguageCount}`,
+      `zones=${status.zoneCount} registered=${status.registeredLanguageCount}`
   );
 
   // Decoration totals per category.

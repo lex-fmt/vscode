@@ -2,11 +2,7 @@ import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
 import type { LexExtensionApi } from '../../src/main.js';
 import { integrationTest } from './harness.js';
-import {
-  closeAllEditors,
-  FORMATTING_DOCUMENT_PATH,
-  openWorkspaceDocument
-} from './helpers.js';
+import { closeAllEditors, FORMATTING_DOCUMENT_PATH, openWorkspaceDocument } from './helpers.js';
 
 integrationTest('applies whole-document formatting fixes indentation', async () => {
   const extension = vscode.extensions.getExtension<LexExtensionApi>('lex.lex-vscode');
@@ -21,18 +17,20 @@ integrationTest('applies whole-document formatting fixes indentation', async () 
   const misformatEdit = new vscode.WorkspaceEdit();
   misformatEdit.insert(document.uri, new vscode.Position(0, 0), '  ');
   await vscode.workspace.applyEdit(misformatEdit);
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   try {
-    const edits = await vscode.commands.executeCommand<
-      vscode.TextEdit[] | undefined
-    >('vscode.executeFormatDocumentProvider', document.uri, {
-      tabSize: 2,
-      insertSpaces: true
-    });
+    const edits = await vscode.commands.executeCommand<vscode.TextEdit[] | undefined>(
+      'vscode.executeFormatDocumentProvider',
+      document.uri,
+      {
+        tabSize: 2,
+        insertSpaces: true,
+      }
+    );
 
     assert.ok(edits && edits.length > 0, 'Formatting should produce edits');
-    const changed = edits.some(edit => {
+    const changed = edits.some((edit) => {
       const original = document.getText(edit.range);
       return original !== (edit.newText ?? '');
     });

@@ -74,11 +74,7 @@ export interface EmbeddedToken {
  */
 export interface InjectionHostAdapter {
   getRegisteredLanguages(): Promise<Set<string>>;
-  getTokens(
-    zoneIndex: number,
-    content: string,
-    langId: string,
-  ): Promise<EmbeddedToken[] | null>;
+  getTokens(zoneIndex: number, content: string, langId: string): Promise<EmbeddedToken[] | null>;
   /**
    * Map from a tokenizer capture name (possibly hierarchical, e.g.
    * `function.method`) onto a `DecorationCategory`. The shared module

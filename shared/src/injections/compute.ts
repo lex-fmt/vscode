@@ -28,7 +28,7 @@ import type {
  */
 export async function computeInjectionDecorations(
   zones: InjectionZone[],
-  host: InjectionHostAdapter,
+  host: InjectionHostAdapter
 ): Promise<Map<DecorationCategory, InjectionRange[]>> {
   const rangesByCategory = new Map<DecorationCategory, InjectionRange[]>();
   for (const category of Object.keys(CATEGORY_COLORS) as DecorationCategory[]) {

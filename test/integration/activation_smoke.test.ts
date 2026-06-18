@@ -2,11 +2,7 @@ import assert from 'node:assert/strict';
 import * as vscode from 'vscode';
 import type { LexExtensionApi } from '../../src/main.js';
 import { integrationTest } from './harness.js';
-import {
-  closeAllEditors,
-  openWorkspaceDocument,
-  TEST_DOCUMENT_PATH
-} from './helpers.js';
+import { closeAllEditors, openWorkspaceDocument, TEST_DOCUMENT_PATH } from './helpers.js';
 
 integrationTest('activates extension and tags Lex documents', async () => {
   const extensionId = 'lex.lex-vscode';

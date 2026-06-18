@@ -5,7 +5,7 @@ import { integrationTest } from './harness.js';
 import {
   closeAllEditors,
   openWorkspaceDocument,
-  SEMANTIC_TOKENS_DOCUMENT_PATH
+  SEMANTIC_TOKENS_DOCUMENT_PATH,
 } from './helpers.js';
 
 integrationTest('provides document links for URLs and verbatim sources', async () => {
@@ -25,8 +25,11 @@ integrationTest('provides document links for URLs and verbatim sources', async (
     throw new Error('Document links request should return entries');
   }
 
-  const targets = links.map(link => link.target?.toString()).filter(Boolean);
-  assert.ok(targets.some(target => target?.includes('lexlang.org')), 'External URL should be linked');
+  const targets = links.map((link) => link.target?.toString()).filter(Boolean);
+  assert.ok(
+    targets.some((target) => target?.includes('lexlang.org')),
+    'External URL should be linked'
+  );
 
   await closeAllEditors();
 });

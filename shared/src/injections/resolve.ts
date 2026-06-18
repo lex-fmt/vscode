@@ -9,7 +9,7 @@ import { LANGUAGE_ALIASES } from './constants.js';
  */
 export function resolveLanguageId(
   annotation: string,
-  registeredLanguages: Set<string>,
+  registeredLanguages: Set<string>
 ): string | null {
   const name = annotation.toLowerCase().trim();
   if (!name) return null;

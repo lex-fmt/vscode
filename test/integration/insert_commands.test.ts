@@ -6,7 +6,7 @@ import {
   openWorkspaceDocument,
   TEST_DOCUMENT_PATH,
   writeWorkspaceFile,
-  removeWorkspacePath
+  removeWorkspacePath,
 } from './helpers.js';
 
 integrationTest('insert asset command inserts snippet from selected file', async () => {
@@ -40,7 +40,10 @@ integrationTest('insert verbatim command embeds text content', async () => {
   assert.ok(editor, 'Editor should be available');
 
   const relativeScriptPath = 'documents/tmp-insert/script.py';
-  const scriptUri = await writeWorkspaceFile(relativeScriptPath, Buffer.from("print('hello from lex')\n"));
+  const scriptUri = await writeWorkspaceFile(
+    relativeScriptPath,
+    Buffer.from("print('hello from lex')\n")
+  );
 
   const insertionPosition = new vscode.Position(1, 0);
   editor.selection = new vscode.Selection(insertionPosition, insertionPosition);

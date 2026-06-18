@@ -6,12 +6,8 @@
     "moduleResolution": "node16",
     "baseUrl": ".",
     "paths": {
-      "vscode-languageclient/node": [
-        "./node_modules/vscode-languageclient/lib/node/main.d.ts"
-      ],
-      "@lex/shared": [
-        "../shared/src/index.ts"
-      ]
+      "vscode-languageclient/node": ["./node_modules/vscode-languageclient/lib/node/main.d.ts"],
+      "@lex/shared": ["../shared/src/index.ts"]
     },
 
     "outDir": "out",
