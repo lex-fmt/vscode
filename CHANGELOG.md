@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+## 0.11.2 - 2026-06-20
+
+- reformat source to managed prettier 3.8.4
+- Extract pure smart-paste helpers into smartPasteCore.ts and cover them with node:test unit tests.
+
 ## 0.11.1 - 2026-06-16
 
 - ci: migrate release reusable-workflow callers from @v2 to @v3
