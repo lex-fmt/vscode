@@ -1,0 +1,10 @@
+# Generated build output of the shared/ workspace module. Compiled from
+# shared/src; rebuilt by `npm run build`, never hand-formatted. Also
+# gitignored — this is belt-and-suspenders so the gate skips it even if a
+# stale copy lingers in a working tree.
+shared/dist/
+
+# Test fixtures are intentionally unformatted — they exercise the
+# extension against real-world (often deliberately messy) input, so
+# prettier must not rewrite them.
+test/fixtures/**

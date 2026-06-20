@@ -5,6 +5,11 @@ node_modules
 /build
 /tmp
 
+# Compiled output of the shared/ workspace module. Regenerated from
+# shared/src by `npm run build` (locally via pretest, in CI via
+# app-bin/ci-build-shared-hook.sh); never authored or consumed from git.
+shared/dist/
+
 # Downloaded binaries and artifacts
 /resources/lexd-lsp
 /resources/lexd-lsp.exe
