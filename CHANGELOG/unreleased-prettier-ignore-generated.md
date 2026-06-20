@@ -1,0 +1,1 @@
+- Stop prettier-checking generated shared/dist and test fixtures
