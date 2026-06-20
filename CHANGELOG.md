@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+## 0.11.3 - 2026-06-20
+
+- Stop prettier-checking generated shared/dist and test fixtures
+
 ## 0.11.2 - 2026-06-20
 
 - reformat source to managed prettier 3.8.4
