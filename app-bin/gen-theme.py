@@ -26,6 +26,7 @@ is silently ignored here.
 Run after editing the canonical file. The build's `prebuild` npm
 hook runs `gen-theme.py --check` to fail on stale output.
 """
+
 from __future__ import annotations
 
 import json

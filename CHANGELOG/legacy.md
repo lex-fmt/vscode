@@ -17,18 +17,18 @@
   ([lex#583](https://github.com/lex-fmt/lex/issues/583)). User-facing
   changes flow through standard LSP responses with no extension-side
   wiring needed:
-    - **Label-policy diagnostics.** `:: doc.foo ::` (reserved-forbidden)
+  - **Label-policy diagnostics.** `:: doc.foo ::` (reserved-forbidden)
       and `:: lex.unknown ::` (unregistered canonical) now surface as
       red squigglies with diagnostic codes
       `forbidden-label-prefix` / `unknown-lex-canonical`.
-    - **Quickfix code action.** "Rewrite `doc.table` to `table`" /
+  - **Quickfix code action.** "Rewrite `doc.table` to `table`" /
       `doc.image` → `image` etc. for the four curated mappings, plus
       a generic "strip `doc.` prefix" fallback for any other `doc.*`.
-    - **Hover form-classification.** Annotating a label site shows
+  - **Hover form-classification.** Annotating a label site shows
       "Shortcut for `lex.metadata.author`" / "Prefix-stripped form of
       `lex.metadata.author`" / "Community label" depending on the
       source spelling.
-    - **Permissive parse for diagnostics.** A `:: doc.foo ::` in a
+  - **Permissive parse for diagnostics.** A `:: doc.foo ::` in a
       file no longer blanks out every LSP feature (semantic tokens,
       hover, completion, Go to Definition) — the rest of the file keeps
       working and the offending label gets a diagnostic in place.

@@ -27,38 +27,38 @@ set -euo pipefail
 
 required_tools=(jq curl npm tar)
 if [ "${PLATFORM:-}" = "windows" ]; then
-  required_tools+=(unzip)
+	required_tools+=(unzip)
 fi
 for tool in "${required_tools[@]}"; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "::error::$tool is required but not installed"
-    exit 1
-  fi
+	if ! command -v "$tool" >/dev/null 2>&1; then
+		echo "::error::$tool is required but not installed"
+		exit 1
+	fi
 done
 
 # ---- 1. Build shared/ submodule --------------------------------------------
 
 if [ ! -f shared/package.json ]; then
-  echo "::error::shared/package.json not found — submodule not initialized?"
-  exit 1
+	echo "::error::shared/package.json not found — submodule not initialized?"
+	exit 1
 fi
 
 echo "-> building shared/ submodule"
 (
-  cd shared
-  npm ci
-  npm run build
+	cd shared
+	npm ci
+	npm run build
 )
 
 # ---- 2. Bootstrap fetch-deps (not on PATH in CI) ---------------------------
 
 FETCH_DEPS=fetch-deps
 if ! command -v fetch-deps &>/dev/null; then
-  FETCH_DEPS="$(mktemp "${TMPDIR:-/tmp}/fetch-deps.XXXXXX")"
-  trap 'rm -f "$FETCH_DEPS"' EXIT
-  curl -fsSL -o "$FETCH_DEPS" \
-    "https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"
-  chmod +x "$FETCH_DEPS"
+	FETCH_DEPS="$(mktemp "${TMPDIR:-/tmp}/fetch-deps.XXXXXX")"
+	trap 'rm -f "$FETCH_DEPS"' EXIT
+	curl -fsSL -o "$FETCH_DEPS" \
+		"https://raw.githubusercontent.com/arthur-debert/release/main/bin/fetch-deps"
+	chmod +x "$FETCH_DEPS"
 fi
 
 # ---- 3. Download everything via fetch-deps ---------------------------------

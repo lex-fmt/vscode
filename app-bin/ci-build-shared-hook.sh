@@ -12,13 +12,13 @@
 set -euo pipefail
 
 if ! command -v npm >/dev/null 2>&1; then
-    echo "::error::npm not found on \$PATH (needed for shared/ build)" >&2
-    exit 2
+	echo "::error::npm not found on \$PATH (needed for shared/ build)" >&2
+	exit 2
 fi
 
 if [ ! -d shared ]; then
-    echo "::error::shared/ directory missing at repo root" >&2
-    exit 2
+	echo "::error::shared/ directory missing at repo root" >&2
+	exit 2
 fi
 
 cd shared

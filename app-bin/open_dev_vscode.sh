@@ -9,18 +9,18 @@ USER_DATA_DIR="$EXTENSION_DIR/.vscode-test-user-data"
 
 # Download binary if needed
 if [[ ! -x "$LEX_LSP_BIN" ]]; then
-  if ! command -v fetch-deps >/dev/null 2>&1; then
-    echo "error: fetch-deps is required but not on PATH" >&2
-    echo "Install from: https://github.com/arthur-debert/release" >&2
-    exit 1
-  fi
-  echo "lexd-lsp binary not found, downloading..."
-  fetch-deps --if-missing lexd-lsp
+	if ! command -v fetch-deps >/dev/null 2>&1; then
+		echo "error: fetch-deps is required but not on PATH" >&2
+		echo "Install from: https://github.com/arthur-debert/release" >&2
+		exit 1
+	fi
+	echo "lexd-lsp binary not found, downloading..."
+	fetch-deps --if-missing lexd-lsp
 fi
 
 if ! command -v code >/dev/null 2>&1; then
-  echo "VS Code CLI (code) not found on PATH. Install VS Code and ensure 'code' is available."
-  exit 1
+	echo "VS Code CLI (code) not found on PATH. Install VS Code and ensure 'code' is available."
+	exit 1
 fi
 
 mkdir -p "$USER_DATA_DIR"
@@ -28,7 +28,7 @@ mkdir -p "$USER_DATA_DIR"
 echo "Opening VS Code with clean test configuration at: $USER_DATA_DIR"
 
 exec code \
-  --extensionDevelopmentPath="$EXTENSION_DIR" \
-  --user-data-dir="$USER_DATA_DIR" \
-  --extensions-dir="$USER_DATA_DIR/extensions" \
-  "$WORKSPACE_FILE"
+	--extensionDevelopmentPath="$EXTENSION_DIR" \
+	--user-data-dir="$USER_DATA_DIR" \
+	--extensions-dir="$USER_DATA_DIR/extensions" \
+	"$WORKSPACE_FILE"
