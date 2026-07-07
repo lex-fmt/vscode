@@ -1,13 +1,13 @@
-import { constants as fsConstants, existsSync } from 'node:fs';
-import { access } from 'node:fs/promises';
-import { execSync, spawnSync } from 'node:child_process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { constants as fsConstants, existsSync } from 'node:fs'
+import { access } from 'node:fs/promises'
+import { execSync, spawnSync } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   runTests,
   downloadAndUnzipVSCode,
-  resolveCliArgsFromVSCodeExecutablePath,
-} from '@vscode/test-electron';
+  resolveCliArgsFromVSCodeExecutablePath
+} from '@vscode/test-electron'
 
 // Drives a separate VS Code instance with Code Spell Checker installed and
 // runs the spellcheck integration test inside it. Kept separate from the
@@ -23,35 +23,35 @@ async function main() {
     console.log(
       'Skipping VS Code CSpell integration tests in cloud sandbox ' +
         '(CLAUDE_CODE_REMOTE=true). Set LEX_FORCE_INTEGRATION_TESTS=1 to override.'
-    );
-    return;
+    )
+    return
   }
 
-  const currentDir = fileURLToPath(new URL('.', import.meta.url));
-  const extensionDevelopmentPath = path.resolve(currentDir, '..', '..');
-  const extensionTestsPath = path.resolve(currentDir, 'integration-cspell/index.js');
+  const currentDir = fileURLToPath(new URL('.', import.meta.url))
+  const extensionDevelopmentPath = path.resolve(currentDir, '..', '..')
+  const extensionTestsPath = path.resolve(currentDir, 'integration-cspell/index.js')
   const workspacePath = path.resolve(
     extensionDevelopmentPath,
     'test/fixtures/sample-workspace.code-workspace'
-  );
+  )
 
-  await ensureLexBinary(extensionDevelopmentPath);
-  ensureTreeSitter(extensionDevelopmentPath);
-  ensureEmbeddedGrammars(extensionDevelopmentPath);
+  await ensureLexBinary(extensionDevelopmentPath)
+  ensureTreeSitter(extensionDevelopmentPath)
+  ensureEmbeddedGrammars(extensionDevelopmentPath)
 
   // Download VS Code, then install CSpell into its extension store using
   // the bundled CLI. resolveCliArgsFromVSCodeExecutablePath returns the
   // user-data + extensions flags that match the VS Code instance below.
-  const vscodeExecutablePath = await downloadAndUnzipVSCode();
-  const [cli, ...installArgs] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
+  const vscodeExecutablePath = await downloadAndUnzipVSCode()
+  const [cli, ...installArgs] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath)
   const install = spawnSync(
     cli,
     [...installArgs, '--install-extension', 'streetsidesoftware.code-spell-checker'],
     { encoding: 'utf-8', stdio: 'inherit' }
-  );
+  )
   if (install.status !== 0) {
-    console.error('Failed to install Code Spell Checker into the test VS Code');
-    process.exit(install.status ?? 1);
+    console.error('Failed to install Code Spell Checker into the test VS Code')
+    process.exit(install.status ?? 1)
   }
 
   try {
@@ -59,53 +59,53 @@ async function main() {
       vscodeExecutablePath,
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: [workspacePath, '--disable-gpu', '--disable-workspace-trust'],
-    });
+      launchArgs: [workspacePath, '--disable-gpu', '--disable-workspace-trust']
+    })
   } catch (error) {
-    console.error('Failed to run VS Code CSpell extension tests');
-    console.error(error);
-    process.exit(1);
+    console.error('Failed to run VS Code CSpell extension tests')
+    console.error(error)
+    process.exit(1)
   }
 }
 
 async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> {
-  const lexBinaryPath = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp');
-  const lexBinaryPathExe = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp.exe');
+  const lexBinaryPath = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp')
+  const lexBinaryPathExe = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp.exe')
 
   try {
-    await access(lexBinaryPath, fsConstants.X_OK);
-    return;
+    await access(lexBinaryPath, fsConstants.X_OK)
+    return
   } catch {
-    if (existsSync(lexBinaryPathExe)) return;
+    if (existsSync(lexBinaryPathExe)) return
   }
 
-  console.log('Downloading lexd-lsp binary via fetch-deps...');
+  console.log('Downloading lexd-lsp binary via fetch-deps...')
   try {
     execSync('fetch-deps --if-missing lexd-lsp', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
-      shell: process.platform === 'win32' ? 'bash' : undefined,
-    });
-    return;
+      shell: process.platform === 'win32' ? 'bash' : undefined
+    })
+    return
   } catch {
-    console.error('Failed to download lexd-lsp binary');
+    console.error('Failed to download lexd-lsp binary')
   }
-  console.error(`lexd-lsp binary not found at ${lexBinaryPath}`);
-  process.exit(1);
+  console.error(`lexd-lsp binary not found at ${lexBinaryPath}`)
+  process.exit(1)
 }
 
 function ensureTreeSitter(extensionDevelopmentPath: string): void {
-  const wasmPath = path.resolve(extensionDevelopmentPath, 'resources/tree-sitter-lex.wasm');
-  if (existsSync(wasmPath)) return;
-  console.log('Downloading tree-sitter artifacts via fetch-deps...');
+  const wasmPath = path.resolve(extensionDevelopmentPath, 'resources/tree-sitter-lex.wasm')
+  if (existsSync(wasmPath)) return
+  console.log('Downloading tree-sitter artifacts via fetch-deps...')
   try {
     execSync('fetch-deps --if-missing tree-sitter', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
-      shell: process.platform === 'win32' ? 'bash' : undefined,
-    });
+      shell: process.platform === 'win32' ? 'bash' : undefined
+    })
   } catch {
-    console.error('Failed to download tree-sitter artifacts');
+    console.error('Failed to download tree-sitter artifacts')
   }
 }
 
@@ -114,11 +114,11 @@ function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
     execSync('fetch-deps --if-missing embedded-grammars', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
-      shell: process.platform === 'win32' ? 'bash' : undefined,
-    });
+      shell: process.platform === 'win32' ? 'bash' : undefined
+    })
   } catch {
-    console.error('Failed to download embedded-language tree-sitter grammars');
+    console.error('Failed to download embedded-language tree-sitter grammars')
   }
 }
 
-main();
+main()

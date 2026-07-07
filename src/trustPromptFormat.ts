@@ -14,18 +14,18 @@
  * optional fields and use runtime presence checks in `describeSource`.
  */
 export interface TrustRequestSource {
-  kind: string;
-  name?: string;
-  path?: string;
-  uri?: string;
+  kind: string
+  name?: string
+  path?: string
+  uri?: string
 }
 
 export interface TrustRequestParams {
-  namespace: string;
-  command_string: string;
-  source: TrustRequestSource;
-  capability: string;
-  transport: string;
+  namespace: string
+  command_string: string
+  source: TrustRequestSource
+  capability: string
+  transport: string
 }
 
 export interface TrustResponse {
@@ -34,8 +34,8 @@ export interface TrustResponse {
    * (e.g. `"trusted_once"`) are non-breaking on the wire — the host
    * treats anything other than `"trusted"` as denied.
    */
-  decision: string;
-  reason?: string;
+  decision: string
+  reason?: string
 }
 
 export function formatPromptMessage(params: TrustRequestParams): string {
@@ -43,26 +43,26 @@ export function formatPromptMessage(params: TrustRequestParams): string {
   // §γ but the field is string-shaped so future transports (WASM in
   // PR 12+) won't be a breaking change. Render the actual value so
   // the prompt stays accurate when the server sends something new.
-  const transportLabel = describeTransport(params.transport);
-  return `Lex extension namespace "${params.namespace}" wants to run a ${transportLabel} handler.`;
+  const transportLabel = describeTransport(params.transport)
+  return `Lex extension namespace "${params.namespace}" wants to run a ${transportLabel} handler.`
 }
 
 function describeTransport(transport: string): string {
   switch (transport) {
     case 'subprocess':
-      return 'subprocess';
+      return 'subprocess'
     case 'native':
-      return 'native (in-process)';
+      return 'native (in-process)'
     case 'wasm':
-      return 'WASM';
+      return 'WASM'
     default:
-      return transport || 'unknown-transport';
+      return transport || 'unknown-transport'
   }
 }
 
 export function formatPromptDetail(params: TrustRequestParams): string {
-  const sourceLabel = describeSource(params.source);
-  const capabilityLabel = describeCapability(params.capability);
+  const sourceLabel = describeSource(params.source)
+  const capabilityLabel = describeCapability(params.capability)
   // Two short paragraphs separated by blank line — vscode renders the
   // detail as plain text, so we lean on whitespace for structure.
   return [
@@ -70,8 +70,8 @@ export function formatPromptDetail(params: TrustRequestParams): string {
     `Command: ${params.command_string}`,
     `Capabilities: ${capabilityLabel}`,
     '',
-    "Trusting will allow this binary to run on this workspace's documents until you revoke it. Denying registers the namespace schema-only — pre-validation still runs but no handler is invoked.",
-  ].join('\n');
+    "Trusting will allow this binary to run on this workspace's documents until you revoke it. Denying registers the namespace schema-only — pre-validation still runs but no handler is invoked."
+  ].join('\n')
 }
 
 function describeSource(source: TrustRequestSource): string {
@@ -80,24 +80,24 @@ function describeSource(source: TrustRequestSource): string {
   // instead of "undefined". Forward-compat: unknown kinds fall through
   // to the raw kind string.
   if (source.kind === 'lex_toml' && typeof source.name === 'string') {
-    return `lex.toml [labels] entry "${source.name}"`;
+    return `lex.toml [labels] entry "${source.name}"`
   }
   if (source.kind === 'local_file' && typeof source.path === 'string') {
-    return `local schema directory ${source.path}`;
+    return `local schema directory ${source.path}`
   }
   if (source.kind === 'cache_only' && typeof source.uri === 'string') {
-    return `cached fetch from ${source.uri}`;
+    return `cached fetch from ${source.uri}`
   }
-  return source.kind || 'unknown source';
+  return source.kind || 'unknown source'
 }
 
 function describeCapability(capability: string): string {
   switch (capability) {
     case 'pure':
-      return 'pure (no fs / no net) — declared but not yet sandbox-enforced';
+      return 'pure (no fs / no net) — declared but not yet sandbox-enforced'
     case 'full':
-      return 'full (fs and/or net access)';
+      return 'full (fs and/or net access)'
     default:
-      return capability || 'unknown';
+      return capability || 'unknown'
   }
 }

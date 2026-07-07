@@ -20,17 +20,17 @@
 // channel writes still appear in the Output panel; this only adds a
 // stderr mirror.
 
-import * as vscode from 'vscode';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import * as vscode from 'vscode'
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 
-let installed = false;
-let logFilePath: string | undefined;
+let installed = false
+let logFilePath: string | undefined
 
 function write(prefix: string, line: string): void {
   // Always try stderr — harmless if it isn't being captured.
   try {
-    process.stderr.write(`${prefix} ${line}\n`);
+    process.stderr.write(`${prefix} ${line}\n`)
   } catch {
     // ignore
   }
@@ -38,7 +38,7 @@ function write(prefix: string, line: string): void {
   // extension-host stdio can still read activation-time errors.
   if (logFilePath) {
     try {
-      appendFileSync(logFilePath, `${prefix} ${line}\n`);
+      appendFileSync(logFilePath, `${prefix} ${line}\n`)
     } catch {
       // ignore
     }
@@ -46,57 +46,57 @@ function write(prefix: string, line: string): void {
 }
 
 export function installLogMirror(): void {
-  if (installed) return;
-  if (process.env.LEX_LOG_TO_STDERR !== '1') return;
-  installed = true;
+  if (installed) return
+  if (process.env.LEX_LOG_TO_STDERR !== '1') return
+  installed = true
 
   // Open / truncate the log file once per activation. Path is configurable
   // via LEX_LOG_FILE; otherwise defaults to /tmp/lex-vscode-test.log so
   // test runs can `tail -f` or read it post-mortem without env config.
-  logFilePath = process.env.LEX_LOG_FILE ?? '/tmp/lex-vscode-test.log';
+  logFilePath = process.env.LEX_LOG_FILE ?? '/tmp/lex-vscode-test.log'
   try {
-    mkdirSync(dirname(logFilePath), { recursive: true });
-    writeFileSync(logFilePath, '');
+    mkdirSync(dirname(logFilePath), { recursive: true })
+    writeFileSync(logFilePath, '')
   } catch {
     // ignore — best-effort
   }
 
-  patchShowMessages();
-  patchOutputChannelFactory();
+  patchShowMessages()
+  patchOutputChannelFactory()
 
-  write('[lex/instrument]', `stderr+file mirror installed (file=${logFilePath})`);
+  write('[lex/instrument]', `stderr+file mirror installed (file=${logFilePath})`)
 }
 
 function patchShowMessages(): void {
-  const win = vscode.window;
-  const originalError = win.showErrorMessage;
-  const originalWarn = win.showWarningMessage;
-  const originalInfo = win.showInformationMessage;
+  const win = vscode.window
+  const originalError = win.showErrorMessage
+  const originalWarn = win.showWarningMessage
+  const originalInfo = win.showInformationMessage
 
   win.showErrorMessage = (...args: unknown[]) => {
-    write('[lex/notify ERROR]', firstStringArg(args));
-    return originalError.apply(win, args as Parameters<typeof originalError>);
-  };
+    write('[lex/notify ERROR]', firstStringArg(args))
+    return originalError.apply(win, args as Parameters<typeof originalError>)
+  }
 
   win.showWarningMessage = (...args: unknown[]) => {
-    write('[lex/notify WARN ]', firstStringArg(args));
-    return originalWarn.apply(win, args as Parameters<typeof originalWarn>);
-  };
+    write('[lex/notify WARN ]', firstStringArg(args))
+    return originalWarn.apply(win, args as Parameters<typeof originalWarn>)
+  }
 
   win.showInformationMessage = (...args: unknown[]) => {
-    write('[lex/notify INFO ]', firstStringArg(args));
-    return originalInfo.apply(win, args as Parameters<typeof originalInfo>);
-  };
+    write('[lex/notify INFO ]', firstStringArg(args))
+    return originalInfo.apply(win, args as Parameters<typeof originalInfo>)
+  }
 }
 
 function firstStringArg(args: unknown[]): string {
-  const first = args[0];
-  return typeof first === 'string' ? first : JSON.stringify(first);
+  const first = args[0]
+  return typeof first === 'string' ? first : JSON.stringify(first)
 }
 
 function patchOutputChannelFactory(): void {
-  const win = vscode.window;
-  const originalCreate = win.createOutputChannel;
+  const win = vscode.window
+  const originalCreate = win.createOutputChannel
   win.createOutputChannel = ((name: string, ...rest: unknown[]) => {
     // Cast through unknown to bypass the overloaded signature — the
     // upstream API has both a string-options and a LogOutputChannel
@@ -104,22 +104,22 @@ function patchOutputChannelFactory(): void {
     const channel = (originalCreate as unknown as (...a: unknown[]) => vscode.OutputChannel).apply(
       win,
       [name, ...rest]
-    );
+    )
     // Mirror appendLine + append on the Lex channel. Other extensions'
     // channels are left alone so cross-extension noise doesn't drown
     // the lex signal.
     if (name === 'Lex') {
-      const originalAppendLine = channel.appendLine.bind(channel);
-      const originalAppend = channel.append.bind(channel);
+      const originalAppendLine = channel.appendLine.bind(channel)
+      const originalAppend = channel.append.bind(channel)
       channel.appendLine = (line: string) => {
-        write('[lex/log]', line);
-        originalAppendLine(line);
-      };
+        write('[lex/log]', line)
+        originalAppendLine(line)
+      }
       channel.append = (value: string) => {
-        write('[lex/log/append]', value);
-        originalAppend(value);
-      };
+        write('[lex/log/append]', value)
+        originalAppend(value)
+      }
     }
-    return channel;
-  }) as typeof win.createOutputChannel;
+    return channel
+  }) as typeof win.createOutputChannel
 }

@@ -1,38 +1,38 @@
-import path from 'node:path';
-import fs from 'node:fs';
+import path from 'node:path'
+import fs from 'node:fs'
 
-export const LEX_CONFIGURATION_SECTION = 'lex';
-export const LSP_BINARY_SETTING = 'lspBinaryPath';
+export const LEX_CONFIGURATION_SECTION = 'lex'
+export const LSP_BINARY_SETTING = 'lspBinaryPath'
 // Default path to bundled LSP binary (matches package.json default)
-const DEFAULT_LSP_BINARY = './resources/lexd-lsp';
-const WINDOWS_EXECUTABLE_SUFFIX = '.exe';
+const DEFAULT_LSP_BINARY = './resources/lexd-lsp'
+const WINDOWS_EXECUTABLE_SUFFIX = '.exe'
 
 function normalizeWindowsExecutable(
   binaryPath: string,
   platform: NodeJS.Platform = process.platform
 ): string {
   if (platform !== 'win32') {
-    return binaryPath;
+    return binaryPath
   }
 
   if (binaryPath.toLowerCase().endsWith(WINDOWS_EXECUTABLE_SUFFIX)) {
-    return binaryPath;
+    return binaryPath
   }
 
-  return `${binaryPath}${WINDOWS_EXECUTABLE_SUFFIX}`;
+  return `${binaryPath}${WINDOWS_EXECUTABLE_SUFFIX}`
 }
 
 export interface LexExtensionConfig {
-  lspBinaryPath: string;
-  warning?: string;
+  lspBinaryPath: string
+  warning?: string
 }
 
 export function defaultLspBinaryPath(
   extensionPath: string,
   platform: NodeJS.Platform = process.platform
 ): string {
-  const resolved = path.resolve(extensionPath, DEFAULT_LSP_BINARY);
-  return normalizeWindowsExecutable(resolved, platform);
+  const resolved = path.resolve(extensionPath, DEFAULT_LSP_BINARY)
+  return normalizeWindowsExecutable(resolved, platform)
 }
 
 /**
@@ -50,11 +50,11 @@ export function resolveLspBinaryPath(
 ): { path: string; warning?: string } {
   // 1. Environment variable takes precedence (for CI and explicit override)
   //    Falls through to bundled binary if the env path doesn't exist.
-  const envPath = env.LEX_LSP_PATH;
+  const envPath = env.LEX_LSP_PATH
   if (envPath && envPath.trim() !== '') {
-    const resolved = normalizeWindowsExecutable(envPath, platform);
+    const resolved = normalizeWindowsExecutable(envPath, platform)
     if (existsSync(resolved)) {
-      return { path: resolved };
+      return { path: resolved }
     }
     // Env var set but binary missing — fall through to bundled binary
   }
@@ -62,23 +62,23 @@ export function resolveLspBinaryPath(
   // 2. User config setting
   if (configuredPath && configuredPath.trim() !== '') {
     if (path.isAbsolute(configuredPath)) {
-      return { path: normalizeWindowsExecutable(configuredPath, platform) };
+      return { path: normalizeWindowsExecutable(configuredPath, platform) }
     }
-    const resolved = path.resolve(extensionPath, configuredPath);
-    return { path: normalizeWindowsExecutable(resolved, platform) };
+    const resolved = path.resolve(extensionPath, configuredPath)
+    return { path: normalizeWindowsExecutable(resolved, platform) }
   }
 
   // 3. Bundled binary
-  return { path: defaultLspBinaryPath(extensionPath, platform) };
+  return { path: defaultLspBinaryPath(extensionPath, platform) }
 }
 
 export function buildLexExtensionConfig(
   extensionPath: string,
   configuredLspPath?: string | null
 ): LexExtensionConfig {
-  const resolved = resolveLspBinaryPath(extensionPath, configuredLspPath);
+  const resolved = resolveLspBinaryPath(extensionPath, configuredLspPath)
   return {
     lspBinaryPath: resolved.path,
-    warning: resolved.warning,
-  };
+    warning: resolved.warning
+  }
 }

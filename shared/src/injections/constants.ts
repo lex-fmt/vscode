@@ -1,9 +1,9 @@
-import type { DecorationCategory } from './types.js';
+import type { DecorationCategory } from './types.js'
 
 /**
  * Debounce window between document edits and the next highlight refresh.
  */
-export const DEBOUNCE_MS = 250;
+export const DEBOUNCE_MS = 250
 
 /**
  * Aliases from common annotation strings (`:: py ::`, `:: js ::`) onto
@@ -26,8 +26,8 @@ export const LANGUAGE_ALIASES: Readonly<Record<string, string>> = {
   cxx: 'cpp',
   cc: 'cpp',
   htm: 'html',
-  golang: 'go',
-};
+  golang: 'go'
+}
 
 /**
  * Default mapping from tree-sitter highlight capture names to our
@@ -54,8 +54,8 @@ export const TREE_SITTER_HIGHLIGHT_MAP: Readonly<Record<string, DecorationCatego
   type: 'type',
   'type.builtin': 'type',
   operator: 'operator',
-  'constant.builtin': 'keyword',
-};
+  'constant.builtin': 'keyword'
+}
 
 /**
  * Theme color IDs per category. Hosts translate these into native
@@ -68,8 +68,8 @@ export const CATEGORY_COLORS: Readonly<Record<DecorationCategory, string>> = {
   number: 'lex.injection.number',
   type: 'lex.injection.type',
   function: 'lex.injection.function',
-  operator: 'lex.injection.operator',
-};
+  operator: 'lex.injection.operator'
+}
 
 /**
  * Font-style overrides per category. Missing entries default to the
@@ -77,5 +77,5 @@ export const CATEGORY_COLORS: Readonly<Record<DecorationCategory, string>> = {
  */
 export const CATEGORY_STYLES: Readonly<Partial<Record<DecorationCategory, string>>> = {
   comment: 'italic',
-  keyword: 'bold',
-};
+  keyword: 'bold'
+}

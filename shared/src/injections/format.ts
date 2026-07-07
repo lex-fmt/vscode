@@ -1,5 +1,5 @@
-import { CATEGORY_COLORS } from './constants.js';
-import type { DecorationCategory, InjectionStatus, ZoneDiagnostic } from './types.js';
+import { CATEGORY_COLORS } from './constants.js'
+import type { DecorationCategory, InjectionStatus, ZoneDiagnostic } from './types.js'
 
 /**
  * Render an `InjectionStatus` as a human-readable text block for output
@@ -19,50 +19,50 @@ import type { DecorationCategory, InjectionStatus, ZoneDiagnostic } from './type
  * host-registered language ID. That's the most common failure mode.
  */
 export function formatInjectionStatus(status: InjectionStatus): string {
-  const lines: string[] = [];
-  const file = status.documentUri ?? '(no document)';
+  const lines: string[] = []
+  const file = status.documentUri ?? '(no document)'
   lines.push(
     `Lex injection status — file=${file} enabled=${status.enabled} ` +
       `zones=${status.zoneCount} registered=${status.registeredLanguageCount}`
-  );
+  )
 
   // Decoration totals per category.
-  const totals: string[] = [];
+  const totals: string[] = []
   for (const cat of Object.keys(CATEGORY_COLORS) as DecorationCategory[]) {
-    const ranges = status.rangesByCategory.get(cat) ?? [];
-    totals.push(`${cat}=${ranges.length}`);
+    const ranges = status.rangesByCategory.get(cat) ?? []
+    totals.push(`${cat}=${ranges.length}`)
   }
-  lines.push(`Decorations:  ${totals.join(' ')}`);
+  lines.push(`Decorations:  ${totals.join(' ')}`)
 
   if (status.zones.length === 0) {
-    lines.push('Zones: (none)');
-    return lines.join('\n');
+    lines.push('Zones: (none)')
+    return lines.join('\n')
   }
 
-  lines.push('Zones:');
+  lines.push('Zones:')
   for (const zone of status.zones) {
-    lines.push(`  ${formatZoneLine(zone)}`);
+    lines.push(`  ${formatZoneLine(zone)}`)
   }
-  return lines.join('\n');
+  return lines.join('\n')
 }
 
 function formatZoneLine(z: ZoneDiagnostic): string {
-  const range = `[${z.range.startLine}:${z.range.startCol} → ${z.range.endLine}:${z.range.endCol}]`;
-  const resolved = z.resolvedLanguageId ?? '—';
-  const head = `#${z.index} ${range} ${z.annotationLanguage} (→ ${resolved}) bytes=${z.contentLength}`;
+  const range = `[${z.range.startLine}:${z.range.startCol} → ${z.range.endLine}:${z.range.endCol}]`
+  const resolved = z.resolvedLanguageId ?? '—'
+  const head = `#${z.index} ${range} ${z.annotationLanguage} (→ ${resolved}) bytes=${z.contentLength}`
   if (!z.requestedTokens) {
-    return `${head} requested=false`;
+    return `${head} requested=false`
   }
-  const tail = `requested=true received=${z.receivedTokens} tokens=${z.tokenCount}`;
-  let line = `${head} ${tail}`;
+  const tail = `requested=true received=${z.receivedTokens} tokens=${z.tokenCount}`
+  let line = `${head} ${tail}`
   if (z.error) {
-    line += ` error="${z.error}"`;
+    line += ` error="${z.error}"`
   }
   if (z.tokenTypeHistogram && Object.keys(z.tokenTypeHistogram).length > 0) {
     // Sort by count descending so the dominant token types stand out.
-    const entries = Object.entries(z.tokenTypeHistogram).sort((a, b) => b[1] - a[1]);
-    const tally = entries.map(([t, n]) => `${t}=${n}`).join(' ');
-    line += `\n      types: ${tally}`;
+    const entries = Object.entries(z.tokenTypeHistogram).sort((a, b) => b[1] - a[1])
+    const tally = entries.map(([t, n]) => `${t}=${n}`).join(' ')
+    line += `\n      types: ${tally}`
   }
-  return line;
+  return line
 }

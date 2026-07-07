@@ -8,13 +8,13 @@
  */
 
 /** Custom request method implemented by lexd-lsp (>= v0.17.0). */
-export const PREPARE_PASTE_METHOD = 'lex/preparePaste';
+export const PREPARE_PASTE_METHOD = 'lex/preparePaste'
 
 /**
  * Capability flag advertised under `ServerCapabilities.experimental` when the
  * server implements `lex/preparePaste`. Mirrors the key set by lex-lsp.
  */
-export const PREPARE_PASTE_CAPABILITY = 'lexPreparePaste';
+export const PREPARE_PASTE_CAPABILITY = 'lexPreparePaste'
 
 /**
  * Shape of the JSON-RPC reply for `lex/preparePaste` (mirrors
@@ -22,8 +22,8 @@ export const PREPARE_PASTE_CAPABILITY = 'lexPreparePaste';
  * editor side consumes; `mode` is included for parity / future diagnostics.
  */
 export interface PreparePasteResult {
-  text: string;
-  mode: string;
+  text: string
+  mode: string
 }
 
 /**
@@ -35,9 +35,9 @@ export interface PreparePasteResult {
 export interface ServerCapabilityProbe {
   initializeResult?: {
     capabilities?: {
-      experimental?: unknown;
-    };
-  };
+      experimental?: unknown
+    }
+  }
 }
 
 /**
@@ -50,8 +50,8 @@ export interface ServerCapabilityProbe {
 export function serverSupportsPreparePaste(client: ServerCapabilityProbe | undefined): boolean {
   const experimental = client?.initializeResult?.capabilities?.experimental as
     | Record<string, unknown>
-    | undefined;
-  return experimental?.[PREPARE_PASTE_CAPABILITY] === true;
+    | undefined
+  return experimental?.[PREPARE_PASTE_CAPABILITY] === true
 }
 
 /**
@@ -81,8 +81,8 @@ export function isUsableServerResult(
   // at runtime. The only caller in `smartPaste.ts` reads `result.text`,
   // which this narrower shape satisfies; further fields stay accessed
   // through the original (broader) type if ever needed.
-  if (!result) return false;
-  if (typeof result.text !== 'string') return false;
-  if (result.text === pastedText) return false;
-  return true;
+  if (!result) return false
+  if (typeof result.text !== 'string') return false
+  if (result.text === pastedText) return false
+  return true
 }

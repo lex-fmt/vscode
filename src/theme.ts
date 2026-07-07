@@ -16,41 +16,41 @@
  * See `src/theme-data.ts` (do not hand-edit).
  */
 
-import * as vscode from 'vscode';
+import * as vscode from 'vscode'
 
-import { LEX_RULE_KEYS, LIGHT_RULES } from './theme-data.js';
+import { LEX_RULE_KEYS, LIGHT_RULES } from './theme-data.js'
 
 function isDarkTheme(): boolean {
   return (
     vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
     vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast
-  );
+  )
 }
 
-const SEMANTIC_TOKEN_CONFIG_KEY = 'editor.semanticTokenColorCustomizations';
+const SEMANTIC_TOKEN_CONFIG_KEY = 'editor.semanticTokenColorCustomizations'
 
 export async function applyLexTheme(): Promise<void> {
-  const config = vscode.workspace.getConfiguration();
-  const existing = config.get<Record<string, unknown>>(SEMANTIC_TOKEN_CONFIG_KEY) ?? {};
-  const existingRules = (existing.rules as Record<string, unknown>) ?? {};
+  const config = vscode.workspace.getConfiguration()
+  const existing = config.get<Record<string, unknown>>(SEMANTIC_TOKEN_CONFIG_KEY) ?? {}
+  const existingRules = (existing.rules as Record<string, unknown>) ?? {}
 
   if (isDarkTheme()) {
     // Dark mode: remove any light-mode overrides so package.json defaults apply
-    const cleaned = { ...existingRules };
-    let changed = false;
+    const cleaned = { ...existingRules }
+    let changed = false
     for (const key of LEX_RULE_KEYS) {
       if (key in cleaned) {
-        delete cleaned[key];
-        changed = true;
+        delete cleaned[key]
+        changed = true
       }
     }
     if (changed) {
-      const updated = { ...existing, rules: cleaned };
+      const updated = { ...existing, rules: cleaned }
       if (Object.keys(cleaned).length === 0) {
-        delete (updated as Record<string, unknown>).rules;
+        delete (updated as Record<string, unknown>).rules
       }
-      const value = Object.keys(updated).length === 0 ? undefined : updated;
-      await config.update(SEMANTIC_TOKEN_CONFIG_KEY, value, vscode.ConfigurationTarget.Global);
+      const value = Object.keys(updated).length === 0 ? undefined : updated
+      await config.update(SEMANTIC_TOKEN_CONFIG_KEY, value, vscode.ConfigurationTarget.Global)
     }
   } else {
     // Light mode: write light-mode overrides (take precedence over defaults)
@@ -58,17 +58,17 @@ export async function applyLexTheme(): Promise<void> {
       ...existing,
       rules: {
         ...existingRules,
-        ...LIGHT_RULES,
-      },
-    };
-    await config.update(SEMANTIC_TOKEN_CONFIG_KEY, updated, vscode.ConfigurationTarget.Global);
+        ...LIGHT_RULES
+      }
+    }
+    await config.update(SEMANTIC_TOKEN_CONFIG_KEY, updated, vscode.ConfigurationTarget.Global)
   }
 }
 
 export function setupThemeListeners(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveColorTheme(async () => {
-      await applyLexTheme();
+      await applyLexTheme()
     })
-  );
+  )
 }

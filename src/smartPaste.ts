@@ -18,31 +18,31 @@
  *   params   { textDocument: TextDocumentIdentifier, range: Range, pastedText: string }
  *   response { text: string, mode: string }
  */
-import * as vscode from 'vscode';
-import type { LanguageClient } from 'vscode-languageclient/node.js';
-import type { Range as LspRange } from 'vscode-languageserver-types';
+import * as vscode from 'vscode'
+import type { LanguageClient } from 'vscode-languageclient/node.js'
+import type { Range as LspRange } from 'vscode-languageserver-types'
 import {
   PREPARE_PASTE_METHOD,
   PREPARE_PASTE_CAPABILITY,
   serverSupportsPreparePaste,
   isUsableServerResult,
-  type PreparePasteResult,
-} from './smartPasteCore.js';
+  type PreparePasteResult
+} from './smartPasteCore.js'
 
 export {
   PREPARE_PASTE_METHOD,
   PREPARE_PASTE_CAPABILITY,
   serverSupportsPreparePaste,
   isUsableServerResult,
-  type PreparePasteResult,
-};
+  type PreparePasteResult
+}
 
 /**
  * MIME type smart paste handles. `text/plain` is the clipboard flavour VS Code
  * provides for ordinary text pastes; that is exactly the input the re-anchor
  * transform operates on.
  */
-const TEXT_PLAIN = 'text/plain';
+const TEXT_PLAIN = 'text/plain'
 
 /**
  * The paste-edit kind we contribute. Identifies our edit among any other
@@ -52,9 +52,9 @@ const SMART_PASTE_KIND = vscode.DocumentDropOrPasteEditKind.Empty.append(
   'text',
   'lex',
   'smartPaste'
-);
+)
 
-type GetClient = () => LanguageClient | undefined;
+type GetClient = () => LanguageClient | undefined
 
 /**
  * The `DocumentPasteEditProvider` for Lex documents. Stateless apart from the
@@ -70,30 +70,30 @@ export class LexSmartPasteProvider implements vscode.DocumentPasteEditProvider {
     _context: vscode.DocumentPasteEditContext,
     token: vscode.CancellationToken
   ): Promise<vscode.DocumentPasteEdit[] | undefined> {
-    const client = this.getClient();
+    const client = this.getClient()
     // Guard on capability + a live client. Returning undefined yields native
     // paste — the correct fallback when the server can't re-anchor (§1, §5).
     if (!client || !serverSupportsPreparePaste(client)) {
-      return undefined;
+      return undefined
     }
 
     // Only the plain-text flavour is re-anchored; richer flavours (files,
     // images) are left to native handling.
-    const item = dataTransfer.get(TEXT_PLAIN);
+    const item = dataTransfer.get(TEXT_PLAIN)
     if (!item) {
-      return undefined;
+      return undefined
     }
     // Reading the clipboard flavour can reject; a failed read must not throw
     // out of the provider and disrupt the paste — fall back to native instead.
-    let pastedText: string;
+    let pastedText: string
     try {
-      pastedText = await item.asString();
+      pastedText = await item.asString()
     } catch {
-      return undefined;
+      return undefined
     }
     // Empty clipboard: no edit, native (no-op) paste proceeds (§6).
     if (pastedText.length === 0 || token.isCancellationRequested) {
-      return undefined;
+      return undefined
     }
 
     // Re-anchor only the single-caret case. A multi-cursor paste reports one
@@ -102,41 +102,41 @@ export class LexSmartPasteProvider implements vscode.DocumentPasteEditProvider {
     // every cursor — wrong indentation everywhere but the first. Leave
     // multi-cursor (and the degenerate zero-range case) to native handling.
     if (ranges.length !== 1) {
-      return undefined;
+      return undefined
     }
-    const range = ranges[0];
+    const range = ranges[0]
 
-    let result: PreparePasteResult;
+    let result: PreparePasteResult
     try {
-      const lspRange: LspRange = client.code2ProtocolConverter.asRange(range);
+      const lspRange: LspRange = client.code2ProtocolConverter.asRange(range)
       result = await client.sendRequest<PreparePasteResult>(
         PREPARE_PASTE_METHOD,
         {
           textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document),
           range: lspRange,
-          pastedText,
+          pastedText
         },
         token
-      );
+      )
     } catch {
       // Server down, request unavailable, or any transport error → native
       // paste. Smart paste never blocks the basic operation (§1).
-      return undefined;
+      return undefined
     }
 
     if (token.isCancellationRequested) {
-      return undefined;
+      return undefined
     }
     // `isUsableServerResult` filters malformed payloads (missing/non-string
     // `text`) and the identity case where re-anchoring left the input
     // unchanged — both fall back to native paste (no redundant entry in the
     // edit picker).
     if (!isUsableServerResult(result, pastedText)) {
-      return undefined;
+      return undefined
     }
 
-    const edit = new vscode.DocumentPasteEdit(result.text, 'Lex: smart paste', SMART_PASTE_KIND);
-    return [edit];
+    const edit = new vscode.DocumentPasteEdit(result.text, 'Lex: smart paste', SMART_PASTE_KIND)
+    return [edit]
   }
 }
 
@@ -151,7 +151,7 @@ export function registerSmartPaste(getClient: GetClient): vscode.Disposable {
     new LexSmartPasteProvider(getClient),
     {
       providedPasteEditKinds: [SMART_PASTE_KIND],
-      pasteMimeTypes: [TEXT_PLAIN],
+      pasteMimeTypes: [TEXT_PLAIN]
     }
-  );
+  )
 }

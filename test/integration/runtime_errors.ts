@@ -18,21 +18,21 @@
  */
 
 export interface CapturedRuntimeError {
-  source: 'unhandledRejection' | 'uncaughtException';
-  message: string;
+  source: 'unhandledRejection' | 'uncaughtException'
+  message: string
 }
 
-let captured: CapturedRuntimeError[] = [];
-let expectedPatterns: string[] = [];
-let installed = false;
+let captured: CapturedRuntimeError[] = []
+let expectedPatterns: string[] = []
+let installed = false
 
 export function getCapturedErrors(): readonly CapturedRuntimeError[] {
-  return captured;
+  return captured
 }
 
 export function reset(): void {
-  captured = [];
-  expectedPatterns = [];
+  captured = []
+  expectedPatterns = []
 }
 
 /**
@@ -41,53 +41,53 @@ export function reset(): void {
  * testing error paths) should call this before the action.
  */
 export function markExpectedError(substring: string): void {
-  expectedPatterns.push(substring);
+  expectedPatterns.push(substring)
 }
 
 function isExpected(message: string): boolean {
-  const idx = expectedPatterns.findIndex((p) => message.includes(p));
+  const idx = expectedPatterns.findIndex((p) => message.includes(p))
   if (idx === -1) {
-    return false;
+    return false
   }
-  expectedPatterns.splice(idx, 1);
-  return true;
+  expectedPatterns.splice(idx, 1)
+  return true
 }
 
 function formatReason(raw: unknown): string {
   if (raw instanceof Error) {
-    return raw.stack ?? raw.message;
+    return raw.stack ?? raw.message
   }
   if (typeof raw === 'string') {
-    return raw;
+    return raw
   }
   // `JSON.stringify` is typed as `string | undefined` and *does*
   // return `undefined` for things like `undefined`, functions, and
   // symbols. Always return a string so downstream `.includes(...)`
   // calls in `isExpected()` are safe.
   try {
-    const json = JSON.stringify(raw);
+    const json = JSON.stringify(raw)
     if (json !== undefined) {
-      return json;
+      return json
     }
   } catch {
     // fall through
   }
-  return String(raw);
+  return String(raw)
 }
 
 function record(source: CapturedRuntimeError['source'], raw: unknown): void {
-  const message = formatReason(raw);
+  const message = formatReason(raw)
   if (isExpected(message)) {
-    return;
+    return
   }
-  captured.push({ source, message });
+  captured.push({ source, message })
 }
 
 export function install(): void {
   if (installed) {
-    return;
+    return
   }
-  installed = true;
+  installed = true
 
   // Note: `process.on(…)` adds listeners; Node will still call any
   // pre-existing listeners VS Code itself installed. That's intentional
@@ -95,19 +95,19 @@ export function install(): void {
   // what we want (we record the error, the rest of the host stays
   // stable).
   process.on('unhandledRejection', (reason) => {
-    record('unhandledRejection', reason);
-  });
+    record('unhandledRejection', reason)
+  })
   process.on('uncaughtException', (err) => {
-    record('uncaughtException', err);
-  });
+    record('uncaughtException', err)
+  })
 }
 
 export function assertNoRuntimeErrors(context?: string): void {
   if (captured.length === 0) {
-    return;
+    return
   }
-  const lines = captured.map((c, i) => `  [${i + 1}] (${c.source}) ${c.message}`);
+  const lines = captured.map((c, i) => `  [${i + 1}] (${c.source}) ${c.message}`)
   throw new Error(
     `${context ? context + ': ' : ''}runtime errors captured (${captured.length}):\n${lines.join('\n')}`
-  );
+  )
 }

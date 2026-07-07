@@ -15,16 +15,16 @@ export type DecorationCategory =
   | 'number'
   | 'type'
   | 'function'
-  | 'operator';
+  | 'operator'
 
 /**
  * Zero-based range in the real Lex document.
  */
 export interface InjectionRange {
-  startLine: number;
-  startCol: number;
-  endLine: number;
-  endCol: number;
+  startLine: number
+  startCol: number
+  endLine: number
+  endCol: number
 }
 
 /**
@@ -35,12 +35,12 @@ export interface InjectionRange {
  * without importing vscode-specific modules.
  */
 export interface InjectionZone {
-  language: string;
-  text: string;
-  startRow: number;
-  startCol: number;
-  endRow: number;
-  endCol: number;
+  language: string
+  text: string
+  startRow: number
+  startCol: number
+  endRow: number
+  endCol: number
 }
 
 /**
@@ -54,11 +54,11 @@ export interface InjectionZone {
  * via the host-supplied `tokenNameToCategory` lookup.
  */
 export interface EmbeddedToken {
-  name: string;
-  startLine: number;
-  startCol: number;
-  endLine: number;
-  endCol: number;
+  name: string
+  startLine: number
+  startCol: number
+  endLine: number
+  endCol: number
 }
 
 /**
@@ -73,15 +73,15 @@ export interface EmbeddedToken {
  *    tokenized right now" and we silently skip it.
  */
 export interface InjectionHostAdapter {
-  getRegisteredLanguages(): Promise<Set<string>>;
-  getTokens(zoneIndex: number, content: string, langId: string): Promise<EmbeddedToken[] | null>;
+  getRegisteredLanguages(): Promise<Set<string>>
+  getTokens(zoneIndex: number, content: string, langId: string): Promise<EmbeddedToken[] | null>
   /**
    * Map from a tokenizer capture name (possibly hierarchical, e.g.
    * `function.method`) onto a `DecorationCategory`. The shared module
    * walks specificity from longest prefix down — `function.method`
    * before `function` — and skips tokens whose name does not resolve.
    */
-  tokenNameToCategory: Readonly<Record<string, DecorationCategory>>;
+  tokenNameToCategory: Readonly<Record<string, DecorationCategory>>
 }
 
 /**
@@ -100,28 +100,28 @@ export interface InjectionHostAdapter {
  * flipped from "true" back to "false" identifies the failing stage.
  */
 export interface ZoneDiagnostic {
-  index: number;
+  index: number
   /** Language as detected by tree-sitter (already lowercased / first-word). */
-  annotationLanguage: string;
+  annotationLanguage: string
   /** Host language ID after alias resolution, or null if no tokenizer claims it. */
-  resolvedLanguageId: string | null;
+  resolvedLanguageId: string | null
   /** Zero-based real-document range of the zone. */
-  range: InjectionRange;
+  range: InjectionRange
   /** Bytes of zone content sent to the tokenizer. */
-  contentLength: number;
-  requestedTokens: boolean;
-  receivedTokens: boolean;
+  contentLength: number
+  requestedTokens: boolean
+  receivedTokens: boolean
   /** Decoded token count. */
-  tokenCount: number;
+  tokenCount: number
   /**
    * Histogram of how many tokens of each capture name came back. Useful
    * when `tokenCount > 0` but decorations are sparse — usually means the
    * tokenizer emitted captures whose names don't resolve via
    * `tokenNameToCategory` (e.g. `variable`, `punctuation.bracket`).
    */
-  tokenTypeHistogram?: Record<string, number>;
+  tokenTypeHistogram?: Record<string, number>
   /** Error message if `getTokens` threw. */
-  error?: string;
+  error?: string
 }
 
 /**
@@ -130,14 +130,14 @@ export interface ZoneDiagnostic {
  * happened without re-running the pipeline.
  */
 export interface InjectionStatus {
-  enabled: boolean;
-  documentUri: string | null;
+  enabled: boolean
+  documentUri: string | null
   /** ms since epoch when the refresh completed. */
-  timestamp: number;
-  zoneCount: number;
-  zones: ZoneDiagnostic[];
+  timestamp: number
+  zoneCount: number
+  zones: ZoneDiagnostic[]
   /** Number of host-registered language IDs at the time of the refresh. */
-  registeredLanguageCount: number;
+  registeredLanguageCount: number
   /** Decoration ranges per category from the most recent compute. */
-  rangesByCategory: Map<DecorationCategory, InjectionRange[]>;
+  rangesByCategory: Map<DecorationCategory, InjectionRange[]>
 }
