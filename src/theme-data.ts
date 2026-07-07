@@ -7,7 +7,7 @@
 // when switching back to dark (so the package.json dark defaults
 // take over again).
 
-export type SemanticTokenRule = string | { foreground: string; fontStyle?: string };
+export type SemanticTokenRule = string | { foreground: string; fontStyle?: string }
 
 export const LIGHT_RULES: Record<string, SemanticTokenRule> = {
   'DocumentTitle:lex': { foreground: '#000000', fontStyle: 'bold underline' },
@@ -42,8 +42,8 @@ export const LIGHT_RULES: Record<string, SemanticTokenRule> = {
   'InlineMarker_math_start:lex': { foreground: '#cacaca', fontStyle: 'italic' },
   'InlineMarker_math_end:lex': { foreground: '#cacaca', fontStyle: 'italic' },
   'InlineMarker_ref_start:lex': { foreground: '#cacaca', fontStyle: 'italic' },
-  'InlineMarker_ref_end:lex': { foreground: '#cacaca', fontStyle: 'italic' },
-};
+  'InlineMarker_ref_end:lex': { foreground: '#cacaca', fontStyle: 'italic' }
+}
 
 export const LEX_RULE_KEYS: string[] = [
   'DocumentTitle:lex',
@@ -78,5 +78,5 @@ export const LEX_RULE_KEYS: string[] = [
   'InlineMarker_math_start:lex',
   'InlineMarker_math_end:lex',
   'InlineMarker_ref_start:lex',
-  'InlineMarker_ref_end:lex',
-];
+  'InlineMarker_ref_end:lex'
+]
