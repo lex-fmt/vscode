@@ -1,4 +1,4 @@
-import type { DecorationCategory, EmbeddedToken, InjectionRange, InjectionZone } from './types.js';
+import type { DecorationCategory, EmbeddedToken, InjectionRange, InjectionZone } from './types.js'
 
 /**
  * Map a tokenizer capture name onto a `DecorationCategory` via prefix
@@ -16,15 +16,15 @@ export function resolveCategory(
   name: string,
   map: Readonly<Record<string, DecorationCategory>>
 ): DecorationCategory | null {
-  let cursor = name;
+  let cursor = name
   while (cursor.length > 0) {
-    const cat = map[cursor];
-    if (cat) return cat;
-    const dot = cursor.lastIndexOf('.');
-    if (dot < 0) return null;
-    cursor = cursor.slice(0, dot);
+    const cat = map[cursor]
+    if (cat) return cat
+    const dot = cursor.lastIndexOf('.')
+    if (dot < 0) return null
+    cursor = cursor.slice(0, dot)
   }
-  return null;
+  return null
 }
 
 /**
@@ -43,21 +43,21 @@ export function mapTokensToDecorations(
   rangesByCategory: Map<DecorationCategory, InjectionRange[]>
 ): void {
   for (const tok of tokens) {
-    const category = resolveCategory(tok.name, map);
-    if (!category) continue;
+    const category = resolveCategory(tok.name, map)
+    if (!category) continue
 
-    const ranges = rangesByCategory.get(category);
-    if (!ranges) continue;
+    const ranges = rangesByCategory.get(category)
+    if (!ranges) continue
 
-    const startReal = toRealPosition(tok.startLine, tok.startCol, zone);
-    const endReal = toRealPosition(tok.endLine, tok.endCol, zone);
+    const startReal = toRealPosition(tok.startLine, tok.startCol, zone)
+    const endReal = toRealPosition(tok.endLine, tok.endCol, zone)
 
     ranges.push({
       startLine: startReal.line,
       startCol: startReal.col,
       endLine: endReal.line,
-      endCol: endReal.col,
-    });
+      endCol: endReal.col
+    })
   }
 }
 
@@ -68,6 +68,6 @@ function toRealPosition(
 ): { line: number; col: number } {
   return {
     line: zone.startRow + line,
-    col: line === 0 ? zone.startCol + col : col,
-  };
+    col: line === 0 ? zone.startCol + col : col
+  }
 }

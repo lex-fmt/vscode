@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
-import type { LanguageClient } from 'vscode-languageclient/node.js';
+import * as vscode from 'vscode'
+import type { LanguageClient } from 'vscode-languageclient/node.js'
 import {
   formatPromptDetail,
   formatPromptMessage,
   type TrustRequestParams,
-  type TrustResponse,
-} from './trustPromptFormat.js';
+  type TrustResponse
+} from './trustPromptFormat.js'
 
 /**
  * `lex/trustRequest` — server→client custom request. The LSP fires this
@@ -15,7 +15,7 @@ import {
  *
  * Wire shape mirrors `crates/lex-lsp/src/trust_prompt.rs` in lex-fmt/lex.
  */
-const TRUST_REQUEST_METHOD = 'lex/trustRequest';
+const TRUST_REQUEST_METHOD = 'lex/trustRequest'
 
 /**
  * Register the `lex/trustRequest` handler against an already-started
@@ -25,8 +25,8 @@ export function registerTrustPrompt(client: LanguageClient): vscode.Disposable {
   return client.onRequest(
     TRUST_REQUEST_METHOD,
     async (params: TrustRequestParams): Promise<TrustResponse> => {
-      const message = formatPromptMessage(params);
-      const detail = formatPromptDetail(params);
+      const message = formatPromptMessage(params)
+      const detail = formatPromptDetail(params)
 
       // Modal so the user can't miss the prompt — extension trust is a
       // security decision, not a casual notification. The two action
@@ -38,18 +38,18 @@ export function registerTrustPrompt(client: LanguageClient): vscode.Disposable {
         { modal: true, detail },
         'Trust',
         'Deny'
-      );
+      )
 
       if (choice === 'Trust') {
-        return { decision: 'trusted' };
+        return { decision: 'trusted' }
       }
       return {
         decision: 'denied',
         reason:
           choice === 'Deny'
             ? `User denied trust for namespace \`${params.namespace}\` in this workspace.`
-            : `Trust prompt for namespace \`${params.namespace}\` was dismissed without a decision.`,
-      };
+            : `Trust prompt for namespace \`${params.namespace}\` was dismissed without a decision.`
+      }
     }
-  );
+  )
 }

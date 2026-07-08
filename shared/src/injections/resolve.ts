@@ -1,4 +1,4 @@
-import { LANGUAGE_ALIASES } from './constants.js';
+import { LANGUAGE_ALIASES } from './constants.js'
 
 /**
  * Resolves an annotation string (e.g. `"py"`, `" Python "`, `"rust"`) to a
@@ -11,8 +11,8 @@ export function resolveLanguageId(
   annotation: string,
   registeredLanguages: Set<string>
 ): string | null {
-  const name = annotation.toLowerCase().trim();
-  if (!name) return null;
-  const resolved = LANGUAGE_ALIASES[name] ?? name;
-  return registeredLanguages.has(resolved) ? resolved : null;
+  const name = annotation.toLowerCase().trim()
+  if (!name) return null
+  const resolved = LANGUAGE_ALIASES[name] ?? name
+  return registeredLanguages.has(resolved) ? resolved : null
 }

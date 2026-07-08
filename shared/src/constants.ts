@@ -1,8 +1,8 @@
-import lexDeps from '../lex-deps.json' with { type: 'json' };
+import lexDeps from '../lex-deps.json' with { type: 'json' }
 
 // Pinned lexd-lsp version - binaries downloaded from https://github.com/lex-fmt/lex/releases
-export const LEX_LSP_VERSION = lexDeps['lexd-lsp'];
-export const LEX_LSP_REPO = lexDeps['lexd-lsp-repo'];
+export const LEX_LSP_VERSION = lexDeps['lexd-lsp']
+export const LEX_LSP_REPO = lexDeps['lexd-lsp-repo']
 
 export const TOKEN_TYPES = [
   'DocumentTitle',
@@ -36,18 +36,18 @@ export const TOKEN_TYPES = [
   'InlineMarker_math_end',
   'InlineMarker_ref_start',
   'InlineMarker_ref_end',
-  'ReferenceAnnotation',
-];
+  'ReferenceAnnotation'
+]
 
-export const TOKEN_MODIFIERS: string[] = [];
+export const TOKEN_MODIFIERS: string[] = []
 
 export const LEGEND = {
   tokenTypes: TOKEN_TYPES,
-  tokenModifiers: TOKEN_MODIFIERS,
-};
+  tokenModifiers: TOKEN_MODIFIERS
+}
 
 export const FORMAT_EXTENSIONS: Record<string, string> = {
   lex: '.lex',
   markdown: '.md',
-  html: '.html',
-};
+  html: '.html'
+}

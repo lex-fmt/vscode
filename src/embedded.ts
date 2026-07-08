@@ -17,12 +17,12 @@
  * here.
  */
 
-import path from 'node:path';
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { Parser, Language, Query, type Node } from 'web-tree-sitter';
-import type { injections } from '@lex/shared';
+import path from 'node:path'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { Parser, Language, Query, type Node } from 'web-tree-sitter'
+import type { injections } from '@lex/shared'
 
-export type EmbeddedToken = injections.EmbeddedToken;
+export type EmbeddedToken = injections.EmbeddedToken
 
 export interface EmbeddedTokenizer {
   /**
@@ -30,23 +30,23 @@ export interface EmbeddedTokenizer {
    * from disk at construction time and never changes — adding a new
    * bundled grammar requires a download + extension reload.
    */
-  availableLanguages(): Set<string>;
+  availableLanguages(): Set<string>
   /**
    * Tokenize `content` as `langId`. Resolves to `null` when the
    * language is not bundled, the WASM grammar fails to load, or the
    * parse throws. Resolves to `[]` when the parse succeeded but the
    * highlights query produced no captures.
    */
-  tokenize(content: string, langId: string): Promise<EmbeddedToken[] | null>;
-  dispose(): void;
+  tokenize(content: string, langId: string): Promise<EmbeddedToken[] | null>
+  dispose(): void
 }
 
 interface LoadedLanguage {
-  parser: Parser;
-  query: Query;
+  parser: Parser
+  query: Query
 }
 
-export type EmbeddedLogger = (msg: string) => void;
+export type EmbeddedLogger = (msg: string) => void
 
 /**
  * Build a tokenizer rooted at `<extensionPath>/resources/embedded-grammars/`.
@@ -58,110 +58,110 @@ export function createEmbeddedTokenizer(
   extensionPath: string,
   log?: EmbeddedLogger
 ): EmbeddedTokenizer {
-  const grammarsDir = path.join(extensionPath, 'resources', 'embedded-grammars');
-  const loaded = new Map<string, LoadedLanguage>();
-  const inflight = new Map<string, Promise<LoadedLanguage | null>>();
-  const failed = new Map<string, string>();
-  const available = discoverLanguages(grammarsDir);
+  const grammarsDir = path.join(extensionPath, 'resources', 'embedded-grammars')
+  const loaded = new Map<string, LoadedLanguage>()
+  const inflight = new Map<string, Promise<LoadedLanguage | null>>()
+  const failed = new Map<string, string>()
+  const available = discoverLanguages(grammarsDir)
 
   log?.(
     `[lex] embedded tokenizer: ${available.size} grammar(s) available: ${
       Array.from(available).sort().join(', ') || '(none)'
     }`
-  );
+  )
 
   async function load(langId: string): Promise<LoadedLanguage | null> {
-    const cached = loaded.get(langId);
-    if (cached) return cached;
-    if (failed.has(langId)) return null;
+    const cached = loaded.get(langId)
+    if (cached) return cached
+    if (failed.has(langId)) return null
 
-    const existing = inflight.get(langId);
-    if (existing) return existing;
+    const existing = inflight.get(langId)
+    if (existing) return existing
 
-    const parserPath = path.join(grammarsDir, langId, 'parser.wasm');
-    const queryPath = path.join(grammarsDir, langId, 'highlights.scm');
+    const parserPath = path.join(grammarsDir, langId, 'parser.wasm')
+    const queryPath = path.join(grammarsDir, langId, 'highlights.scm')
     if (!existsSync(parserPath) || !existsSync(queryPath)) {
-      const msg = `missing parser.wasm or highlights.scm for ${langId}`;
-      failed.set(langId, msg);
-      log?.(`[lex] embedded tokenizer: ${msg}`);
-      return null;
+      const msg = `missing parser.wasm or highlights.scm for ${langId}`
+      failed.set(langId, msg)
+      log?.(`[lex] embedded tokenizer: ${msg}`)
+      return null
     }
 
     const promise = (async (): Promise<LoadedLanguage | null> => {
       try {
-        const language = await Language.load(parserPath);
-        const parser = new Parser();
-        parser.setLanguage(language);
-        const queryStr = readFileSync(queryPath, 'utf-8');
-        const query = new Query(language, queryStr);
-        const entry: LoadedLanguage = { parser, query };
-        loaded.set(langId, entry);
-        log?.(`[lex] embedded tokenizer: loaded ${langId}`);
-        return entry;
+        const language = await Language.load(parserPath)
+        const parser = new Parser()
+        parser.setLanguage(language)
+        const queryStr = readFileSync(queryPath, 'utf-8')
+        const query = new Query(language, queryStr)
+        const entry: LoadedLanguage = { parser, query }
+        loaded.set(langId, entry)
+        log?.(`[lex] embedded tokenizer: loaded ${langId}`)
+        return entry
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        failed.set(langId, msg);
-        log?.(`[lex] embedded tokenizer: load failed for ${langId}: ${msg}`);
-        return null;
+        const msg = err instanceof Error ? err.message : String(err)
+        failed.set(langId, msg)
+        log?.(`[lex] embedded tokenizer: load failed for ${langId}: ${msg}`)
+        return null
       } finally {
-        inflight.delete(langId);
+        inflight.delete(langId)
       }
-    })();
-    inflight.set(langId, promise);
-    return promise;
+    })()
+    inflight.set(langId, promise)
+    return promise
   }
 
   return {
     availableLanguages: () => new Set(available),
     async tokenize(content, langId) {
-      if (!available.has(langId)) return null;
-      const ctx = await load(langId);
-      if (!ctx) return null;
+      if (!available.has(langId)) return null
+      const ctx = await load(langId)
+      if (!ctx) return null
 
-      let tree;
+      let tree
       try {
-        tree = ctx.parser.parse(content);
+        tree = ctx.parser.parse(content)
       } catch (err) {
         log?.(
           `[lex] embedded tokenizer: parse(${langId}) threw: ${
             err instanceof Error ? err.message : String(err)
           }`
-        );
-        return null;
+        )
+        return null
       }
-      if (!tree) return null;
+      if (!tree) return null
 
-      const captures = ctx.query.captures(tree.rootNode);
-      const tokens = captures.map(({ name, node }) => makeToken(name, node));
-      tree.delete();
-      return tokens;
+      const captures = ctx.query.captures(tree.rootNode)
+      const tokens = captures.map(({ name, node }) => makeToken(name, node))
+      tree.delete()
+      return tokens
     },
     dispose() {
       for (const entry of loaded.values()) {
-        entry.parser.delete();
-        entry.query.delete();
+        entry.parser.delete()
+        entry.query.delete()
       }
-      loaded.clear();
-      inflight.clear();
-      failed.clear();
-    },
-  };
+      loaded.clear()
+      inflight.clear()
+      failed.clear()
+    }
+  }
 }
 
 function discoverLanguages(grammarsDir: string): Set<string> {
-  if (!existsSync(grammarsDir)) return new Set();
-  const set = new Set<string>();
+  if (!existsSync(grammarsDir)) return new Set()
+  const set = new Set<string>()
   for (const entry of readdirSync(grammarsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const lang = entry.name;
+    if (!entry.isDirectory()) continue
+    const lang = entry.name
     if (
       existsSync(path.join(grammarsDir, lang, 'parser.wasm')) &&
       existsSync(path.join(grammarsDir, lang, 'highlights.scm'))
     ) {
-      set.add(lang);
+      set.add(lang)
     }
   }
-  return set;
+  return set
 }
 
 function makeToken(name: string, node: Node): EmbeddedToken {
@@ -170,6 +170,6 @@ function makeToken(name: string, node: Node): EmbeddedToken {
     startLine: node.startPosition.row,
     startCol: node.startPosition.column,
     endLine: node.endPosition.row,
-    endCol: node.endPosition.column,
-  };
+    endCol: node.endPosition.column
+  }
 }

@@ -4,7 +4,7 @@
 
 export interface PathCompletionDiagnostics {
   // Indicates the LSP is handling path completions
-  lspHandlesPathCompletion: true;
+  lspHandlesPathCompletion: true
 }
 
 export function registerPathCompletion(): void {
@@ -14,6 +14,6 @@ export function registerPathCompletion(): void {
 
 export function getPathCompletionDiagnostics(): PathCompletionDiagnostics {
   return {
-    lspHandlesPathCompletion: true,
-  };
+    lspHandlesPathCompletion: true
+  }
 }

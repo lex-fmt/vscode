@@ -3,22 +3,22 @@
  * Conversions go through the LSP using lex.export command.
  * See README.lex "Preview" section for full documentation.
  */
-import * as vscode from 'vscode';
-import { ExecuteCommandRequest, LanguageClient } from 'vscode-languageclient/node.js';
+import * as vscode from 'vscode'
+import { ExecuteCommandRequest, LanguageClient } from 'vscode-languageclient/node.js'
 
-const PREVIEW_VIEW_TYPE = 'lexPreview';
-const DEBOUNCE_MS = 400;
+const PREVIEW_VIEW_TYPE = 'lexPreview'
+const DEBOUNCE_MS = 400
 
-type GetClient = () => LanguageClient | undefined;
-type WaitForClientReady = () => Promise<void>;
+type GetClient = () => LanguageClient | undefined
+type WaitForClientReady = () => Promise<void>
 
 interface PreviewState {
-  panel: vscode.WebviewPanel;
-  sourceUri: vscode.Uri;
-  disposables: vscode.Disposable[];
+  panel: vscode.WebviewPanel
+  sourceUri: vscode.Uri
+  disposables: vscode.Disposable[]
 }
 
-const activePreviews = new Map<string, PreviewState>();
+const activePreviews = new Map<string, PreviewState>()
 
 /**
  * Number of live-preview panels the extension currently tracks. Exposed
@@ -26,25 +26,25 @@ const activePreviews = new Map<string, PreviewState>();
  * command actually opened a webview without scraping VS Code's UI state.
  */
 export function getActivePreviewCount(): number {
-  return activePreviews.size;
+  return activePreviews.size
 }
 
 function getPreviewTitle(uri: vscode.Uri): string {
-  const filename = uri.path.split('/').pop() || 'Untitled';
-  return `Preview: ${filename}`;
+  const filename = uri.path.split('/').pop() || 'Untitled'
+  return `Preview: ${filename}`
 }
 
 function debounce<T extends (...args: unknown[]) => void>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
   return (...args: Parameters<T>) => {
     if (timeoutId) {
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId)
     }
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
+    timeoutId = setTimeout(() => fn(...args), delay)
+  }
 }
 
 function wrapHtmlForWebview(html: string): string {
@@ -125,7 +125,7 @@ function wrapHtmlForWebview(html: string): string {
 <body>
 ${html}
 </body>
-</html>`;
+</html>`
 }
 
 async function convertToHtmlViaLsp(
@@ -133,22 +133,22 @@ async function convertToHtmlViaLsp(
   getClient: GetClient,
   waitForClientReady: WaitForClientReady
 ): Promise<string> {
-  await waitForClientReady();
-  const client = getClient();
+  await waitForClientReady()
+  const client = getClient()
   if (!client) {
-    throw new Error('Lex language server is not running.');
+    throw new Error('Lex language server is not running.')
   }
 
   const result = (await client.sendRequest(ExecuteCommandRequest.type, {
     command: 'lex.export',
-    arguments: ['html', content],
-  })) as unknown;
+    arguments: ['html', content]
+  })) as unknown
 
   if (typeof result !== 'string') {
-    throw new Error('Export failed: unexpected response from language server.');
+    throw new Error('Export failed: unexpected response from language server.')
   }
 
-  return result;
+  return result
 }
 
 async function updatePreview(
@@ -158,13 +158,13 @@ async function updatePreview(
   waitForClientReady: WaitForClientReady
 ): Promise<void> {
   try {
-    const html = await convertToHtmlViaLsp(document.getText(), getClient, waitForClientReady);
-    panel.webview.html = wrapHtmlForWebview(html);
+    const html = await convertToHtmlViaLsp(document.getText(), getClient, waitForClientReady)
+    panel.webview.html = wrapHtmlForWebview(html)
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = err instanceof Error ? err.message : String(err)
     panel.webview.html = wrapHtmlForWebview(
       `<div class="error"><strong>Preview Error:</strong> ${escapeHtml(message)}</div>`
-    );
+    )
   }
 }
 
@@ -173,7 +173,7 @@ function escapeHtml(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
 }
 
 function createPreview(
@@ -186,7 +186,7 @@ function createPreview(
   // map key in `activePreviews` and the stored `sourceUri`. Without this,
   // a second invocation of the preview command on the renamed document
   // would not find the existing panel and would create a duplicate.
-  let currentUri = document.uri;
+  let currentUri = document.uri
 
   const panel = vscode.window.createWebviewPanel(
     PREVIEW_VIEW_TYPE,
@@ -194,62 +194,62 @@ function createPreview(
     viewColumn,
     {
       enableScripts: false,
-      retainContextWhenHidden: true,
+      retainContextWhenHidden: true
     }
-  );
+  )
 
-  const disposables: vscode.Disposable[] = [];
-  const state: PreviewState = { panel, sourceUri: currentUri, disposables };
+  const disposables: vscode.Disposable[] = []
+  const state: PreviewState = { panel, sourceUri: currentUri, disposables }
 
   // Initial render
-  void updatePreview(panel, document, getClient, waitForClientReady);
+  void updatePreview(panel, document, getClient, waitForClientReady)
 
   // Debounced update function
   const debouncedUpdate = debounce(() => {
     // Find the current document (it may have been closed and reopened)
     const currentDoc = vscode.workspace.textDocuments.find(
       (d) => d.uri.toString() === currentUri.toString()
-    );
+    )
     if (currentDoc) {
-      void updatePreview(panel, currentDoc, getClient, waitForClientReady);
+      void updatePreview(panel, currentDoc, getClient, waitForClientReady)
     }
-  }, DEBOUNCE_MS);
+  }, DEBOUNCE_MS)
 
   // Listen for document changes
   disposables.push(
     vscode.workspace.onDidChangeTextDocument((e) => {
       if (e.document.uri.toString() === currentUri.toString()) {
-        debouncedUpdate();
+        debouncedUpdate()
       }
     })
-  );
+  )
 
   // Update title and re-key `activePreviews` when the document is renamed.
   disposables.push(
     vscode.workspace.onDidRenameFiles((e) => {
       for (const file of e.files) {
         if (file.oldUri.toString() === currentUri.toString()) {
-          const oldKey = currentUri.toString();
-          currentUri = file.newUri;
-          panel.title = getPreviewTitle(currentUri);
-          state.sourceUri = currentUri;
+          const oldKey = currentUri.toString()
+          currentUri = file.newUri
+          panel.title = getPreviewTitle(currentUri)
+          state.sourceUri = currentUri
           if (activePreviews.delete(oldKey)) {
-            activePreviews.set(currentUri.toString(), state);
+            activePreviews.set(currentUri.toString(), state)
           }
         }
       }
     })
-  );
+  )
 
   // Clean up when panel is closed
   panel.onDidDispose(() => {
     for (const d of disposables) {
-      d.dispose();
+      d.dispose()
     }
-    activePreviews.delete(currentUri.toString());
-  });
+    activePreviews.delete(currentUri.toString())
+  })
 
-  return state;
+  return state
 }
 
 function createShowPreviewCommand(
@@ -258,33 +258,33 @@ function createShowPreviewCommand(
   beside: boolean
 ): () => void {
   return () => {
-    const editor = vscode.window.activeTextEditor;
+    const editor = vscode.window.activeTextEditor
     if (!editor) {
-      vscode.window.showErrorMessage('No active editor.');
-      return;
+      vscode.window.showErrorMessage('No active editor.')
+      return
     }
 
-    const document = editor.document;
+    const document = editor.document
     if (document.languageId !== 'lex') {
-      vscode.window.showErrorMessage('Preview is only available for .lex files.');
-      return;
+      vscode.window.showErrorMessage('Preview is only available for .lex files.')
+      return
     }
 
-    const uriKey = document.uri.toString();
-    const existing = activePreviews.get(uriKey);
+    const uriKey = document.uri.toString()
+    const existing = activePreviews.get(uriKey)
 
     if (existing) {
       // Reveal existing preview
-      existing.panel.reveal();
-      return;
+      existing.panel.reveal()
+      return
     }
 
     // Create new preview
-    const viewColumn = beside ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active;
+    const viewColumn = beside ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active
 
-    const state = createPreview(document, getClient, waitForClientReady, viewColumn);
-    activePreviews.set(uriKey, state);
-  };
+    const state = createPreview(document, getClient, waitForClientReady, viewColumn)
+    activePreviews.set(uriKey, state)
+  }
 }
 
 export function registerPreviewCommands(
@@ -301,5 +301,5 @@ export function registerPreviewCommands(
       'lex.showPreviewToSide',
       createShowPreviewCommand(getClient, waitForClientReady, true)
     )
-  );
+  )
 }

@@ -1,10 +1,10 @@
-import assert from 'node:assert/strict';
-import { rmSync } from 'node:fs';
-import path from 'node:path';
-import * as vscode from 'vscode';
-import type { LexExtensionApi } from '../../src/main.js';
-import { integrationTest } from './harness.js';
-import { closeAllEditors, openWorkspaceDocument, TEST_DOCUMENT_PATH } from './helpers.js';
+import assert from 'node:assert/strict'
+import { rmSync } from 'node:fs'
+import path from 'node:path'
+import * as vscode from 'vscode'
+import type { LexExtensionApi } from '../../src/main.js'
+import { integrationTest } from './harness.js'
+import { closeAllEditors, openWorkspaceDocument, TEST_DOCUMENT_PATH } from './helpers.js'
 
 /**
  * End-to-end test for the `lex/trustRequest` LSP custom request handler
@@ -34,24 +34,24 @@ integrationTest('forwards lex/trustRequest from lexd-lsp to a vscode warning mod
   // run, or from vscode's DialogService refusing to show the modal
   // in tests when the shim wasn't installed yet) and short-circuits
   // without firing `lex/trustRequest`.
-  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
   if (workspaceFolder) {
-    const trustFile = path.join(workspaceFolder.uri.fsPath, '.lex', 'trust.json');
-    rmSync(trustFile, { force: true });
+    const trustFile = path.join(workspaceFolder.uri.fsPath, '.lex', 'trust.json')
+    rmSync(trustFile, { force: true })
   }
 
-  const extensionId = 'lex.lex-vscode';
-  const extension = vscode.extensions.getExtension<LexExtensionApi>(extensionId);
-  assert.ok(extension, `Extension ${extensionId} should be available`);
-  const api = await extension.activate();
-  await api?.clientReady();
+  const extensionId = 'lex.lex-vscode'
+  const extension = vscode.extensions.getExtension<LexExtensionApi>(extensionId)
+  assert.ok(extension, `Extension ${extensionId} should be available`)
+  const api = await extension.activate()
+  await api?.clientReady()
 
   interface Capture {
-    message: string;
-    detail: string | undefined;
+    message: string
+    detail: string | undefined
   }
-  const captured: Capture[] = [];
-  const original = vscode.window.showWarningMessage;
+  const captured: Capture[] = []
+  const original = vscode.window.showWarningMessage
 
   // Replace the modal so the test doesn't actually block on a
   // user click. The patched fn captures the message + detail and
@@ -63,11 +63,11 @@ integrationTest('forwards lex/trustRequest from lexd-lsp to a vscode warning mod
     // The real signature has overloads — for our usage the first
     // arg after the message is the options object, which we read
     // for the `detail` field.
-    const options = rest[0] as { modal?: boolean; detail?: string } | undefined;
-    captured.push({ message, detail: options?.detail });
-    return Promise.resolve('Deny');
-  }) as typeof vscode.window.showWarningMessage;
-  (vscode.window as unknown as Record<string, unknown>).showWarningMessage = patchedShim;
+    const options = rest[0] as { modal?: boolean; detail?: string } | undefined
+    captured.push({ message, detail: options?.detail })
+    return Promise.resolve('Deny')
+  }) as typeof vscode.window.showWarningMessage
+  ;(vscode.window as unknown as Record<string, unknown>).showWarningMessage = patchedShim
 
   try {
     // Open a doc + trigger an extension-aware request. The LSP
@@ -75,7 +75,7 @@ integrationTest('forwards lex/trustRequest from lexd-lsp to a vscode warning mod
     // completion / code-action request — opening alone won't wake
     // it, so we follow up with executeHoverProvider to force the
     // boot path that fires `lex/trustRequest`.
-    const document = await openWorkspaceDocument(TEST_DOCUMENT_PATH);
+    const document = await openWorkspaceDocument(TEST_DOCUMENT_PATH)
     // Position at line 0, character 0 — content may not have a
     // labelled annotation there, but we don't need a hover hit;
     // we just need the LSP's hover handler to fire so its
@@ -84,7 +84,7 @@ integrationTest('forwards lex/trustRequest from lexd-lsp to a vscode warning mod
       'vscode.executeHoverProvider',
       document.uri,
       new vscode.Position(0, 0)
-    );
+    )
 
     // Wait up to 30s for the prompt to fire. The lex-side boot is
     // serialised behind a tokio mutex and runs on spawn_blocking,
@@ -92,30 +92,30 @@ integrationTest('forwards lex/trustRequest from lexd-lsp to a vscode warning mod
     // The "trust request to editor failed" 60s timeout in the
     // lex-side prompt handler is unrelated — that timeout caps
     // the *editor's* response time, not the time to fire.
-    const timeoutMs = 30_000;
-    const startedAt = Date.now();
+    const timeoutMs = 30_000
+    const startedAt = Date.now()
     while (captured.length === 0 && Date.now() - startedAt < timeoutMs) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 250))
     }
 
     assert.ok(
       captured.length > 0,
       `expected at least one lex/trustRequest within ${timeoutMs}ms; got none`
-    );
-    const prompt = captured[0];
+    )
+    const prompt = captured[0]
     // Headline names the namespace + transport.
-    assert.match(prompt.message, /"acme"/);
-    assert.match(prompt.message, /subprocess handler/);
+    assert.match(prompt.message, /"acme"/)
+    assert.match(prompt.message, /subprocess handler/)
     // Detail mentions the source (lex.toml entry), command (the
     // non-existent binary path from the fixture), and capability
     // (pure: fs:false net:false).
-    const detail = prompt.detail;
-    assert.ok(detail, 'expected detail body to be set');
-    assert.match(detail, /lex\.toml.*"acme"/);
-    assert.match(detail, /lex-test-trust-prompt-acme-handler-does-not-exist/);
-    assert.match(detail, /pure/);
+    const detail = prompt.detail
+    assert.ok(detail, 'expected detail body to be set')
+    assert.match(detail, /lex\.toml.*"acme"/)
+    assert.match(detail, /lex-test-trust-prompt-acme-handler-does-not-exist/)
+    assert.match(detail, /pure/)
   } finally {
-    vscode.window.showWarningMessage = original;
-    await closeAllEditors();
+    vscode.window.showWarningMessage = original
+    await closeAllEditors()
   }
-});
+})
