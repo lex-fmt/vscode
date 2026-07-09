@@ -1,4 +1,4 @@
-<!-- generated - do not edit. See CHANGELOG/README.txt -->
+<!-- generated - do not edit; fragments live in CHANGELOG/ (`shipit changelog render` regenerates this file) -->
 
 # Changelog
 
@@ -75,6 +75,7 @@
   gap shows up as CSpell occasionally flagging code identifiers inside
   verbatim blocks. Tracked for an eventual LSP-side spellable-ranges
   request.
+
 
 ## v0.10.5 (2026-05-21)
 
