@@ -66,10 +66,10 @@ async function main() {
   } catch (error) {
     console.error('Failed to run VS Code CSpell extension tests')
     console.error(error)
+    process.exitCode = 1
+  } finally {
     userData.cleanup()
-    process.exit(1)
   }
-  userData.cleanup()
 }
 
 async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> {

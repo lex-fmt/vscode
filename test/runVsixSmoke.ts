@@ -39,9 +39,10 @@ async function main() {
 
   console.log('Packaging VSIX for smoke test...')
   const { vsixPath, cleanup } = await packageVsix(extensionRoot)
-  const userData = shortUserDataDir()
+  let userData: ReturnType<typeof shortUserDataDir> | undefined
 
   try {
+    userData = shortUserDataDir()
     await resetTestProfile()
     const vscodeExecutablePath = await downloadAndUnzipVSCode({
       cachePath: defaultCachePath
@@ -59,7 +60,7 @@ async function main() {
       reuseMachineInstall: false
     })
   } finally {
-    userData.cleanup()
+    userData?.cleanup()
     await cleanup()
     if (!keepProfile) {
       await resetTestProfile()
