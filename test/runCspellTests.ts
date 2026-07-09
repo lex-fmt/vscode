@@ -8,6 +8,7 @@ import {
   downloadAndUnzipVSCode,
   resolveCliArgsFromVSCodeExecutablePath
 } from '@vscode/test-electron'
+import { shortUserDataDir } from './shortUserDataDir.js'
 
 // Drives a separate VS Code instance with Code Spell Checker installed and
 // runs the spellcheck integration test inside it. Kept separate from the
@@ -54,17 +55,20 @@ async function main() {
     process.exit(install.status ?? 1)
   }
 
+  const userData = shortUserDataDir()
   try {
     await runTests({
       vscodeExecutablePath,
       extensionDevelopmentPath,
       extensionTestsPath,
-      launchArgs: [workspacePath, '--disable-gpu', '--disable-workspace-trust']
+      launchArgs: [workspacePath, userData.arg, '--disable-gpu', '--disable-workspace-trust']
     })
   } catch (error) {
     console.error('Failed to run VS Code CSpell extension tests')
     console.error(error)
-    process.exit(1)
+    process.exitCode = 1
+  } finally {
+    userData.cleanup()
   }
 }
 

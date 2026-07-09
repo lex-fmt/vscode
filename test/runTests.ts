@@ -4,6 +4,7 @@ import { execSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runTests } from '@vscode/test-electron'
+import { shortUserDataDir } from './shortUserDataDir.js'
 
 async function main() {
   // Cloud sandboxes (e.g. Claude Code on the web) block
@@ -33,12 +34,14 @@ async function main() {
   ensureTreeSitter(extensionDevelopmentPath)
   ensureEmbeddedGrammars(extensionDevelopmentPath)
 
+  const userData = shortUserDataDir()
   try {
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs: [
         workspacePath,
+        userData.arg,
         '--disable-gpu',
         '--disable-extensions',
         '--disable-workspace-trust'
@@ -47,7 +50,9 @@ async function main() {
   } catch (error) {
     console.error('Failed to run VS Code extension tests')
     console.error(error)
-    process.exit(1)
+    process.exitCode = 1
+  } finally {
+    userData.cleanup()
   }
 }
 
