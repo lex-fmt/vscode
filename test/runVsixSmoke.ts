@@ -7,6 +7,7 @@ import type { SpawnOptionsWithoutStdio } from 'node:child_process'
 import { downloadAndUnzipVSCode } from '@vscode/test-electron'
 import { resolveCliArgsFromVSCodeExecutablePath, runTests } from '@vscode/test-electron'
 import { defaultCachePath } from '@vscode/test-electron/out/download.js'
+import { shortUserDataDir } from './shortUserDataDir.js'
 
 async function main() {
   // Cloud sandboxes (e.g. Claude Code on the web) block
@@ -38,6 +39,7 @@ async function main() {
 
   console.log('Packaging VSIX for smoke test...')
   const { vsixPath, cleanup } = await packageVsix(extensionRoot)
+  const userData = shortUserDataDir()
 
   try {
     await resetTestProfile()
@@ -53,10 +55,11 @@ async function main() {
       vscodeExecutablePath,
       extensionDevelopmentPath: harnessExtensionPath,
       extensionTestsPath: testRunnerPath,
-      launchArgs: [workspacePath],
+      launchArgs: [workspacePath, userData.arg],
       reuseMachineInstall: false
     })
   } finally {
+    userData.cleanup()
     await cleanup()
     if (!keepProfile) {
       await resetTestProfile()
