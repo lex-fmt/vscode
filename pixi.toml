@@ -15,6 +15,18 @@ lint = "./bin/shipit lint"
 logs = "./bin/shipit logs"
 provision-lexd = "./bin/shipit provision lexd"
 # <<< shipit-managed tasks <<<
+# The wf-checks TEST LANE's run (ADP02-WS03, #155; model lex#829). The block's
+# checkout has no submodule support (the legacy vscode-ext-ci.yml caller passed
+# `submodules: true`), so the lane provisions the `comms` submodule inline —
+# `npm run build`'s prebuild hook (gen-theme.py --check) reads its canonical
+# theme data. Then the same verbs the legacy caller ran: the shared/ module
+# build hook (the extension's TypeScript depends on its compiled dist/), root
+# `npm ci`, and the legacy check-command chain (typecheck via `npm run build`,
+# eslint, unit tests). Integration + cspell suites stay out of the lane exactly
+# as they were out of the legacy check-command (they launch a downloaded
+# VS Code — not a hosted-runner-shaped check). Idempotent and cheap on a
+# laptop where comms/shared are already in place.
+test-full = "git submodule update --init --recursive && ./app-bin/ci-build-shared-hook.sh && npm ci && npm run build && npm run lint && npm run test:unit"
 
 [feature.lint.dependencies]
 # >>> shipit-managed lint deps (do not edit; regenerate via `shipit install`) >>>
@@ -39,6 +51,19 @@ actionlint = "1.7.*"
 lefthook = "2.1.*"
 # <<< shipit-managed lint deps <<<
 
+[feature.lint.tasks]
+# The wf-checks LINT LANE's run (ADP02-WS03, #155), byte-modeled on shipit's
+# own and on lex#829: the lint toolchain (ruff/shfmt/prettier/markdownlint/
+# actionlint/...) lives in THIS feature's env, so the lane task must resolve
+# into the lint env — the managed bare `lint` task is a fixed plain string that
+# runs in the default env (where none of those tools exist on a hosted runner)
+# and cannot provision the lex leg's lexd. `provision lexd` inline lands lexd
+# in this env's prefix, idempotent. Defined ONLY in this feature, so it exists
+# in EXACTLY ONE env (lint) and bare `pixi run lint-full` resolves
+# unambiguously — the wf-checks matrix job's `pixi run --locked lint-full` and
+# a laptop run are identical.
+lint-full = { cmd = "./bin/shipit provision lexd && ./bin/shipit lint" }
+
 [environments]
 # >>> shipit-managed environments (do not edit; regenerate via `shipit install`) >>>
 lint = ["lint"]
@@ -57,3 +82,19 @@ lint = ["lint"]
 nodejs = "26.*"
 pnpm = "11.*"
 # <<< shipit-managed node deps <<<
+# Consumer-owned dependencies (ADP02-WS03, #155), outside the managed block
+# above. The wf-checks lanes run `pixi run --locked <task>` on a hosted runner
+# where nothing outside pixi is provisioned:
+# uv backs the pinned bin/shipit launcher (ADR-0033: it provisions the repo's
+# pinned shipit via uv, PATH-independent). Both lanes run
+# `pixi run --locked <task>` -> ./bin/shipit on a hosted runner where uv is not
+# otherwise present, so the launcher's one prerequisite must ride the env too.
+# (Known upstream gap: shipit#758 — the block/managed set should own this.)
+uv = ">=0.5"
+# python runs app-bin/gen-theme.py (stdlib-only), `npm run build`'s prebuild
+# hook — the test lane's typecheck step. The default pixi env otherwise
+# carries no python, and a hosted runner's system `python` is outside pixi.
+# Loose floor (not a minor pin): the script needs only the stdlib, and the
+# default feature rides every env — a tight pin here would down-pin the
+# managed lint env's python resolution.
+python = ">=3.11"
