@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Pre-check hook for the canonical vscode-ext-ci.yml@v1 thin caller.
+# Shared-module build hook for the PR-time test lane.
 #
 # Builds the shared/ workspace module before the umbrella check runs.
 # The main extension's TypeScript depends on the shared module's
 # compiled output (dist/), so this MUST run before tsc / lint / tests
-# kick off in the canonical's check step.
+# kick off in the test lane.
 #
-# Invoked from .github/workflows/test.yml's
-# `pre-check: scripts/ci-build-shared.sh`.
+# Invoked from pixi.toml's `test-full` task (the shipit `test` lane in
+# .shipit.toml, run by the wf-checks block; ADP02-WS03, #155). Previously
+# the `pre-check` input of the legacy vscode-ext-ci.yml caller
+# (.github/workflows/test.yml), removed in that migration.
 
 set -euo pipefail
 
