@@ -10,8 +10,18 @@
 # inside the reusable workflow.
 #
 # Cross-repo release automation: when an upstream this repo depends on
-# fires `repository_dispatch` type `upstream-released`, this listener
-# kicks off the cascade.
+# fires `repository_dispatch`, this listener kicks off the cascade. TWO
+# event types are accepted (ADP02-WS09, #158):
+#
+#   upstream-released  the legacy cascade's type (release/cascade docs) —
+#                      payload {source, version, run_url}. Kept until the
+#                      legacy cascade retires.
+#   upstream-release   shipit's notify-downstreams type (shipit#824's
+#                      NOTIFY_EVENT_TYPE, TOL02-WS16) — fired by an
+#                      upstream's shipit publish stage on a real release;
+#                      payload {repo, tag, version, artifact} (no `source`
+#                      key — the handler's should-release re-checks ALL
+#                      pins, so the source slug is informational).
 #
 # Manual trigger (for testing / recovery):
 #   gh api repos/<owner>/<repo>/dispatches \
@@ -22,7 +32,7 @@ name: On upstream released
 
 on:
   repository_dispatch:
-    types: [upstream-released]
+    types: [upstream-released, upstream-release]
 
 permissions:
   contents: write

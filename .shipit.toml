@@ -69,6 +69,53 @@ local = true
 [toolchains]
 "." = "npm"
 
+# [artifacts] — this repo's declared release surface for the shipit release
+# pipeline (ADP02-WS09, arthur-debert/shipit#842 — the FIRST CONSUMER FIRE of
+# the TOL02-WS13 composition, shipit#821: per-target .vsix + the
+# vscode-marketplace/open-vsx endpoints). ONE artifact: the extension itself.
+#
+#   - build: the bare `npm` leg ([toolchains] "." above) — `npm run build`
+#     (tsc). The per-target packaging is the BUNDLE step, not the build.
+#   - platforms: the four legacy lanes. The vsix composition maps each closed
+#     platform name to its vsce target string (shipit VSCE_TARGETS:
+#     linux-x86_64 → linux-x64, windows-x86_64 → win32-x64) and writes
+#     `<name>-<vsce-target>.vsix` — so `lex-vscode` + these four platforms
+#     reproduce legacy v0.11.3's asset set name-for-name:
+#     lex-vscode-{darwin-arm64,linux-arm64,linux-x64,win32-x64}.vsix.
+#   - endpoints: gh-release + both marketplaces, per #821's decision record
+#     and the #842 doctrine. Both marketplace endpoints are external
+#     REGISTRIES: the central RC guard drops them on a `-release-rc` cut
+#     (rc proof = build + gh-release only); a REAL marketplace/open-vsx
+#     publish is an owner call at the gate. Tokens: VSCE_PAT / OVSX_PAT
+#     (repo secrets, present — forwarded by the shipit-release.yml caller).
+#
+# FLAGGED gaps (per the issue: flag, never work around):
+#   1. win32-x64: the plan's windows-x86_64 lane runs on `windows-latest`
+#      executing shipit itself (the bundle verb runs on the lane's runner) —
+#      shipit is not yet win-importable (arthur-debert/shipit#893, fix in
+#      flight). The win32 leg of the rc proof depends on that landing
+#      shipit-side; not worked around here.
+#   2. Native-deps staging: legacy vscode-ext.yml@v3 ran
+#      app-bin/pre-vsce-package-hook.sh (shared/ submodule build +
+#      fetch-deps: per-target lexd-lsp binary + tree-sitter wasm/queries
+#      into resources/) between npm ci and vsce package. The vsix
+#      composition runs only `npm exec -- vsce package` in the npm leg;
+#      nothing in the shipit lane stages those resources yet. Hard edge for
+#      the rc proof — per #842 doctrine, the fix lands shipit-side (or as a
+#      declared follow-up), never a consumer-side workaround here.
+#   3. open-vsx: declared (per #821: "wired-but-off until the consumer's
+#      OVSX_PAT verifies" — declaring IS the per-repo config choice), but
+#      the legacy release.yml records two live blockers: the stored
+#      OVSX_PAT fails /api/lex/verify-pat (needs regeneration by the
+#      namespace owner) and v0.10.7 is stuck "Under review" open-vsx-side.
+#      rc's are unaffected (RC guard); a real open-vsx publish stays
+#      blocked until both clear.
+[artifacts.lex-vscode]
+build = ["npm"]
+platforms = ["darwin-arm64", "linux-arm64", "linux-x86_64", "windows-x86_64"]
+bundle = { composition = "vsix" }
+endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
+
 [shipit]
 version = "84818feb7b7c39ebdb5875028828db05b2d65f8a"
 
