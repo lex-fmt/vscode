@@ -21,6 +21,19 @@ scripts/**
 app-bin/**
 node_modules/**
 
+# Dev/build-environment dirs that must NEVER ship in the .vsix. The pixi env
+# (.pixi/envs/**) materializes the toolchain AND the [artifact-deps] lexd-lsp
+# conda package (ARF02-WS04) — it is the STAGING SOURCE, not payload; the
+# staged copy lands at resources/lexd-lsp via bundle.stage. dist/ holds the
+# built .vsix outputs; .vscode-test/ is the integration suite's downloaded
+# VS Code. `vsce package --no-dependencies` (the repo's own smoke-test mode,
+# test/runVsixSmoke.ts) walks .vscodeignore alone, so these must be excluded
+# here or vsce packages the whole env (and 3.9.x's secret scan chokes on its
+# symlinked lib dirs).
+.pixi/**
+dist/**
+.vscode-test/**
+
 # Keep tree-sitter resources (WASM + queries) in VSIX
 !resources/tree-sitter-lex.wasm
 !resources/tree-sitter.wasm

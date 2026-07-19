@@ -3,7 +3,14 @@
 [workspace]
 name = "lex-fmt_vscode"
 channels = ["conda-forge"]
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64"]
+# osx-64 dropped (ARF02-WS04): the extension now takes lexd-lsp as a hard
+# [artifact-deps] pin off the Artifact channel, whose closed subdir map serves
+# NO osx-64 (docs/spec/artifact-channel.md Non-Goals + Platform matrix: no
+# Intel-mac / no musl — matching the legacy `provision` refusal). Keeping osx-64
+# would make the default-env pixi solve fail (the channel has no osx-64
+# lexd-lsp). The shipped VSIX targets are darwin-arm64/linux-x64/linux-arm64
+# only — there is no darwin-x64 .vsix — so this drops no release surface.
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
 
 [tasks]
 # >>> shipit-managed test task (do not edit; regenerate via `shipit install`) >>>
@@ -66,6 +73,9 @@ lefthook = "2.1.*"
 lint-full = { cmd = "./bin/shipit provision lexd && ./bin/shipit lint" }
 
 [environments]
+# >>> shipit-managed artifact-dep environments (do not edit; regenerate via `shipit install`) >>>
+default = ["shipit-artifacts"]
+# <<< shipit-managed artifact-dep environments <<<
 # >>> shipit-managed environments (do not edit; regenerate via `shipit install`) >>>
 lint = ["lint"]
 # <<< shipit-managed environments <<<
@@ -99,3 +109,11 @@ uv = ">=0.5"
 # default feature rides every env — a tight pin here would down-pin the
 # managed lint env's python resolution.
 python = ">=3.11"
+
+# >>> shipit-managed artifact-dep feature `shipit-artifacts` (do not edit; regenerate via `shipit install`) >>>
+[feature.shipit-artifacts]
+channels = ["https://storage.googleapis.com/shipit-artifacts-public/lex-fmt/lex"]
+
+[feature.shipit-artifacts.dependencies]
+lexd-lsp = "0.19.10-rc.1"
+# <<< shipit-managed artifact-dep feature `shipit-artifacts` <<<

@@ -39,6 +39,13 @@ ignore = [
   # repo's existing .prettierignore exclusion of the same dir ("Test fixtures are
   # intentionally unformatted"); keeps the lex leg off them the way prettier already is.
   "test/fixtures/**",
+  # shipit-generated managed workflow (delivered by `shipit install` when
+  # [artifact-deps] is declared). Its hash-pinned content carries a >120-char
+  # echo line (line 47) that trips the fleet's own strict yamllint — a shipit
+  # generator bug, not consumer prose. Exempted here (reconcile-safe,
+  # consumer-owned) rather than hand-editing managed bytes and drifting the
+  # [managed] hash. Remove once shipit ships a lint-clean cascade template.
+  ".github/workflows/shipit-artifact-cascade.yml",
 ]
 
 # [lanes] — the declared PR-time check units (ADP02-WS03, #155; model: lex#829).
@@ -95,14 +102,16 @@ local = true
 #      shipit is not yet win-importable (arthur-debert/shipit#893, fix in
 #      flight). The win32 leg of the rc proof depends on that landing
 #      shipit-side; not worked around here.
-#   2. Native-deps staging: legacy vscode-ext.yml@v3 ran
-#      app-bin/pre-vsce-package-hook.sh (shared/ submodule build +
-#      fetch-deps: per-target lexd-lsp binary + tree-sitter wasm/queries
-#      into resources/) between npm ci and vsce package. The vsix
-#      composition runs only `npm exec -- vsce package` in the npm leg;
-#      nothing in the shipit lane stages those resources yet. Hard edge for
-#      the rc proof — per #842 doctrine, the fix lands shipit-side (or as a
-#      declared follow-up), never a consumer-side workaround here.
+#   2. Native-deps staging: RESOLVED (ARF02-WS04, this repo's #160 /
+#      arthur-debert/shipit#1003). The lexd-lsp LSP now rides the Artifact
+#      channel as a per-platform conda package (`[artifact-deps.lexd-lsp]`
+#      below), and the vsix composition's `bundle.stage` map copies the
+#      pixi-materialized binary into `resources/lexd-lsp` before
+#      `vsce package` (TOL03-WS03 #974/#980). No bespoke fetch-deps, no
+#      deps.json path — the channel already put the right per-subdir binary
+#      in the build env; staging is a copy. The legacy tree-sitter wasm/query
+#      staging is NOT reproduced here (WS03 staged only lexd-lsp; the
+#      tree-sitter data-artifact shape is a separate, later concern).
 #   3. open-vsx: declared (per #821: "wired-but-off until the consumer's
 #      OVSX_PAT verifies" — declaring IS the per-repo config choice), but
 #      the legacy release.yml records two live blockers: the stored
@@ -113,8 +122,32 @@ local = true
 [artifacts.lex-vscode]
 build = ["npm"]
 platforms = ["darwin-arm64", "linux-arm64", "linux-x86_64", "windows-x86_64"]
-bundle = { composition = "vsix" }
+# bundle.stage (TOL03-WS03 #974/#980): the vsix composition stages the
+# `lexd-lsp` native binary from the `[artifact-deps.lexd-lsp]` pin below into
+# `resources/lexd-lsp` before `vsce package`, so each non-Windows .vsix ships
+# the real LSP the extension spawns (see src/config.ts: the bundled binary is
+# `./resources/lexd-lsp`). Copied off the pixi env the Artifact channel
+# materialized — never a bespoke fetch (#911 stays retired). Only `lexd-lsp` is
+# staged; the tree-sitter data-artifact shape is a separate, later concern.
+bundle = { composition = "vsix", stage = { "lexd-lsp" = "resources/lexd-lsp" } }
 endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
+
+# [artifact-deps] — cross-repo Artifact-channel pins (ARF02, ADR-0064/0065).
+# `shipit install` projects each into a managed pixi block (the reserved
+# `shipit-artifacts` feature wired into the default env) so pixi
+# resolves/locks/sha256-verifies it like any ordinary dependency, authless off
+# lex-fmt/lex's public per-repo conda channel. A version bump re-resolves
+# transparently through `pixi install`/`update` (commit the updated pixi.lock).
+#
+# lexd-lsp is the LSP the extension bundles; the exact version is the one WS03
+# retained in the channel (verified live on osx-arm64/linux-64/linux-aarch64 —
+# the served non-Windows subdirs; no osx-64, no win-64, matching the channel's
+# closed subdir map per docs/spec/artifact-channel.md). It is a TOOL artifact
+# (binary on PATH), staged into the vsix via [artifacts.lex-vscode].bundle.stage
+# above.
+[artifact-deps.lexd-lsp]
+repo = "lex-fmt/lex"
+version = "0.19.10-rc.1"
 
 [shipit]
 version = "afedd13dfd9f27ed1c5d7d61294a01ba3446bf1d"
@@ -159,3 +192,6 @@ agent-start = "sha256:3f8b7d1d6e1d51f9a714e4781f8be89a60e3da26f33f55715c3a67f4ae
 ".codex/config.toml" = "sha256:a4e081d9c5edb37b2e38affb29d55cacd0075f9867274eaedbaa3177b79ea50d"
 ".codex/hooks.json#shipit-pretooluse-hook" = "sha256:102910434d9387b3da2c00c5279de80a6b9432ceb62e0ea34d2031dd73cbced1"
 ".codex/hooks.json#shipit-sessionstart-hook" = "sha256:66dc7e078e13cb7deab605033e4b3911ca88f0ab54e7b7d57e05b1a9c2721169"
+".github/workflows/shipit-artifact-cascade.yml" = "sha256:a77618cbdc7fb9cbc1ce0295ab581e0139cd04d04a9d3776a280c0e5fd7dd45c"
+"pixi.toml#shipit-artifacts" = "sha256:43d20757cb50d12d861745d7fedeade9c9d593fab5b7855a6ca638c4fb7dd459"
+"pixi.toml#shipit-artifact-deps-environments" = "sha256:13aa79a471a55e1b7166c585e9af61adfd81009b69eac414f49a5ebaff5f6f52"
