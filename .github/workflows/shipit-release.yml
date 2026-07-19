@@ -117,8 +117,16 @@ jobs:
     with:
       version: ${{ inputs.version }}
       unsigned: ${{ inputs.unsigned }}
+    # Per-stage secret parity (#896): a stage dispatch must forward the SAME
+    # plan-required secret set as `full`, trimmed to the block's declared names.
+    # This repo's stable plan requires RELEASE_TOKEN + VSCE_PAT + OVSX_PAT, and
+    # wf-prepare declares all three, so `prepare` forwards all three (matching
+    # the `release` job above) even though prepare itself only pushes the tag —
+    # the RC guard still drops the marketplace endpoints on a `-release-rc` cut.
     secrets:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
   build:
     if: inputs.stage == 'build'
