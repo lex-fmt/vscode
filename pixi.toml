@@ -5,8 +5,9 @@ name = "lex-fmt_vscode"
 channels = ["conda-forge"]
 # osx-64 dropped (ARF02-WS04): the extension now takes lexd-lsp as a hard
 # [artifact-deps] pin off the Artifact channel, whose closed subdir map serves
-# NO osx-64 (docs/spec/artifact-channel.md Non-Goals + Platform matrix: no
-# Intel-mac / no musl — matching the legacy `provision` refusal). Keeping osx-64
+# NO osx-64 (arthur-debert/shipit `docs/spec/artifact-channel.md` Non-Goals +
+# Platform matrix: no Intel-mac / no musl — matching the legacy `provision`
+# refusal). Keeping osx-64
 # would make the default-env pixi solve fail (the channel has no osx-64
 # lexd-lsp). The shipped VSIX targets are darwin-arm64/linux-x64/linux-arm64
 # only — there is no darwin-x64 .vsix — so this drops no release surface.

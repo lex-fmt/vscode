@@ -142,9 +142,9 @@ endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
 # lexd-lsp is the LSP the extension bundles; the exact version is the one WS03
 # retained in the channel (verified live on osx-arm64/linux-64/linux-aarch64 —
 # the served non-Windows subdirs; no osx-64, no win-64, matching the channel's
-# closed subdir map per docs/spec/artifact-channel.md). It is a TOOL artifact
-# (binary on PATH), staged into the vsix via [artifacts.lex-vscode].bundle.stage
-# above.
+# closed subdir map per arthur-debert/shipit `docs/spec/artifact-channel.md`).
+# It is a TOOL artifact (binary on PATH), staged into the vsix via
+# [artifacts.lex-vscode].bundle.stage above.
 [artifact-deps.lexd-lsp]
 repo = "lex-fmt/lex"
 version = "0.19.10-rc.1"
