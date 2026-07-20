@@ -136,10 +136,13 @@ endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
 # `shipit install` projects each into a managed pixi block (the reserved
 # `shipit-artifacts` feature wired into the default env) so pixi
 # resolves/locks/sha256-verifies it like any ordinary dependency, authless off
-# lex-fmt/lex's public per-repo conda channel. A version bump re-resolves
-# transparently through `pixi install`/`update` (commit the updated pixi.lock).
+# lex-fmt/lex's public per-repo conda channel. The VERSION is consumer-owned and
+# is NOT declared here (conda-direct, ADR-0077): it lives in the same pixi
+# feature that carries the derived channel — `[feature.shipit-artifacts.dependencies]`
+# in pixi.toml. A version bump is a bump there, re-resolved transparently through
+# `pixi install`/`update` (commit the updated pixi.lock).
 #
-# lexd-lsp is the LSP the extension bundles; the exact version is the one WS03
+# lexd-lsp is the LSP the extension bundles; the pinned version is the one WS03
 # retained in the channel (verified live on osx-arm64/linux-64/linux-aarch64 —
 # the served non-Windows subdirs; no osx-64, no win-64, matching the channel's
 # closed subdir map per arthur-debert/shipit `docs/spec/artifact-channel.md`).
@@ -147,7 +150,6 @@ endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
 # [artifacts.lex-vscode].bundle.stage above.
 [artifact-deps.lexd-lsp]
 repo = "lex-fmt/lex"
-version = "0.19.10-rc.1"
 
 [shipit]
 version = "57d9d16b1a8d374e1558912376c4f10d70beae1d"
