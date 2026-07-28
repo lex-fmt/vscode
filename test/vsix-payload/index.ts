@@ -17,13 +17,16 @@
  * `.vscodeignore` still ships a dead extension, and only the packaged
  * `.vsix` shows it.
  *
- *   node ./out/test/vsix-payload/index.js            # fetch, package, check
+ *   node ./out/test/vsix-payload/index.js            # package, check
  *   node ./out/test/vsix-payload/index.js some.vsix  # check an existing one
  *
- * The first form fetches the Lex half of the payload when the checkout
- * lacks it (see `ensureLexGrammarPayload`), so `npm run
- * test:vsix-payload` is this one command and nothing else — the whole
- * check is reachable through `node` on every platform.
+ * The first form needs no payload step of its own: `vsce package` runs
+ * `vscode:prepublish` -> `npm run bundle`, which stages all three
+ * payload halves — `./bin/shipit stage` for the Lex grammar (off the
+ * resolved conda env, per `[stage.tree-sitter]`), `copy-wasm` for the
+ * web-tree-sitter runtime, `stage-grammars` for the embedded five. So
+ * `npm run test:vsix-payload` is this one command and nothing else, and
+ * the check is reachable through `node` on every platform.
  *
  * The second form is how the check itself is proven: point it at a
  * `.vsix` with the payload deliberately stripped and it must go red.
@@ -57,36 +60,12 @@ async function main() {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'lex-vsix-payload-'))
   const vsixPath = path.join(tempDir, 'lex-vscode-payload-check.vsix')
   try {
-    await ensureLexGrammarPayload()
     console.log('Packaging VSIX for the payload check...')
     await run('npx', ['vsce', 'package', '--no-dependencies', '--out', vsixPath])
     await check(vsixPath)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
-}
-
-/**
- * Put the Lex half of the payload in `resources/` if this checkout
- * lacks it, so `vsce package` has something to package.
- *
- * Driven from here rather than chained ahead of this CLI in the npm
- * script, for two reasons. `npm test` runs this check, and a
- * `./app-bin/some-script.sh` prefix in a package.json script is not a
- * command on `cmd.exe`, which is how npm runs scripts on Windows, so
- * the entry point stays `node` on every platform, matching the care the
- * `npx.cmd` fix-up below already takes. And the fetch belongs to the
- * PACKAGING path: checking a `.vsix` handed in on the command line
- * needs nothing from the working tree, but the npm-script chain paid
- * for it anyway.
- *
- * The fetch itself stays in bash — `fetch-deps` is a shell script, so
- * re-homing it here would buy no portability — and the script keeps
- * its own present-and-non-empty gate, so running it by hand (the
- * remedy a failed check prints) is still idempotent.
- */
-async function ensureLexGrammarPayload() {
-  await run('bash', ['app-bin/ensure-lex-grammar-payload.sh'])
 }
 
 /** Report on one `.vsix`, throwing when its payload is incomplete. */
@@ -111,9 +90,7 @@ async function check(vsixPath: string) {
 /** Run a command in the extension root, rejecting on a non-zero exit. */
 async function run(command: string, args: string[]) {
   // On Windows `npx` is a `.cmd` shim that `spawn` will not resolve —
-  // the same fix-up `test/runVsixSmoke.ts` applies. Only `npx`: `bash`
-  // is a real executable there (Git for Windows puts it on PATH), and
-  // `bash.cmd` would be nothing at all.
+  // the same fix-up `test/runVsixSmoke.ts` applies.
   const resolved = process.platform === 'win32' && command === 'npx' ? 'npx.cmd' : command
   await new Promise<void>((resolve, reject) => {
     const child = spawn(resolved, args, { stdio: 'inherit', cwd: extensionRoot })

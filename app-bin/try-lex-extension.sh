@@ -33,6 +33,10 @@ OPEN_ONLY=false
 RESET=false
 LSP_PATH=""
 TS_PATH=""
+# Reported at the end, and only assigned on the build path — initialized here so
+# `--open-only` does not trip `set -u`.
+LSP_SOURCE=""
+TS_SOURCE=""
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
@@ -83,6 +87,49 @@ fi
 
 mkdir -p "$PROFILE_DIR" "$EXTENSIONS_DIR"
 
+# ── Resolve lexd-lsp binary ────────────────────────────────
+# Never copied into resources/: the LSP is named to the extension through
+# LEX_LSP_PATH, the override src/config.ts checks first, and exported below so
+# the `code` this script launches passes it down. That keeps ONE writer of
+# `resources/lexd-lsp` in the repo — the release-time
+# `[artifacts.lex-vscode].bundle.stage`, which refuses a pre-existing file —
+# so a local try-run can never poison a local release build.
+if [[ -n "$LSP_PATH" ]]; then
+	LSP_PATH="$(cd "$LSP_PATH" 2>/dev/null && pwd || echo "$LSP_PATH")"
+
+	if [[ -x "$LSP_PATH/lexd-lsp" ]]; then
+		# Case 1: directory containing a lexd-lsp binary (e.g. target/release/)
+		LEX_LSP_BIN="$LSP_PATH/lexd-lsp"
+		LSP_SOURCE="$LEX_LSP_BIN"
+
+	elif [[ -f "$LSP_PATH/Cargo.toml" ]] && grep -q 'lexd-lsp' "$LSP_PATH/Cargo.toml"; then
+		# Case 2: Cargo workspace root — build lexd-lsp from source
+		echo "Building lexd-lsp from Cargo workspace: $LSP_PATH"
+		cargo build --release -p lexd-lsp --manifest-path "$LSP_PATH/Cargo.toml"
+		LEX_LSP_BIN="$LSP_PATH/target/release/lexd-lsp"
+		if [[ ! -x "$LEX_LSP_BIN" ]]; then
+			echo "Error: cargo build succeeded but binary not found at $LEX_LSP_BIN" >&2
+			exit 1
+		fi
+		LSP_SOURCE="$LEX_LSP_BIN (built from source)"
+
+	else
+		echo "Error: --lsp-path '$LSP_PATH' is neither a directory with a lexd-lsp binary" >&2
+		echo "       nor a Cargo workspace containing lexd-lsp." >&2
+		exit 1
+	fi
+else
+	# The pinned conda package, used in place off the resolved env prefix.
+	LEX_LSP_BIN="$EXT_DIR/.pixi/envs/default/bin/lexd-lsp"
+	if [[ ! -x "$LEX_LSP_BIN" ]]; then
+		echo "error: lexd-lsp is not materialized at $LEX_LSP_BIN" >&2
+		echo "       run 'pixi install' so the pinned conda package is resolved" >&2
+		exit 1
+	fi
+	LSP_SOURCE="$LEX_LSP_BIN"
+fi
+export LEX_LSP_PATH="$LEX_LSP_BIN"
+
 # ── Build & Install VSIX ──────────────────────────────────────────────────────
 if [[ "$OPEN_ONLY" == "false" ]]; then
 	# Clean previous Lex extension to avoid VS Code's "restart required" error.
@@ -100,51 +147,21 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
 
 	cd "$EXT_DIR"
 
-	# ── Resolve lexd-lsp binary ──────────────────────────────────────────────
-	LEX_LSP_BIN="$EXT_DIR/resources/lexd-lsp"
-	LSP_SOURCE=""
+	# Build VSIX (universal, for local testing)
+	VSIX_FILE="$EXT_DIR/dist/lex-test.vsix"
+	mkdir -p "$EXT_DIR/dist"
 
-	if [[ -n "$LSP_PATH" ]]; then
-		LSP_PATH="$(cd "$LSP_PATH" 2>/dev/null && pwd || echo "$LSP_PATH")"
+	echo "Compiling TypeScript..."
+	npm run build
 
-		if [[ -x "$LSP_PATH/lexd-lsp" ]]; then
-			# Case 1: directory containing a lexd-lsp binary (e.g. target/release/)
-			echo "Using lexd-lsp binary from: $LSP_PATH/lexd-lsp"
-			cp "$LSP_PATH/lexd-lsp" "$LEX_LSP_BIN"
-			chmod +x "$LEX_LSP_BIN"
-			LSP_SOURCE="$LSP_PATH/lexd-lsp"
+	echo "Bundling extension..."
+	# Stages all three payload halves into resources/, the Lex grammar included
+	# (`./bin/shipit stage`, off the resolved conda env).
+	npm run bundle -- --minify
 
-		elif [[ -f "$LSP_PATH/Cargo.toml" ]] && grep -q 'lexd-lsp' "$LSP_PATH/Cargo.toml"; then
-			# Case 2: Cargo workspace root — build lexd-lsp from source
-			echo "Building lexd-lsp from Cargo workspace: $LSP_PATH"
-			cargo build --release -p lexd-lsp --manifest-path "$LSP_PATH/Cargo.toml"
-			BUILT="$LSP_PATH/target/release/lexd-lsp"
-			if [[ ! -x "$BUILT" ]]; then
-				echo "Error: cargo build succeeded but binary not found at $BUILT" >&2
-				exit 1
-			fi
-			cp "$BUILT" "$LEX_LSP_BIN"
-			chmod +x "$LEX_LSP_BIN"
-			LSP_SOURCE="$BUILT (built from source)"
-
-		else
-			echo "Error: --lsp-path '$LSP_PATH' is neither a directory with a lexd-lsp binary" >&2
-			echo "       nor a Cargo workspace containing lexd-lsp." >&2
-			exit 1
-		fi
-	elif [[ ! -x "$LEX_LSP_BIN" ]]; then
-		if ! command -v fetch-deps >/dev/null 2>&1; then
-			echo "error: fetch-deps is required but not on PATH" >&2
-			echo "Install from: https://github.com/arthur-debert/release" >&2
-			exit 1
-		fi
-		echo "lexd-lsp binary not found, downloading..."
-		fetch-deps --if-missing lexd-lsp
-	fi
-
-	# ── Resolve tree-sitter grammar ───────────────────────────────────────
-	TS_SOURCE=""
-
+	# ── Local grammar override ────────────────────────────────────────────
+	# AFTER the bundle, so a locally-built grammar WINS over the staged conda
+	# payload instead of being overwritten by it.
 	if [[ -n "$TS_PATH" ]]; then
 		TS_PATH="$(cd "$TS_PATH" 2>/dev/null && pwd || echo "$TS_PATH")"
 
@@ -173,16 +190,6 @@ if [[ "$OPEN_ONLY" == "false" ]]; then
 			exit 1
 		fi
 	fi
-
-	# Build VSIX (universal, for local testing)
-	VSIX_FILE="$EXT_DIR/dist/lex-test.vsix"
-	mkdir -p "$EXT_DIR/dist"
-
-	echo "Compiling TypeScript..."
-	npm run build
-
-	echo "Bundling extension..."
-	npm run bundle -- --minify
 
 	echo "Packaging VSIX..."
 	npx @vscode/vsce package -o "$VSIX_FILE" 2>&1
@@ -219,9 +226,6 @@ if [[ -n "$TS_SOURCE" ]]; then
 fi
 echo ""
 
-if [[ -n "$LSP_SOURCE" ]]; then
-	export LEX_LSP_SOURCE="$LSP_SOURCE"
-fi
 exec code \
 	--user-data-dir "$PROFILE_DIR" \
 	--extensions-dir "$EXTENSIONS_DIR" \

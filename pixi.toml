@@ -40,9 +40,12 @@ logs = "./bin/shipit logs"
 # grammars — is not inside it. It is in the lane precisely because the suites
 # that would otherwise notice (the injection integration tests' `tokenCount >
 # 0` asserts) are the ones excluded above, which let a payload-less extension
-# package with CI green. It fetches the Lex half per deps.json when absent
-# (app-bin/ensure-lex-grammar-payload.sh) — the same download the release's
-# pre-package hook does, so the lane packages what the release would.
+# package with CI green. It needs no payload step of its own: `vsce package`
+# runs `vscode:prepublish` -> `npm run bundle`, which stages all three payload
+# halves (`./bin/shipit stage` for the Lex grammar off the resolved conda env,
+# `copy-wasm` for the web-tree-sitter runtime, `stage-grammars` for the
+# embedded five) — the same chain the release's `vsce package` runs, so the
+# lane packages what the release would.
 test-full = "git submodule update --init --recursive && ./app-bin/ci-build-shared-hook.sh && npm ci && npm run build && npm run lint && npm run test:unit && npm run test:vsix-payload"
 
 [feature.shipit-artifacts.dependencies]
@@ -63,14 +66,23 @@ test-full = "git submodule update --init --recursive && ./app-bin/ci-build-share
 #
 # `==` is explicit on purpose — pixi warns a bare version is ambiguous.
 #
-#   lexd-lsp — the Lex language server (lex-fmt/lex), an ARCH package served on
-#              this repo's three declared platforms (osx-arm64 / linux-64 /
-#              linux-aarch64; the channel serves no osx-64). NOT consumed in
-#              place: `[artifacts.lex-vscode].bundle.stage` in .shipit.toml
-#              copies the pixi-materialized binary into `resources/lexd-lsp`
-#              before `vsce package`, so each non-Windows .vsix ships the real
-#              LSP the extension spawns (src/config.ts).
+#   lexd-lsp    — the Lex language server (lex-fmt/lex), an ARCH package served
+#                 on this repo's three declared platforms (osx-arm64 / linux-64
+#                 / linux-aarch64; the channel serves no osx-64). NOT consumed
+#                 in place: `[artifacts.lex-vscode].bundle.stage` in
+#                 .shipit.toml copies the pixi-materialized binary into
+#                 `resources/lexd-lsp` before `vsce package`, so each
+#                 non-Windows .vsix ships the real LSP the extension spawns
+#                 (src/config.ts). The dev/test flows point `LEX_LSP_PATH` at
+#                 the env prefix's `bin/lexd-lsp` instead of copying it.
+#   tree-sitter — the Lex grammar (lex-fmt/tree-sitter-lex), a NOARCH data
+#                 package shipping `share/tree-sitter/{tree-sitter-lex.wasm,
+#                 queries/,src/,…}`. Staged into `resources/` by
+#                 `[stage.tree-sitter]` in .shipit.toml — the wasm and the
+#                 queries only; the extension loads the wasm through
+#                 web-tree-sitter and never compiles the C `src/`.
 lexd-lsp = "==0.19.10"
+tree-sitter = "==0.13.0"
 
 [feature.lint.dependencies]
 # >>> shipit-managed lint deps (do not edit; regenerate via `shipit install`) >>>
@@ -173,7 +185,7 @@ python = ">=3.11"
 
 # >>> shipit-managed artifact-dep feature `shipit-artifacts` (do not edit; regenerate via `shipit install`) >>>
 [feature.shipit-artifacts]
-channels = ["https://storage.googleapis.com/shipit-artifacts-public/lex-fmt/lex"]
+channels = ["https://storage.googleapis.com/shipit-artifacts-public/lex-fmt/lex", "https://storage.googleapis.com/shipit-artifacts-public/lex-fmt/tree-sitter-lex"]
 # <<< shipit-managed artifact-dep feature `shipit-artifacts` <<<
 
 # >>> shipit-managed lexd feature (do not edit; regenerate via `shipit install`) >>>

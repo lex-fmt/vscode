@@ -10,13 +10,16 @@ node_modules
 # app-bin/ci-build-shared-hook.sh); never authored or consumed from git.
 shared/dist/
 
-# Downloaded binaries and artifacts
+# Staged payload. Nothing here is downloaded or authored: the Lex grammar
+# (tree-sitter-lex.wasm, queries/) is copied out of the resolved conda env by
+# `./bin/shipit stage`, tree-sitter.wasm out of node_modules by
+# `npm run copy-wasm`, and the LSP binary is staged into the .vsix at release
+# time by shipit's vsix composition.
 /resources/lexd-lsp
 /resources/lexd-lsp.exe
 /resources/tree-sitter-lex.wasm
 /resources/tree-sitter.wasm
 /resources/queries/
-/resources/.tree-sitter-version
 
 # Staged embedded-language grammars. Not downloaded: parser.wasm,
 # highlights.scm and LICENSE are copied out of the official
@@ -24,9 +27,6 @@ shared/dist/
 # sources are lock-pinned dependencies; this staging dir is build
 # output.
 /resources/embedded-grammars/
-
-# fetch-deps stamp files
-/.deps/
 
 # Logs
 logs
