@@ -1,9 +1,15 @@
-<!-- generated - do not edit; fragments live in CHANGELOG/ (`shipit changelog render` regenerates this file) -->
+<!-- generated - do not edit. See CHANGELOG/README.txt -->
 
 # Changelog
 
 ## Unreleased
 
+## 0.11.4 - 2026-07-28
+
+- Dropped the retired `version` key from `[artifact-deps.lexd-lsp]` in
+  `.shipit.toml`; shipit now rejects it outright (conda-direct, ADR-0077) and
+  the pin is consumer-owned in pixi's `shipit-artifacts` feature, where it
+  already lived
 - Releases now cut through the shipit release pipeline (per-target `.vsix`
   for darwin-arm64/linux-arm64/linux-x64/win32-x64, published to the GitHub
   release, VS Code Marketplace and Open VSX); release asset names are
