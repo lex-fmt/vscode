@@ -191,7 +191,7 @@ repo = "lex-fmt/tree-sitter-lex"
 "share/tree-sitter/queries" = "resources/queries"
 
 [shipit]
-version = "50c1fe15690a0afe5e32ce3b817376b7a0d3d44f"
+version = "6e7e96ae5644dd838cc39188007d489156af8dfc"
 
 [managed]
 ".agents/skills/coordinating/SKILL.md" = "sha256:065a793b117dcfbb1e97fea0a80b405c69995850af9a350061dbcc1f4ea4976a"
