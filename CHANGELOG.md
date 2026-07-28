@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 0.12.0 - 2026-07-28
+
 - Embedded-language parsers (python, javascript, json, rust, bash) now come
   from the official `tree-sitter-<lang>` npm packages instead of being
   fetched from GitHub release assets via a manifest in
