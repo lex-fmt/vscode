@@ -138,7 +138,8 @@ test('staging produces the parser.wasm + highlights.scm pair the loader requires
       const staged = path.join(stagedDir, entry.name, file)
       assert.ok(
         existsSync(staged),
-        `missing ${staged} — run \`npm run stage-grammars\` (wired into \`npm run bundle\`)`
+        `missing ${staged} — run \`npm run stage-grammars\` ` +
+          '(wired into `npm run bundle` and `pretest:unit`)'
       )
     }
     // The staged query must be the vendored one, byte for byte.

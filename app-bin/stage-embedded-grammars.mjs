@@ -21,8 +21,10 @@
  * next to it. Idempotent and cheap — safe to run on every build.
  *
  * Wired into `npm run bundle` (hence `pretest`, `test:vsix` and
- * `vscode:prepublish`/`vsce package`), so no caller has to remember it.
- * Run standalone with `npm run stage-grammars`.
+ * `vscode:prepublish`/`vsce package`) AND into `pretest:unit`, so the
+ * unit lane stands on its own — CI's `test-full` runs `test:unit`
+ * without ever calling `bundle`. No caller has to remember it; run
+ * standalone with `npm run stage-grammars`.
  *
  * Exits non-zero with an attributable message when a manifest entry has
  * no installed package or no vendored query — a half-staged grammar dir

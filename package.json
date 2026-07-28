@@ -798,6 +798,7 @@
     "vscode:prepublish": "npm run bundle -- --minify",
     "pretest": "npm run build && npm run bundle",
     "test": "npm run test:unit && npm run test:integration && npm run test:cspell",
+    "pretest:unit": "npm run stage-grammars",
     "test:unit": "node ./out/test/unit/index.js",
     "test:integration": "node ./out/test/runTests.js",
     "test:cspell": "node ./out/test/runCspellTests.js",
