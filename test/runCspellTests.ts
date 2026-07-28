@@ -1,6 +1,4 @@
-import { constants as fsConstants, existsSync } from 'node:fs'
-import { access } from 'node:fs/promises'
-import { execSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -9,6 +7,7 @@ import {
   resolveCliArgsFromVSCodeExecutablePath
 } from '@vscode/test-electron'
 import { shortUserDataDir } from './shortUserDataDir.js'
+import { lexdLspPath, prepareResources } from './prepareResources.js'
 
 // Drives a separate VS Code instance with Code Spell Checker installed and
 // runs the spellcheck integration test inside it. Kept separate from the
@@ -36,9 +35,10 @@ async function main() {
     'test/fixtures/sample-workspace.code-workspace'
   )
 
-  await ensureLexBinary(extensionDevelopmentPath)
-  ensureTreeSitter(extensionDevelopmentPath)
-  ensureEmbeddedGrammars(extensionDevelopmentPath)
+  prepareResources(extensionDevelopmentPath)
+  // The LSP is used in place off the env prefix rather than copied into
+  // `resources/` — see test/prepareResources.ts.
+  const extensionTestsEnv = { LEX_LSP_PATH: lexdLspPath(extensionDevelopmentPath) }
 
   // Download VS Code, then install CSpell into its extension store using
   // the bundled CLI. resolveCliArgsFromVSCodeExecutablePath returns the
@@ -61,6 +61,7 @@ async function main() {
       vscodeExecutablePath,
       extensionDevelopmentPath,
       extensionTestsPath,
+      extensionTestsEnv,
       launchArgs: [workspacePath, userData.arg, '--disable-gpu', '--disable-workspace-trust']
     })
   } catch (error) {
@@ -69,63 +70,6 @@ async function main() {
     process.exitCode = 1
   } finally {
     userData.cleanup()
-  }
-}
-
-async function ensureLexBinary(extensionDevelopmentPath: string): Promise<void> {
-  const lexBinaryPath = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp')
-  const lexBinaryPathExe = path.resolve(extensionDevelopmentPath, 'resources/lexd-lsp.exe')
-
-  try {
-    await access(lexBinaryPath, fsConstants.X_OK)
-    return
-  } catch {
-    if (existsSync(lexBinaryPathExe)) return
-  }
-
-  console.log('Downloading lexd-lsp binary via fetch-deps...')
-  try {
-    execSync('fetch-deps --if-missing lexd-lsp', {
-      stdio: 'inherit',
-      cwd: extensionDevelopmentPath,
-      shell: process.platform === 'win32' ? 'bash' : undefined
-    })
-    return
-  } catch {
-    console.error('Failed to download lexd-lsp binary')
-  }
-  console.error(`lexd-lsp binary not found at ${lexBinaryPath}`)
-  process.exit(1)
-}
-
-function ensureTreeSitter(extensionDevelopmentPath: string): void {
-  const wasmPath = path.resolve(extensionDevelopmentPath, 'resources/tree-sitter-lex.wasm')
-  if (existsSync(wasmPath)) return
-  console.log('Downloading tree-sitter artifacts via fetch-deps...')
-  try {
-    execSync('fetch-deps --if-missing tree-sitter', {
-      stdio: 'inherit',
-      cwd: extensionDevelopmentPath,
-      shell: process.platform === 'win32' ? 'bash' : undefined
-    })
-  } catch {
-    console.error('Failed to download tree-sitter artifacts')
-  }
-}
-
-function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  // npm-sourced parsers and queries: a local copy, not a download.
-  // See the same helper in test/runTests.ts.
-  console.log('Staging embedded tree-sitter grammars...')
-  try {
-    execSync('npm run stage-grammars', {
-      stdio: 'inherit',
-      cwd: extensionDevelopmentPath,
-      shell: process.platform === 'win32' ? 'bash' : undefined
-    })
-  } catch {
-    console.error('Failed to stage embedded-language tree-sitter grammars')
-    process.exit(1)
   }
 }
 

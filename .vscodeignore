@@ -25,9 +25,11 @@ app-bin/**
 node_modules/**
 
 # Dev/build-environment dirs that must NEVER ship in the .vsix. The pixi env
-# (.pixi/envs/**) materializes the toolchain AND the [artifact-deps] lexd-lsp
-# conda package (ARF02-WS04) — it is the STAGING SOURCE, not payload; the
-# staged copy lands at resources/lexd-lsp via bundle.stage. dist/ holds the
+# (.pixi/envs/**) materializes the toolchain AND both [artifact-deps] conda
+# packages — lexd-lsp and the tree-sitter grammar — so it is the STAGING
+# SOURCE, not payload; the staged copies land at resources/lexd-lsp (via
+# bundle.stage) and resources/{tree-sitter-lex.wasm,queries} (via
+# [stage.tree-sitter]), which the re-includes below sweep in. dist/ holds the
 # built .vsix outputs; .vscode-test/ is the integration suite's downloaded
 # VS Code. `vsce package --no-dependencies` (the repo's own smoke-test mode,
 # test/runVsixSmoke.ts) walks .vscodeignore alone, so these must be excluded

@@ -46,14 +46,14 @@ test('a complete .vsix reports no payload problems', () => {
   assert.deepEqual(findPayloadProblems(completeEntries()), [])
 })
 
-test('a .vsix without the Lex grammar wasm is rejected, naming its fetch step', () => {
+test('a .vsix without the Lex grammar wasm is rejected, naming its staging step', () => {
   const problems = findPayloadProblems(
     without((name) => name.endsWith('resources/tree-sitter-lex.wasm'))
   )
 
   assert.equal(problems.length, 1)
   assert.match(problems[0], /^missing: extension\/resources\/tree-sitter-lex\.wasm/)
-  assert.match(problems[0], /ensure-lex-grammar-payload\.sh/)
+  assert.match(problems[0], /shipit stage/)
 })
 
 test('a .vsix without the queries is rejected — injections included', () => {

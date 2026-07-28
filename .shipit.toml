@@ -106,9 +106,10 @@ local = true
 #      pixi-materialized binary into `resources/lexd-lsp` before
 #      `vsce package` (TOL03-WS03 #974/#980). No bespoke fetch-deps, no
 #      deps.json path — the channel already put the right per-subdir binary
-#      in the build env; staging is a copy. The legacy tree-sitter wasm/query
-#      staging is NOT reproduced here (WS03 staged only lexd-lsp; the
-#      tree-sitter data-artifact shape is a separate, later concern).
+#      in the build env; staging is a copy. The tree-sitter wasm/query half —
+#      flagged here as "a separate, later concern" — is now closed too, by
+#      `[stage.tree-sitter]` below (#171): a shipit-cut `.vsix` carries the
+#      Lex grammar, not just the LSP.
 #   3. open-vsx: declared (per #821: "wired-but-off until the consumer's
 #      OVSX_PAT verifies" — declaring IS the per-repo config choice), but
 #      the legacy release.yml records two live blockers: the stored
@@ -124,8 +125,12 @@ platforms = ["darwin-arm64", "linux-arm64", "linux-x86_64", "windows-x86_64"]
 # `resources/lexd-lsp` before `vsce package`, so each non-Windows .vsix ships
 # the real LSP the extension spawns (see src/config.ts: the bundled binary is
 # `./resources/lexd-lsp`). Copied off the pixi env the Artifact channel
-# materialized — never a bespoke fetch (#911 stays retired). Only `lexd-lsp` is
-# staged; the tree-sitter data-artifact shape is a separate, later concern.
+# materialized — never a bespoke fetch (#911 stays retired). Only `lexd-lsp`
+# rides THIS map, because it is the one payload that is PER-TARGET: the lane's
+# runner holds the binary for the target it is packaging. The grammar is
+# universal, so it is staged by the standalone `[stage.tree-sitter]` map below
+# instead — durable rather than transient, and shared with the dev and check
+# lanes.
 bundle = { composition = "vsix", stage = { "lexd-lsp" = "resources/lexd-lsp" } }
 endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
 
@@ -147,6 +152,43 @@ endpoints = ["gh-release", "vscode-marketplace", "open-vsx"]
 # [artifacts.lex-vscode].bundle.stage above.
 [artifact-deps.lexd-lsp]
 repo = "lex-fmt/lex"
+
+# tree-sitter is the Lex GRAMMAR (lex-fmt/tree-sitter-lex), a NOARCH data
+# package. The extension cannot compile the grammar's C sources the way the nvim
+# plugin does, so what it consumes is the prebuilt `tree-sitter-lex.wasm`
+# web-tree-sitter loads (src/treesitter.ts) plus the `queries/`. Staged by
+# `[stage.tree-sitter]` below; version pinned in pixi.toml beside lexd-lsp's.
+# This replaces the deps.json + `fetch-deps` gh-release download one-for-one
+# (#171) — same files, same destinations, only the SOURCE axis swapped from a
+# tarball download to a read of the already-resolved env prefix.
+[artifact-deps.tree-sitter]
+repo = "lex-fmt/tree-sitter-lex"
+
+# [stage] — the app-consumer half of conda-direct (arthur-debert/shipit#1079):
+# once pixi has resolved and extracted the conda package into the env prefix,
+# copy the files this repo SHIPS into its bundle. Sources are relative to
+# `<root>/.pixi/envs/default`, dests to the checkout (bounded to `resources/`).
+# `npm run bundle` runs `./bin/shipit stage` (package.json), and `vsce package`
+# runs `bundle` through `vscode:prepublish` — so the Lex grammar arrives by the
+# SAME road as the other two payload halves (`copy-wasm` for the
+# web-tree-sitter runtime, `stage-grammars` for the five npm-sourced embedded
+# grammars), on the release path and the local one alike.
+#
+# NARROW entries, not nvim's whole-directory copy, and the difference is
+# deliberate: nvim's destination is gitignored and dev/CI-only, so the ~66 KB it
+# does not read costs nothing, while vscode's staged files land INSIDE the
+# shipped `.vsix`. Of the package's 554 KB, 474 KB is `src/` — parser.c,
+# scanner.c, grammar.json, node-types.json, the tree_sitter headers — which
+# exists so a consumer can COMPILE the grammar. This extension loads the wasm
+# and cannot compile anything, so a whole-directory stage would put half a
+# megabyte of dead C into every published artifact, four targets over. The two
+# dests are also the exact paths `src/treesitter.ts` loads and `.vscodeignore`
+# re-includes, so the mapping is legible against the runtime rather than
+# needing a rename step. The cost of narrowness is an edit here if the producer
+# renames one of these two files — a trade worth making when the payload ships.
+[stage.tree-sitter]
+"share/tree-sitter/tree-sitter-lex.wasm" = "resources/tree-sitter-lex.wasm"
+"share/tree-sitter/queries" = "resources/queries"
 
 [shipit]
 version = "50c1fe15690a0afe5e32ce3b817376b7a0d3d44f"
@@ -194,5 +236,5 @@ agent-start = "sha256:70a2f96788eecbd689412d428a3615193edcd1deaccc730e6976332c61
 ".codex/config.toml" = "sha256:a4e081d9c5edb37b2e38affb29d55cacd0075f9867274eaedbaa3177b79ea50d"
 ".codex/hooks.json#shipit-pretooluse-hook" = "sha256:102910434d9387b3da2c00c5279de80a6b9432ceb62e0ea34d2031dd73cbced1"
 ".codex/hooks.json#shipit-sessionstart-hook" = "sha256:66dc7e078e13cb7deab605033e4b3911ca88f0ab54e7b7d57e05b1a9c2721169"
-"pixi.toml#shipit-artifacts" = "sha256:ca18fd3d8cd86d2233eaaa0c281f10dd8ee76dc89124ac4398097a880266ffed"
+"pixi.toml#shipit-artifacts" = "sha256:1ba30bd401cd293e9670780f9a2f3245f06f71f10c1a445d978fdb53e1b9c615"
 "pixi.toml#shipit-artifact-deps-environments" = "sha256:13aa79a471a55e1b7166c585e9af61adfd81009b69eac414f49a5ebaff5f6f52"

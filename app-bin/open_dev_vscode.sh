@@ -4,19 +4,23 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTENSION_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_FILE="$EXTENSION_DIR/test/fixtures/sample-workspace.code-workspace"
-LEX_LSP_BIN="$EXTENSION_DIR/resources/lexd-lsp"
 USER_DATA_DIR="$EXTENSION_DIR/.vscode-test-user-data"
 
-# Download binary if needed
+# Both cross-repo artifacts are ordinary conda packages pinned in pixi.toml
+# (conda-direct): `pixi install` resolves and extracts them, and nothing here
+# downloads. The GRAMMAR is copied into resources/ because the extension
+# resolves it relative to its own dir; the LANGUAGE SERVER is used IN PLACE off
+# the env prefix and named through LEX_LSP_PATH, the override src/config.ts
+# checks first.
+LEX_LSP_BIN="$EXTENSION_DIR/.pixi/envs/default/bin/lexd-lsp"
 if [[ ! -x "$LEX_LSP_BIN" ]]; then
-	if ! command -v fetch-deps >/dev/null 2>&1; then
-		echo "error: fetch-deps is required but not on PATH" >&2
-		echo "Install from: https://github.com/arthur-debert/release" >&2
-		exit 1
-	fi
-	echo "lexd-lsp binary not found, downloading..."
-	fetch-deps --if-missing lexd-lsp
+	echo "error: lexd-lsp is not materialized at $LEX_LSP_BIN" >&2
+	echo "       run 'pixi install' so the pinned conda package is resolved" >&2
+	exit 1
 fi
+export LEX_LSP_PATH="$LEX_LSP_BIN"
+
+"$EXTENSION_DIR/bin/shipit" stage "$EXTENSION_DIR"
 
 if ! command -v code >/dev/null 2>&1; then
 	echo "VS Code CLI (code) not found on PATH. Install VS Code and ensure 'code' is available."

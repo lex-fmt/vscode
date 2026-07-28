@@ -17,7 +17,9 @@
  * arrive by different roads and fail independently:
  *
  *   - the LEX grammar payload (`tree-sitter-lex.wasm`, `queries/`),
- *     downloaded from `lex-fmt/tree-sitter-lex` per `deps.json`;
+ *     staged out of the resolved `tree-sitter` conda package
+ *     (`lex-fmt/tree-sitter-lex`) by `./bin/shipit stage`, per
+ *     `[stage.tree-sitter]` in `.shipit.toml`;
  *   - the EMBEDDED grammars (`embedded-grammars/<lang>/`), staged out
  *     of the `tree-sitter-<lang>` npm packages by
  *     `app-bin/stage-embedded-grammars.mjs`;
@@ -106,7 +108,7 @@ function remedy(entry: string): string {
   if (entry.endsWith('resources/tree-sitter.wasm')) {
     return 'run `npm run copy-wasm`'
   }
-  return 'run `bash app-bin/ensure-lex-grammar-payload.sh` (fetch-deps, per deps.json)'
+  return 'run `./bin/shipit stage` (the [stage.tree-sitter] map, off the resolved conda env)'
 }
 
 /**
