@@ -60,7 +60,9 @@ ignore = [
 #   - `test-full` inits the `comms` submodule (gen-theme's canonical theme data
 #     rides it, and the legacy caller passed `submodules: true`), builds the
 #     shared/ module, then runs the legacy check-command verbs (typecheck via
-#     `npm run build`, eslint, unit tests) — the wf-checks checkout has no
+#     `npm run build`, eslint, unit tests) plus the `.vsix` tree-sitter payload
+#     check (INJ001-WS05, #167 — packages the artifact and fails when the
+#     grammar payload is not in it) — the wf-checks checkout has no
 #     submodule support; node/npm, python (gen-theme) and uv (for bin/shipit)
 #     ride pixi's default env ([dependencies] in pixi.toml).
 [lanes.lint]
