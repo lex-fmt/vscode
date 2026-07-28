@@ -11,10 +11,11 @@
 #   2. fetch-deps: download the lexd-lsp binary + the tree-sitter-lex
 #      WASM/queries (driven from deps.json).
 #
-# NOT here, on purpose: the five EMBEDDED-language parsers. Those are
-# npm dependencies (`@lumis-sh/wasm-*`) with in-repo vendored queries,
-# staged by `npm run stage-grammars`, which `vscode:prepublish` ->
-# `npm run bundle` already runs as part of `vsce package`.
+# NOT here, on purpose: the five EMBEDDED-language parsers. Those come
+# from the official `tree-sitter-<lang>` npm dependencies (parser WASM,
+# queries and license alike), staged by `npm run stage-grammars`, which
+# `vscode:prepublish` -> `npm run bundle` already runs as part of
+# `vsce package`.
 #
 # Env contract (provided by vscode-ext.yml's pre-package step):
 #   VSCE_TARGET  e.g. darwin-arm64 (empty = universal, never the case here)

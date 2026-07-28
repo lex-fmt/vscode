@@ -15,17 +15,14 @@ comms/.git*
 comms/CNAME
 comms/.padz
 
-# Build tooling
+# Build tooling. node_modules/** covers the `tree-sitter-<lang>` deps:
+# they are the STAGING SOURCE for resources/embedded-grammars/, not
+# payload, and each carries grammar sources and native prebuilds the
+# .vsix must never grow. Only web-tree-sitter is re-included, below.
 .github/**
 scripts/**
 app-bin/**
 node_modules/**
-
-# Vendored embedded-grammar queries + their upstream licenses are the
-# STAGING SOURCE, not payload: app-bin/stage-embedded-grammars.mjs
-# copies them (and each parser.wasm out of the @lumis-sh/wasm-* npm
-# deps) into resources/embedded-grammars/, which is what ships below.
-vendor/**
 
 # Dev/build-environment dirs that must NEVER ship in the .vsix. The pixi env
 # (.pixi/envs/**) materializes the toolchain AND the [artifact-deps] lexd-lsp

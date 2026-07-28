@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import path from 'node:path'
-import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -10,63 +10,36 @@ import { Parser, Language, Query } from 'web-tree-sitter'
 /**
  * Supply-chain contract for the five bundled embedded grammars.
  *
- * The parser WASM comes from an npm dependency and the `highlights.scm`
- * is vendored in-repo (no prebuilt-WASM package publishes queries), so
- * the two halves can drift apart in ways nothing else would notice: a
- * query written against a different grammar revision still *compiles*,
- * it just stops matching node names and silently highlights nothing.
- * These tests pin all four joints of that seam:
+ * Parser WASM, `highlights.scm` and LICENSE all come out of one
+ * official `tree-sitter-<lang>` npm package, so query and parser can no
+ * longer drift apart in the tree — but the staged copy still can, and
+ * so can the runtime that has to load it. These tests pin the joints
+ * that remain:
  *
- *   1. manifest ↔ installed npm package (version, and the upstream
- *      revision the package records as the WASM's source)
- *   2. manifest ↔ vendored `highlights.scm` + `LICENSE` on disk
+ *   1. staged set ↔ the languages the extension promises, in BOTH
+ *      directions: staging wipes its output, so a language dropped
+ *      from the script cannot survive in the gitignored output tree
+ *      and keep being discovered.
+ *   2. staged files ↔ the installed packages, byte for byte — a stale
+ *      staging dir left over from an older pin fails here.
  *   3. staged `resources/embedded-grammars/<lang>/` ↔ the pinned
- *      `web-tree-sitter` runtime: the WASM must actually LOAD (older
- *      prebuilt packages fail here on emscripten dylink metadata, not
+ *      `web-tree-sitter` runtime: the WASM must actually LOAD (an
+ *      incompatible prebuilt fails on emscripten dylink metadata, not
  *      on ABI number) and the query must produce real captures.
- *   4. staged set ↔ manifest set in the SUBTRACTIVE direction: staging
- *      wipes its output, so a language dropped from the manifest cannot
- *      survive in the gitignored output tree and keep being discovered.
  *
- * (3) is the ABI-compatibility check the migration turned on. It is a
- * test, not a one-off verification, so bumping `web-tree-sitter` or a
- * `@lumis-sh/wasm-*` pin can never quietly break tokenization.
+ * (3) is the ABI-compatibility check the npm migration turned on. It is
+ * a test, not a one-off verification, so bumping `web-tree-sitter` or a
+ * grammar pin can never quietly break tokenization.
  */
 
 const repoRoot = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..', '..')
-const vendorDir = path.join(repoRoot, 'vendor', 'embedded-grammars')
 const stagedDir = path.join(repoRoot, 'resources', 'embedded-grammars')
 const require = createRequire(path.join(repoRoot, 'package.json'))
-
-interface GrammarEntry {
-  name: string
-  npm: string
-  npmVersion: string
-  wasm: string
-  upstreamRepo: string
-  upstreamTag: string
-  upstreamRev: string
-  queriesPath: string
-  license: string
-}
-
-/** The slice of a `@lumis-sh/wasm-*` package.json this test reads. */
-interface LumisPackage {
-  version: string
-  lumis: { upstreamVersion: string; rev: string }
-}
-
-function readJson<T>(file: string): T {
-  return JSON.parse(readFileSync(file, 'utf-8')) as T
-}
-
-const manifest = readJson<{ schema_version: number; grammars: GrammarEntry[] }>(
-  path.join(vendorDir, 'grammars.json')
-)
 
 /**
  * The languages `src/injections.ts` resolves annotations to, and the
  * set `test/integration/treesitter_injection.test.ts` asserts against.
+ * Mirrors `LANGUAGES` in `app-bin/stage-embedded-grammars.mjs`.
  * Dropping one is a product decision, not a refactor — make it here.
  */
 const EXPECTED_LANGUAGES = ['bash', 'javascript', 'json', 'python', 'rust']
@@ -80,85 +53,53 @@ const SAMPLES: Record<string, string> = {
   bash: '#!/bin/bash\nif [ -f x ]; then echo "hi"; fi\n'
 }
 
-test('grammar manifest covers exactly the bundled languages', () => {
-  assert.deepEqual(
-    manifest.grammars.map((g) => g.name).sort(),
-    EXPECTED_LANGUAGES,
-    'vendor/embedded-grammars/grammars.json must list every bundled language and no others'
-  )
-})
-
-test('manifest pins agree with the installed npm packages', () => {
-  for (const entry of manifest.grammars) {
-    // The packages' `exports` map does not expose `./package.json`, so
-    // reach it via the one subpath they do export — the WASM we stage.
-    // Reading the manifest of the very file we ship is the point.
-    const pkgDir = path.dirname(require.resolve(`${entry.npm}/${entry.wasm}`))
-    const pkg = readJson<LumisPackage>(path.join(pkgDir, 'package.json'))
-
-    assert.equal(
-      pkg.version,
-      entry.npmVersion,
-      `${entry.npm}: manifest pins ${entry.npmVersion} but ${pkg.version} is installed — ` +
-        're-vendor the query and update grammars.json together'
-    )
-    // The package records which grammar revision its WASM was built
-    // from; the vendored query MUST come from that same revision.
-    assert.equal(
-      `v${pkg.lumis.upstreamVersion}`,
-      entry.upstreamTag,
-      `${entry.npm}: WASM is built from grammar ${pkg.lumis.upstreamVersion}, ` +
-        `manifest claims the query came from ${entry.upstreamTag}`
-    )
-    assert.equal(
-      pkg.lumis.rev,
-      entry.upstreamRev,
-      `${entry.npm}: WASM is built from rev ${pkg.lumis.rev}, ` +
-        `manifest claims the query came from ${entry.upstreamRev}`
-    )
-  }
-})
-
-test('every grammar has a vendored query and its upstream MIT license', () => {
-  for (const entry of manifest.grammars) {
-    const query = path.join(vendorDir, entry.name, 'highlights.scm')
-    const license = path.join(vendorDir, entry.name, 'LICENSE')
-
-    assert.ok(existsSync(query), `missing vendored query: ${query}`)
-    assert.ok(readFileSync(query, 'utf-8').trim().length > 0, `empty vendored query: ${query}`)
-    assert.ok(existsSync(license), `missing upstream license: ${license}`)
-    assert.equal(entry.license, 'MIT', `${entry.name}: only MIT grammars may be redistributed here`)
-    assert.match(
-      readFileSync(license, 'utf-8'),
-      /MIT License/i,
-      `${license} does not look like the MIT license the manifest claims`
-    )
-  }
-})
+/** Root of the installed `tree-sitter-<lang>` package. */
+function packageDir(lang: string): string {
+  return path.dirname(require.resolve(`tree-sitter-${lang}/package.json`))
+}
 
 test('staging produces the parser.wasm + highlights.scm pair the loader requires', () => {
-  for (const entry of manifest.grammars) {
+  for (const lang of EXPECTED_LANGUAGES) {
     for (const file of ['parser.wasm', 'highlights.scm', 'LICENSE']) {
-      const staged = path.join(stagedDir, entry.name, file)
+      const staged = path.join(stagedDir, lang, file)
       assert.ok(
         existsSync(staged),
         `missing ${staged} — run \`npm run stage-grammars\` ` +
           '(wired into `npm run bundle` and `pretest:unit`)'
       )
     }
-    // The staged query must be the vendored one, byte for byte.
-    assert.equal(
-      readFileSync(path.join(stagedDir, entry.name, 'highlights.scm'), 'utf-8'),
-      readFileSync(path.join(vendorDir, entry.name, 'highlights.scm'), 'utf-8'),
-      `${entry.name}: staged highlights.scm differs from the vendored source`
+  }
+})
+
+test('staged grammars are the installed packages, byte for byte', () => {
+  for (const lang of EXPECTED_LANGUAGES) {
+    const src = packageDir(lang)
+    const pairs: [string, string][] = [
+      [path.join(src, `tree-sitter-${lang}.wasm`), path.join(stagedDir, lang, 'parser.wasm')],
+      [path.join(src, 'queries', 'highlights.scm'), path.join(stagedDir, lang, 'highlights.scm')],
+      [path.join(src, 'LICENSE'), path.join(stagedDir, lang, 'LICENSE')]
+    ]
+    for (const [from, to] of pairs) {
+      assert.ok(
+        readFileSync(from).equals(readFileSync(to)),
+        `${lang}: ${to} differs from ${from} — the staging dir is stale, re-run ` +
+          '`npm run stage-grammars`'
+      )
+    }
+    // Only MIT-licensed grammars may be redistributed inside the .vsix;
+    // a package relicensing across a version bump must not slip through.
+    assert.match(
+      readFileSync(path.join(stagedDir, lang, 'LICENSE'), 'utf-8'),
+      /MIT License/i,
+      `${lang}: staged LICENSE is not the MIT notice this extension may redistribute`
     )
   }
 })
 
-test('staging prunes a grammar the manifest no longer lists', () => {
+test('staging prunes a grammar the script no longer lists', () => {
   // `resources/embedded-grammars/` is gitignored, so a language dropped
-  // from the manifest is never cleaned by git and would linger in the
-  // working tree. The loader discovers languages by SCANNING that
+  // from the staging script is never cleaned by git and would linger in
+  // the working tree. The loader discovers languages by SCANNING that
   // directory, so a stale pair would keep being announced as available
   // and would ride along into a `.vsix` packaged from that tree.
   const stale = path.join(stagedDir, 'cobol')
@@ -171,23 +112,24 @@ test('staging prunes a grammar the manifest no longer lists', () => {
     stdio: 'pipe'
   })
 
-  assert.ok(!existsSync(stale), 'staging left a grammar the manifest does not list')
-  // ...and the restage is complete, not merely destructive.
-  for (const entry of manifest.grammars) {
-    assert.ok(
-      existsSync(path.join(stagedDir, entry.name, 'parser.wasm')),
-      `${entry.name}: pruning removed a grammar the manifest still lists`
-    )
-  }
+  // The restage is exactly the promised set — subtractive AND complete.
+  assert.deepEqual(
+    readdirSync(stagedDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort(),
+    EXPECTED_LANGUAGES,
+    'staged languages do not match the set the extension promises'
+  )
 })
 
 test('every staged grammar loads under the pinned web-tree-sitter and yields captures', async () => {
   await Parser.init()
 
-  for (const entry of manifest.grammars) {
-    const dir = path.join(stagedDir, entry.name)
-    const sample = SAMPLES[entry.name]
-    assert.ok(sample, `no sample snippet for ${entry.name}`)
+  for (const lang of EXPECTED_LANGUAGES) {
+    const dir = path.join(stagedDir, lang)
+    const sample = SAMPLES[lang]
+    assert.ok(sample, `no sample snippet for ${lang}`)
 
     // Language.load is where an incompatible prebuilt WASM fails —
     // ABI too old, or emscripten dylink metadata the 0.26 loader
@@ -198,12 +140,12 @@ test('every staged grammar loads under the pinned web-tree-sitter and yields cap
 
     const query = new Query(language, readFileSync(path.join(dir, 'highlights.scm'), 'utf-8'))
     const tree = parser.parse(sample)
-    assert.ok(tree, `${entry.name}: parse returned null`)
+    assert.ok(tree, `${lang}: parse returned null`)
 
     const captures = query.captures(tree.rootNode)
     assert.ok(
       captures.length > 0,
-      `${entry.name}: highlights.scm produced no captures — query and parser revisions have drifted`
+      `${lang}: highlights.scm produced no captures — query and parser revisions have drifted`
     )
 
     tree.delete()

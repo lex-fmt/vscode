@@ -111,9 +111,9 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  // The embedded parsers are npm dependencies (`@lumis-sh/wasm-*`) and
-  // their `highlights.scm` files are vendored in-repo, so there is
-  // nothing to download — staging is a local copy into
+  // The embedded parsers and their `highlights.scm` files both come
+  // from the official `tree-sitter-<lang>` npm dependencies, so there
+  // is nothing to download — staging is a local copy into
   // resources/embedded-grammars/. It is idempotent and cheap, so we
   // just always run it. Unlike the network fetches above, a failure
   // here is a broken checkout, not a flaky network: fail loudly rather

@@ -114,8 +114,8 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  // npm-sourced parsers + in-repo vendored queries: a local copy, not a
-  // download. See the same helper in test/runTests.ts.
+  // npm-sourced parsers and queries: a local copy, not a download.
+  // See the same helper in test/runTests.ts.
   console.log('Staging embedded tree-sitter grammars...')
   try {
     execSync('npm run stage-grammars', {

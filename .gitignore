@@ -18,10 +18,11 @@ shared/dist/
 /resources/queries/
 /resources/.tree-sitter-version
 
-# Staged embedded-language grammars. Not downloaded: parser.wasm is
-# copied out of the `@lumis-sh/wasm-*` npm deps and highlights.scm out
-# of vendor/embedded-grammars/ by `npm run stage-grammars`. The sources
-# are in git; this staging dir is build output.
+# Staged embedded-language grammars. Not downloaded: parser.wasm,
+# highlights.scm and LICENSE are copied out of the official
+# `tree-sitter-<lang>` npm deps by `npm run stage-grammars`. The
+# sources are lock-pinned dependencies; this staging dir is build
+# output.
 /resources/embedded-grammars/
 
 # fetch-deps stamp files

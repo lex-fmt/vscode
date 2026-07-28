@@ -18,11 +18,10 @@
  *
  * Where that directory comes from is a private build detail, not a
  * contract with any other repo: `app-bin/stage-embedded-grammars.mjs`
- * (run by `npm run bundle`) copies each `parser.wasm` out of the
- * matching `@lumis-sh/wasm-*` npm dependency and each `highlights.scm`
- * out of `vendor/embedded-grammars/`, where the queries are vendored
- * with their upstream MIT licenses. This module only ever sees the
- * staged result.
+ * (run by `npm run bundle`) copies the `parser.wasm`, `highlights.scm`
+ * and MIT `LICENSE` out of the matching official `tree-sitter-<lang>`
+ * npm dependency, which ships all three. This module only ever sees
+ * the staged result.
  */
 
 import path from 'node:path'
