@@ -11,7 +11,7 @@
   "main": "./out/src/main.cjs",
   "engines": {
     "vscode": "^1.106.0",
-    "node": ">=20"
+    "node": "^20.15.0 || >=22.2.0"
   },
   "categories": [
     "Programming Languages"
