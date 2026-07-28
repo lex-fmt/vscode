@@ -15,6 +15,13 @@
  * bootstrap (initTreeSitter); once initialized the runtime is shared
  * across all loaded grammars, so we only call `Language.load(...)`
  * here.
+ *
+ * Where that directory comes from is a private build detail, not a
+ * contract with any other repo: `app-bin/stage-embedded-grammars.mjs`
+ * (run by `npm run bundle`) copies the `parser.wasm`, `highlights.scm`
+ * and MIT `LICENSE` out of the matching official `tree-sitter-<lang>`
+ * npm dependency, which ships all three. This module only ever sees
+ * the staged result.
  */
 
 import path from 'node:path'
@@ -28,7 +35,7 @@ export interface EmbeddedTokenizer {
   /**
    * Returns the canonical language IDs this tokenizer can serve. Read
    * from disk at construction time and never changes — adding a new
-   * bundled grammar requires a download + extension reload.
+   * bundled grammar requires a re-stage + extension reload.
    */
   availableLanguages(): Set<string>
   /**

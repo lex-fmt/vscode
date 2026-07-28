@@ -8,9 +8,14 @@
 #   1. Build the shared/ submodule (sibling npm package consumed by the
 #      extension's main code; the workflow's root npm ci does NOT recurse
 #      into submodules, so it must be built explicitly here).
-#   2. fetch-deps: download lexd-lsp binary + tree-sitter WASM/queries
-#      + the per-language WASM + highlights from the embedded-grammars
-#      manifest (manifest iteration shape, all driven from deps.json).
+#   2. fetch-deps: download the lexd-lsp binary + the tree-sitter-lex
+#      WASM/queries (driven from deps.json).
+#
+# NOT here, on purpose: the five EMBEDDED-language parsers. Those come
+# from the official `tree-sitter-<lang>` npm dependencies (parser WASM,
+# queries and license alike), staged by `npm run stage-grammars`, which
+# `vscode:prepublish` -> `npm run bundle` already runs as part of
+# `vsce package`.
 #
 # Env contract (provided by vscode-ext.yml's pre-package step):
 #   VSCE_TARGET  e.g. darwin-arm64 (empty = universal, never the case here)
@@ -63,8 +68,9 @@ fi
 
 # ---- 3. Download everything via fetch-deps ---------------------------------
 
-# deps.json drives both the lexd-lsp/tree-sitter download AND the
-# per-grammar iteration (from-manifest + for-each shape).
+# deps.json drives the lexd-lsp binary + tree-sitter-lex WASM/queries
+# download. (Embedded-language parsers do not ride this path — see the
+# header.)
 echo "-> fetching deps (target=${RUST_TARGET})"
 "$FETCH_DEPS" --target "${RUST_TARGET}"
 

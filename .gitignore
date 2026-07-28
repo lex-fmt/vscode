@@ -17,7 +17,12 @@ shared/dist/
 /resources/tree-sitter.wasm
 /resources/queries/
 /resources/.tree-sitter-version
-/resources/embedded-grammars.json
+
+# Staged embedded-language grammars. Not downloaded: parser.wasm,
+# highlights.scm and LICENSE are copied out of the official
+# `tree-sitter-<lang>` npm deps by `npm run stage-grammars`. The
+# sources are lock-pinned dependencies; this staging dir is build
+# output.
 /resources/embedded-grammars/
 
 # fetch-deps stamp files

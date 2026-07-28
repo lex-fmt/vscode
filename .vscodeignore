@@ -15,7 +15,10 @@ comms/.git*
 comms/CNAME
 comms/.padz
 
-# Build tooling
+# Build tooling. node_modules/** covers the `tree-sitter-<lang>` deps:
+# they are the STAGING SOURCE for resources/embedded-grammars/, not
+# payload, and each carries grammar sources and native prebuilds the
+# .vsix must never grow. Only web-tree-sitter is re-included, below.
 .github/**
 scripts/**
 app-bin/**
