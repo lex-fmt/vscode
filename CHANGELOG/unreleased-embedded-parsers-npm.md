@@ -1,6 +1,3 @@
-<!-- Release notes for the next version. -->
-<!-- Updated as work is done; consumed by scripts/create-release. -->
-
 - Embedded-language parsers (python, javascript, json, rust, bash) now come
   from the official `tree-sitter-<lang>` npm packages instead of being
   fetched from GitHub release assets via a manifest in
