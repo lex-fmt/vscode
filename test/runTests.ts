@@ -111,18 +111,24 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
-  // Per-grammar fetch lives in deps.json (from-manifest + for-each
-  // iteration). fetch-deps stamps each item under
-  // .deps/embedded-grammars/<lang>.stamp so --if-missing is a no-op
-  // once the pinned version is on disk.
+  // The embedded parsers are npm dependencies (`@lumis-sh/wasm-*`) and
+  // their `highlights.scm` files are vendored in-repo, so there is
+  // nothing to download — staging is a local copy into
+  // resources/embedded-grammars/. It is idempotent and cheap, so we
+  // just always run it. Unlike the network fetches above, a failure
+  // here is a broken checkout, not a flaky network: fail loudly rather
+  // than let the injection suite's `tokenCount > 0` asserts report it
+  // as an unexplained tokenization failure.
+  console.log('Staging embedded tree-sitter grammars...')
   try {
-    execSync('fetch-deps --if-missing embedded-grammars', {
+    execSync('npm run stage-grammars', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
       shell: process.platform === 'win32' ? 'bash' : undefined
     })
   } catch {
-    console.error('Failed to download embedded-language tree-sitter grammars')
+    console.error('Failed to stage embedded-language tree-sitter grammars')
+    process.exit(1)
   }
 }
 

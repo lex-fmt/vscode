@@ -114,14 +114,18 @@ function ensureTreeSitter(extensionDevelopmentPath: string): void {
 }
 
 function ensureEmbeddedGrammars(extensionDevelopmentPath: string): void {
+  // npm-sourced parsers + in-repo vendored queries: a local copy, not a
+  // download. See the same helper in test/runTests.ts.
+  console.log('Staging embedded tree-sitter grammars...')
   try {
-    execSync('fetch-deps --if-missing embedded-grammars', {
+    execSync('npm run stage-grammars', {
       stdio: 'inherit',
       cwd: extensionDevelopmentPath,
       shell: process.platform === 'win32' ? 'bash' : undefined
     })
   } catch {
-    console.error('Failed to download embedded-language tree-sitter grammars')
+    console.error('Failed to stage embedded-language tree-sitter grammars')
+    process.exit(1)
   }
 }
 
