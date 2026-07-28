@@ -37,6 +37,16 @@ node_modules/**
 dist/**
 .vscode-test/**
 
+# Agent tooling (shipit's managed set): skills, agent definitions and harness
+# config. Never payload, and `.claude/skills` is a SYMLINK to `.agents/skills`
+# (shipit's single-store skills projection), which is the same shape that made
+# the .pixi exclusion above necessary — vsce's secret scan reads every included
+# path as a file and dies `EISDIR` on a symlinked directory, taking
+# `vsce package` (and so both the payload check and the release) down with it.
+.claude/**
+.agents/**
+.codex/**
+
 # Keep tree-sitter resources (WASM + queries) in VSIX
 !resources/tree-sitter-lex.wasm
 !resources/tree-sitter.wasm
