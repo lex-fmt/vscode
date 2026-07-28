@@ -11,13 +11,21 @@
 #
 # The release build gets that download from
 # `app-bin/pre-vsce-package-hook.sh`; the test lane's packaging check
-# (`npm run test:vsix-payload`) gets it from here. Same fetch, minus the
+# gets it from here — `test/vsix-payload/index.ts` runs this script
+# before it packages, so `npm run test:vsix-payload` is a plain `node`
+# invocation on every platform. Same fetch, minus the
 # release-only work — no shared/ build, no lexd-lsp binary, no
 # per-target `RUST_TARGET` — so a check lane does not pay for a
 # platform binary it never opens.
 #
 # Idempotent: a checkout that already has the payload (a laptop, a
-# warm CI cache) exits without touching the network.
+# warm CI cache) exits without touching the network. "Has it" means
+# PRESENT AND NON-EMPTY, the same contract
+# `test/vsix-payload/payload.ts` applies to the packaged `.vsix`: a
+# zero-byte wasm copies and packages cleanly, then dies at
+# `Language.load`. Treating one as present here would skip the fetch
+# that repairs it and hand the packaging check a failure it cannot
+# explain.
 
 set -euo pipefail
 
@@ -34,7 +42,7 @@ required=(
 
 missing=0
 for file in "${required[@]}"; do
-	if [ ! -f "$file" ]; then
+	if [ ! -s "$file" ]; then
 		missing=1
 	fi
 done
@@ -61,10 +69,12 @@ echo "-> fetching the lex tree-sitter payload (deps.json: tree-sitter)"
 
 # Fail here, attributably, rather than let a silent no-op surface later
 # as "the .vsix is missing its payload" — a fetch that did nothing is a
-# network/pin problem, not a packaging one.
+# network/pin problem, not a packaging one. Same present-and-non-empty
+# test as the gate above: a truncated download is a fetch that did
+# nothing, dressed up.
 for file in "${required[@]}"; do
-	if [ ! -f "$file" ]; then
-		echo "error: fetch-deps left $file absent — check deps.json's tree-sitter pin" >&2
+	if [ ! -s "$file" ]; then
+		echo "error: fetch-deps left $file missing or empty — check deps.json's tree-sitter pin" >&2
 		exit 1
 	fi
 done

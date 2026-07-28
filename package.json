@@ -803,7 +803,7 @@
     "test:integration": "node ./out/test/runTests.js",
     "test:cspell": "node ./out/test/runCspellTests.js",
     "test:vsix": "npm run build && npm run bundle && node ./out/test/runVsixSmoke.js",
-    "test:vsix-payload": "./app-bin/ensure-lex-grammar-payload.sh && node ./out/test/vsix-payload/index.js",
+    "test:vsix-payload": "node ./out/test/vsix-payload/index.js",
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
     "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'",

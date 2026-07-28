@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { crc32 } from 'node:zlib'
 import {
   EMBEDDED_LANGUAGES,
   REQUIRED_PAYLOAD,
@@ -174,6 +173,26 @@ test('a synthetic .vsix round-trips through the reader into the same verdict', (
 /** The `kind: path` part of a problem, dropping the remedy hint. */
 function headline(problem: string): string {
   return problem.split(' — ')[0]
+}
+
+/**
+ * CRC-32 (IEEE 802.3) of a buffer.
+ *
+ * Hand-rolled rather than taken from `node:zlib`, whose `crc32` only
+ * landed in Node 20.15 while `package.json` declares `"node": ">=20"` —
+ * an import that throws on a supported runtime would take the whole
+ * unit suite down with it. Bitwise and table-free: it runs over a few
+ * dozen fixture bytes, never over an archive.
+ */
+function crc32(data: Buffer): number {
+  let crc = 0xffffffff
+  for (const byte of data) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit++) {
+      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0
 }
 
 /**

@@ -106,7 +106,7 @@ function remedy(entry: string): string {
   if (entry.endsWith('resources/tree-sitter.wasm')) {
     return 'run `npm run copy-wasm`'
   }
-  return 'run `./app-bin/ensure-lex-grammar-payload.sh` (fetch-deps, per deps.json)'
+  return 'run `bash app-bin/ensure-lex-grammar-payload.sh` (fetch-deps, per deps.json)'
 }
 
 /**
