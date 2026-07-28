@@ -34,7 +34,18 @@ provision-lexd = "./bin/shipit provision lexd"
 # as they were out of the legacy check-command (they launch a downloaded
 # VS Code — not a hosted-runner-shaped check). Idempotent and cheap on a
 # laptop where comms/shared are already in place.
-test-full = "git submodule update --init --recursive && ./app-bin/ci-build-shared-hook.sh && npm ci && npm run build && npm run lint && npm run test:unit"
+#
+# `test:vsix-payload` (INJ001-WS05, #167) is the one step here that looks at
+# the shipping ARTIFACT rather than the tree: it packages a `.vsix` the way
+# the release does (`vsce package --no-dependencies`) and fails when the
+# tree-sitter payload — the Lex grammar wasm + queries, and the five embedded
+# grammars — is not inside it. It is in the lane precisely because the suites
+# that would otherwise notice (the injection integration tests' `tokenCount >
+# 0` asserts) are the ones excluded above, which let a payload-less extension
+# package with CI green. It fetches the Lex half per deps.json when absent
+# (app-bin/ensure-lex-grammar-payload.sh) — the same download the release's
+# pre-package hook does, so the lane packages what the release would.
+test-full = "git submodule update --init --recursive && ./app-bin/ci-build-shared-hook.sh && npm ci && npm run build && npm run lint && npm run test:unit && npm run test:vsix-payload"
 
 [feature.lint.dependencies]
 # >>> shipit-managed lint deps (do not edit; regenerate via `shipit install`) >>>
