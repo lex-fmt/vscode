@@ -11,6 +11,28 @@
   `highlights.scm` and its MIT license together, so query and parser can no
   longer drift apart. A side effect: `vsce package` now stages the embedded
   grammars on its own, so a shipit-cut `.vsix` carries them too.
+- The Lex tree-sitter grammar now arrives as an ordinary pinned dependency of
+  the build environment, resolved and checksummed by the lockfile, instead of
+  being downloaded from a GitHub release at package time by a script the build
+  fetched off the internet first. A wrong pin now fails on a laptop rather than
+  in a release.
+- A shipit-cut `.vsix` carries the Lex grammar. It previously shipped the
+  language server but not the parser, because the grammar rode a separate
+  download the shipit release path never ran — an extension that installed and
+  highlighted nothing.
+- Removed the retired dependency machinery outright: `deps.json`,
+  `shared/lex-deps.json`, both `fetch-deps` bootstrap scripts, its remaining
+  call sites in the dev and test launchers, and the legacy release workflow the
+  pre-package hook existed for. There is no second path left.
+- The dev and integration launchers now run the language server straight out of
+  the resolved environment instead of copying a downloaded binary into the
+  extension, so nothing but a release build ever writes `resources/lexd-lsp`.
+- The release path produces a `.vsix` again. Packaging walked the extension's
+  npm dependency graph, which the `@lex/shared` workspace symlink dependency
+  broke — every cut died with "Extension entrypoint(s) missing", so the
+  completed grammar and language-server migration had no way to ship. The
+  packaging step now skips that walk, which a bundled extension never needed:
+  its runtime dependencies already live inside the bundle.
 - Fixed a silent packaging bug: the `lexd-lsp` version pin sat inside the
   shipit-managed pixi block, which carries only the channel under
   conda-direct, so the next reconcile would have regenerated the block
