@@ -18,7 +18,11 @@
  *
  * `vendor/embedded-grammars/grammars.json` drives all of it and pins
  * which upstream revision each vendored query came from; see the README
- * next to it. Idempotent and cheap — safe to run on every build.
+ * next to it. The output directory is WIPED first, so what ships is
+ * strictly the manifest's set — dropping a language from the manifest
+ * retires it everywhere, rather than leaving a stale grammar that
+ * `discoverLanguages` keeps finding. Idempotent and cheap — safe to run
+ * on every build.
  *
  * Wired into `npm run bundle` (hence `pretest`, `test:vsix` and
  * `vscode:prepublish`/`vsce package`) AND into `pretest:unit`, so the
@@ -32,7 +36,7 @@
  */
 
 import { createRequire } from 'node:module'
-import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -54,6 +58,15 @@ function resolveWasm(entry) {
 }
 
 const manifest = JSON.parse(readFileSync(path.join(vendorDir, 'grammars.json'), 'utf-8'))
+
+// Wipe before staging, so the output is strictly what the manifest says.
+// `resources/embedded-grammars/` is gitignored, so nothing else may live
+// here and no `git clean` ever prunes it: dropping a language from the
+// manifest would otherwise leave a working tree where `discoverLanguages`
+// still finds the retired grammar's `parser.wasm` + `highlights.scm` and
+// keeps announcing it as available — and a `.vsix` packaged from that
+// tree would ship it.
+rmSync(outDir, { recursive: true, force: true })
 
 const staged = []
 for (const entry of manifest.grammars) {

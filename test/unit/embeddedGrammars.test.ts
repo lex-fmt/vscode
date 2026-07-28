@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import path from 'node:path'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { Parser, Language, Query } from 'web-tree-sitter'
@@ -14,7 +15,7 @@ import { Parser, Language, Query } from 'web-tree-sitter'
  * the two halves can drift apart in ways nothing else would notice: a
  * query written against a different grammar revision still *compiles*,
  * it just stops matching node names and silently highlights nothing.
- * These tests pin all three joints of that seam:
+ * These tests pin all four joints of that seam:
  *
  *   1. manifest ↔ installed npm package (version, and the upstream
  *      revision the package records as the WASM's source)
@@ -23,6 +24,9 @@ import { Parser, Language, Query } from 'web-tree-sitter'
  *      `web-tree-sitter` runtime: the WASM must actually LOAD (older
  *      prebuilt packages fail here on emscripten dylink metadata, not
  *      on ABI number) and the query must produce real captures.
+ *   4. staged set ↔ manifest set in the SUBTRACTIVE direction: staging
+ *      wipes its output, so a language dropped from the manifest cannot
+ *      survive in the gitignored output tree and keep being discovered.
  *
  * (3) is the ABI-compatibility check the migration turned on. It is a
  * test, not a one-off verification, so bumping `web-tree-sitter` or a
@@ -147,6 +151,32 @@ test('staging produces the parser.wasm + highlights.scm pair the loader requires
       readFileSync(path.join(stagedDir, entry.name, 'highlights.scm'), 'utf-8'),
       readFileSync(path.join(vendorDir, entry.name, 'highlights.scm'), 'utf-8'),
       `${entry.name}: staged highlights.scm differs from the vendored source`
+    )
+  }
+})
+
+test('staging prunes a grammar the manifest no longer lists', () => {
+  // `resources/embedded-grammars/` is gitignored, so a language dropped
+  // from the manifest is never cleaned by git and would linger in the
+  // working tree. The loader discovers languages by SCANNING that
+  // directory, so a stale pair would keep being announced as available
+  // and would ride along into a `.vsix` packaged from that tree.
+  const stale = path.join(stagedDir, 'cobol')
+  mkdirSync(stale, { recursive: true })
+  writeFileSync(path.join(stale, 'parser.wasm'), 'not a real parser')
+  writeFileSync(path.join(stale, 'highlights.scm'), '(comment) @comment')
+
+  execFileSync(process.execPath, [path.join(repoRoot, 'app-bin', 'stage-embedded-grammars.mjs')], {
+    cwd: repoRoot,
+    stdio: 'pipe'
+  })
+
+  assert.ok(!existsSync(stale), 'staging left a grammar the manifest does not list')
+  // ...and the restage is complete, not merely destructive.
+  for (const entry of manifest.grammars) {
+    assert.ok(
+      existsSync(path.join(stagedDir, entry.name, 'parser.wasm')),
+      `${entry.name}: pruning removed a grammar the manifest still lists`
     )
   }
 })
